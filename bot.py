@@ -1196,7 +1196,7 @@ async def listener_market(message: types.Message):
     user_id = message.from_user.id
     
     # جلب العملات من السوق (Binance Mode)
-    res = supabase.table("crypto_market_simulation").select("*").order("volume_24h", desc=True).limit(25).execute()
+    res = supabase.table("crypto_market_simulation").select("*").order("volume_24h", desc=True).limit(0).execute()
     coins = res.data
     
     text = "📊 | <b>سـوق الـعـمـلات (Binance Mode)</b>\n"
@@ -1385,34 +1385,44 @@ async def callback_wallet_view(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(Text(startswith='market_tab:'), state="*")
 async def callback_market_tabs(callback_query: types.CallbackQuery):
-    # 🔐 القفل الأمني: التأكد أن من ضغط على الزر هو نفسه صاحب الطلب
+    # 🔐 القفل الأمني
     data_parts = callback_query.data.split(':')
-    owner_id = int(data_parts[1]) # الـ ID المخزن في الزر
-    visitor_id = callback_query.from_user.id # الـ ID للشخص الذي ضغط الآن
+    owner_id = int(data_parts[1])
+    visitor_id = callback_query.from_user.id
 
     if visitor_id != owner_id:
-        return await callback_query.answer("⚠️ هذه القائمة ليست لك! اطلب قائمة السوق الخاصة بك من محفظتك.", show_alert=True)
+        return await callback_query.answer("⚠️ هذه القائمة ليست لك!", show_alert=True)
 
     if not await is_authorized(callback_query): return
     
     try:
         tab_type = data_parts[2]
+        # استخراج الصفحة الحالية (إذا لم توجد نبدأ من 0)
+        page = int(data_parts[3]) if len(data_parts) > 3 else 0
+        per_page = 24 # عدد العملات في كل صفحة
+        start = page * per_page
+        end = start + per_page - 1
         
-        # جلب البيانات بناءً على التبويب
+        # جلب البيانات بناءً على التبويب مع تحديد النطاق (Range)
+        query = supabase.table("crypto_market_simulation").select("*")
+        
         if tab_type == 'gainers':
-            res = supabase.table("crypto_market_simulation").select("*").order("change_24h", desc=True).limit(25).execute()
+            res = query.order("change_24h", desc=True).range(start, end).execute()
             header = "📈 <b>الأعلى ربحاً (24h):</b>"
         elif tab_type == 'losers':
-            res = supabase.table("crypto_market_simulation").select("*").order("change_24h", desc=False).limit(25).execute()
+            res = query.order("change_24h", desc=False).range(start, end).execute()
             header = "📉 <b>الأكثر خسارة (24h):</b>"
         else: # trending
-            res = supabase.table("crypto_market_simulation").select("*").order("volume_24h", desc=True).limit(25).execute()
+            res = query.order("volume_24h", desc=True).range(start, end).execute()
             header = "🔥 <b>الأكثر رواجاً (السيولة):</b>"
             
         if not res.data:
-            return await callback_query.answer("⚠️ لا توجد بيانات حالياً.", show_alert=True)
+            return await callback_query.answer("⚠️ لا توجد عملات إضافية في هذا التبويب.", show_alert=True)
 
-        text = f"📊 | <b>سـوق الـعـمـلات (Binance Mode)</b>\n━━━━━━━━━━━━━━━━━━\n{header}\n\n"
+        text = f"📊 | <b>سـوق الـعـمـلات (Binance Mode)</b>\n"
+        text += f"━━━━━━━━━━━━━━━━━━\n"
+        text += f"{header} (صفحة {page + 1})\n\n"
+        
         markup = InlineKeyboardMarkup(row_width=2)
         
         for c in res.data:
@@ -1424,15 +1434,26 @@ async def callback_market_tabs(callback_query: types.CallbackQuery):
             price_format = f"{price:,.4f}" if price < 1 else f"{price:,.2f}"
             
             text += f"{icon} <b>{sym}</b> : <code>{price_format}$</code> ({chg:+.2f}%)\n"
-            
-            # نمرر owner_id لضمان استمرارية الحماية في الصفحات القادمة
             markup.insert(InlineKeyboardButton(f"🪙 {sym}", callback_data=f"coin_view:{owner_id}:{c['symbol']}"))
 
-        # أزرار التبويبات (كلها تحمل ID المالك)
+        # --- [ صف الأزرار الوظيفية (التنقل) ] ---
+        nav_buttons = []
+        # زر "السابق": يظهر فقط إذا لم نكن في الصفحة الأولى
+        if page > 0:
+            nav_buttons.append(InlineKeyboardButton("⬅️ السابق", callback_data=f"market_tab:{owner_id}:{tab_type}:{page - 1}"))
+        
+        # زر "التالي": يظهر دائماً طالما أن الصفحة الحالية ممتلئة (مما يعني وجود المزيد غالباً)
+        if len(res.data) == per_page:
+            nav_buttons.append(InlineKeyboardButton("التالي ➡️", callback_data=f"market_tab:{owner_id}:{tab_type}:{page + 1}"))
+        
+        if nav_buttons:
+            markup.row(*nav_buttons)
+
+        # أزرار التبويبات الرئيسية
         markup.row(
-            InlineKeyboardButton("🔥 الرائجة", callback_data=f"market_tab:{owner_id}:trending"),
-            InlineKeyboardButton("📈 الرابحة", callback_data=f"market_tab:{owner_id}:gainers"),
-            InlineKeyboardButton("📉 الخاسرة", callback_data=f"market_tab:{owner_id}:losers")
+            InlineKeyboardButton("🔥 الرائجة", callback_data=f"market_tab:{owner_id}:trending:0"),
+            InlineKeyboardButton("📈 الرابحة", callback_data=f"market_tab:{owner_id}:gainers:0"),
+            InlineKeyboardButton("📉 الخاسرة", callback_data=f"market_tab:{owner_id}:losers:0")
         )
         markup.add(InlineKeyboardButton("🔙 عودة للمحفظة", callback_data=f"wallet_view:{owner_id}"))
         
@@ -1442,6 +1463,7 @@ async def callback_market_tabs(callback_query: types.CallbackQuery):
         logging.error(f"Error in market_tab: {e}")
         await callback_query.answer("⚠️ فشل تحديث بيانات السوق.", show_alert=True)
         
+
 # --- 3. الكولباك (الذي لا يستجيب للضغط + حماية وتنظيف) --
 @dp.callback_query_handler(Text(startswith='active_trades_view:'), state="*")
 async def callback_view_trades(callback_query: types.CallbackQuery):
