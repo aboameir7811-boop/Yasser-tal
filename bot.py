@@ -2581,13 +2581,21 @@ async def async_manual_upsert(table_name, records):
         "Prefer": "resolution=merge-duplicates"
     }
     endpoint = f"{SUPABASE_URL}/rest/v1/{table_name}"
-    async with aiohttp.ClientSession() as session:
-        try:
+    try:
+        async with aiohttp.ClientSession() as session:
             async with session.post(endpoint, json=records, headers=headers, timeout=30) as response:
-                return response.status in [200, 201]
-        except Exception as e:
-            logging.error(f"⚠️ خطأ في الرفع: {e}")
-            return False
+                if response.status in [200, 201, 204]:
+                    return True
+                else:
+                    # طباعة الخطأ القادم من سوبابيس بالتفصيل
+                    error_text = await response.text()
+                    print(f"❌ فشل الرفع إلى {table_name}!")
+                    print(f"📊 الحالة: {response.status}")
+                    print(f"📝 رسالة الخطأ من سوبابيس: {error_text}")
+                    return False
+    except Exception as e:
+        print(f"⚠️ خطأ تقني أثناء محاولة الرفع: {str(e)}")
+        return False       
 
 # ==========================================
 # --- [ دوال الحساب الرياضي ] ---
