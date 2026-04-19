@@ -2736,6 +2736,39 @@ def get_market_mood(rsi_value):
     if rsi_value >= 50: return "BULLISH_BIAS"
     return "BEARISH_BIAS"
     
+  
+def intelligence_matrix_yusr(open_p, high_p, low_p, close_p, bbw, kc_mid, v_delta):
+    """
+    استخبارات أثر: تطبيق مصفوفة (اليسر بعد العسر)
+    """
+    # الوحدة 1: ضيق البولنجر (العسر التمهيدي) - أقل من 0.07 يعتبر ضيقاً ممتازاً
+    is_squeezed = bbw < 0.07  
+    
+    # الوحدة 2: التمركز الاستراتيجي (فوق خط كلتنر الأوسط)
+    is_above_keltner = close_p > kc_mid
+    
+    # الوحدة 3: بصمة اليسر (تحليل الشمعة المقلوبة / Pin Bar)
+    body = abs(close_p - open_p)
+    lower_wick = min(open_p, close_p) - low_p
+    total_range = high_p - low_p
+    
+    if total_range == 0: return False, 0, ""
+    
+    wick_ratio = lower_wick / total_range
+    # الشرط: الذيل السفلي ضعف الجسم على الأقل، ويمثل أكثر من 50% من إجمالي الشمعة
+    is_pin_bar = (lower_wick > (body * 2)) and (wick_ratio > 0.5)
+    
+    # الوحدة 4: مكافحة الخداع (السيولة الحقيقية)
+    is_real_volume = v_delta > 0  # المشترون أكثر من البائعين
+    
+    # اتخاذ القرار الاستخباراتي
+    if is_squeezed and is_above_keltner and is_pin_bar and is_real_volume:
+        power = round(wick_ratio * 100, 1)
+        report = f"🎯 سَيَجْعَلُ اللَّهُ بَعْدَ عُسْرٍ يُسْرًا | ذيل انعكاسي بقوة {power}% مخترقاً للضيق بسيولة حقيقية."
+        return True, power, report
+        
+    return False, 0, ""
+    
 # ==========================================
 # --- [ دوال التحليل و الجلب ] ---
 # ==========================================   
@@ -2821,24 +2854,33 @@ async def update_crypto_market_data():
                         adx_val = calculate_adx(highs, lows, closes) # قوة الانفجار
                         v_delta = calculate_volume_delta(taker_buy_vols, volumes) # كاشف الزبد
                         rsi_val = calculate_rsi(closes)
-                        mood = get_market_mood(rsi_val) # سيكولوجية 78/22
-                        
+                        mood = get_market_mood(rsi_val) # سيكولوجية 78/22                      
                         # --- [ إضافة أثر: محرك الأهداف والمناطق ] ---
+                        # --- [ غرفة عمليات أثر: محرك الأهداف والاستخبارات ] ---
                         if tf == '15m':
-                            # تحديد منطقة الدخول حول السعر الحالي
+                            # 1. تحديد المناطق والأهداف
                             record["entry_zone_start"] = round(price * 0.998, 6)
                             record["entry_zone_end"] = round(price * 1.002, 6)
-                            
-                            # تحديد درع الحماية DCA (تعديل المتوسط)
                             record["dca_protection_price"] = round(price - (atr_val * 1.5), 6)
-                            
-                            # تحديد أهداف جني الأرباح الآلية
                             record["target_1"] = round(price + (atr_val * 1.2), 6)
                             record["target_2"] = round(price + (atr_val * 2.5), 6)
-                            
-                            # تحديد وقف الخسارة وسيكولوجية السوق
                             record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
-                            record["market_mood"] = get_market_mood(rsi_val)
+                            
+                            # 2. تشغيل مصفوفة الاستخبارات (اليسر بعد العسر)
+                            o_15, h_15, l_15, c_15 = float(results[i][-1][1]), float(results[i][-1][2]), float(results[i][-1][3]), float(results[i][-1][4])
+                            is_yusr, yusr_pow, report = intelligence_matrix_yusr(o_15, h_15, l_15, c_15, bbw_value, kc_mid, v_delta)
+                            
+                            if is_yusr:
+                                record["intelligence_report"] = report
+                                record["yusr_power"] = yusr_pow
+                                record["is_squeezed"] = True
+                                record["market_mood"] = "YUSR_EXPLOSION" # حالة خاصة للعملات المنفجرة
+                            else:
+                                record["intelligence_report"] = "جاري المراقبة..."
+                                record["yusr_power"] = 0
+                                record["is_squeezed"] = bbw_value < 0.07
+                                record["market_mood"] = get_market_mood(rsi_val)
+
                         # --- [ نهاية الإضافة ] ---
 
                         # تحديث السجل بدمج كل البيانات (القديمة + الجديدة)
