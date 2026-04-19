@@ -206,19 +206,19 @@ async def trade_reaper():
         await asyncio.sleep(8) # وقت مثالي لضمان تحديث سريع وحماية من الحظر
 
         
+       
 async def intelligence_scanner():
     """
-    الرادار v10.2 (القلعة المحصنة)
-    يدمج وحشية "زحف الإعصار" مع استخبارات "الترسانة الجديدة"
+    الرادار v10.3 (القلعة المحصنة + استخبارات أثر)
+    يدمج وحشية "زحف الإعصار" مع "اليسر بعد العسر"
     ويطبق فلتر "الغطاء الجوي لفريم الساعة" كشرط أساسي وصارم.
     """
-    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار يمسح السوق بحثاً عن الثلاثية المتفجرة والغطاء الجوي...")
+    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار يمسح السوق بحثاً عن الانفجارات واستخبارات اليسر...")
     
     try:
         res = supabase.table("crypto_market_simulation").select("*").execute()
         coins = res.data
     
-        # تم تصحيح الخطأ القاتل هنا (إزالة [cite: 2])
         if not coins: 
             return []
 
@@ -251,7 +251,7 @@ async def intelligence_scanner():
             # ==========================================
             is_1h_ready = (
                 (price > ema20_1h) and              
-                (price < bb_upper_1h) and           
+                (price < bb_upper_1h) and            
                 (ema20_1h > bb_mid_1h) and          
                 (ema20_1h > ema50_1h > ema100_1h)   
             )
@@ -290,52 +290,40 @@ async def intelligence_scanner():
             bbw_prev_5m = float(coin.get('bbw_prev_5m') or 0) 
             expansion_ratio_5m = (bbw_5m / bbw_prev_5m) if bbw_prev_5m > 0 else 1.0 
 
-            # --- [ استخراج الأدوات المحرمة الجديدة ] ---
+            # --- [ استخراج الأدوات المحرمة واستخبارات الشموع ] ---
             vol_delta = float(coin.get('volume_delta_15m') or 0)
             adx_val = float(coin.get('adx_15m') or 0)
             stop_loss = float(coin.get('stop_loss_atr') or 0)
             mood = coin.get('market_mood') or 'NEUTRAL'
             orderbook_ratio = float(coin.get('orderbook_imbalance_ratio') or 0)
             whale_detected = coin.get('whale_absorption_detected') or False
-
-            # ==========================================
-            # 💎 [ الفراغ 12: مصفوفة استخبارات اليسر بعد العسر ]
-            # ==========================================
             
-            # 1. استخراج بيانات الشمعة الحالية (15m) للتحليل الاستخباراتي
             o_15 = float(coin.get('open_15m') or 0)
             h_15 = float(coin.get('high_15m') or 0)
             l_15 = float(coin.get('low_15m') or 0)
-            c_15 = price  # السعر الحالي يمثل الإغلاق اللحظي
-            
-            # 2. تحليل بصمة الشمعة (الذيل الانعكاسي)
+            c_15 = price
+
+            # ==========================================
+            # 💎 [ 3. المحرك الاستخباراتي: مصفوفة "اليسر بعد العسر" ]
+            # ==========================================
             body_15m = abs(c_15 - o_15)
             lower_wick_15m = min(o_15, c_15) - l_15
             total_range_15m = h_15 - l_15
-            
-            # 3. رصد "العسر" (الانضغاط الشديد)
-            # نستخدم قيمة BBW الحالية لتحديد ما إذا كانت العملة في منطقة ضيق انفجاري
-            is_sqz = bbw_15m < 0.065  
-            
-            # 4. رصد "اليسر" (قوة الدفع من الأسفل)
             wick_ratio = (lower_wick_15m / total_range_15m) if total_range_15m > 0 else 0
-            # شرط أثر: الذيل يمثل أكثر من 60% من الشمعة وضعف حجم الجسم مع سيولة حقيقية
-            is_yusr_detected = (lower_wick_15m > (body_15m * 2)) and (wick_ratio > 0.6) and (vol_delta >= 0)
-            
-            # 5. صياغة التقرير الاستخباراتي وتحديد القوة
-            y_power = round(wick_ratio * 100, 1) if is_yusr_detected else 0
-            intel_report = "جاري المراقبة بحثاً عن اليسر..."
-            
-            if is_sqz and is_yusr_detected:
-                score += 85  # مكافأة اختراق "ضيق" بـ "افتتاح" مؤكد
-                intel_report = f"🎯  | ذيل شرائي {y_power}% بعد ضيق شديد بسيولة حقيقية."
-                reasons.append(f"🔥 رصد: بصمة افتتاح مؤكدة بقوة {y_power}%")
-                mood = "YUSR_EXPLOSION"
-            elif is_sqz:
-                intel_report = "⚠️ ضيق (ضيق شديد) | نرقب ظهور الانفتاح ( الانعكاسي)."
 
+            is_sqz = bbw_15m < 0.065
+            is_yusr_detected = (lower_wick_15m > (body_15m * 2)) and (wick_ratio > 0.6) and (vol_delta > 0)
+            y_power = round(wick_ratio * 100, 1) if is_yusr_detected else 0
+            
+            intel_report = "جاري المراقبة..."
+            if is_sqz and is_yusr_detected:
+                score += 100  # ضربة قاضية للنقاط لأنها أفضل فرصة من القاع
+                intel_report = f"🎯 شرائي يكسر الضيق {y_power}% يكسر الضيق."
+                reasons.append(f"💎 رصد: شرائي مخفي يمتص الضيق بقوة {y_power}%")
+                mood = "YUSR_EXPLOSION"
+                
             # ==========================================
-            # 🔥 [ 3. المحرك الهجومي: تحليل الثلاثية المتفجرة ]
+            # 🔥 [ 4. المحرك الهجومي: تحليل الثلاثية المتفجرة (زحف الإعصار) ]
             # ==========================================
             is_crawling_up = (
                 (price >= ema20) and  
@@ -350,7 +338,9 @@ async def intelligence_scanner():
 
             if is_crawling_up:
                 score += 50 
+                intel_report = "🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية." if mood != "YUSR_EXPLOSION" else intel_report
                 reasons.append(f"🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية مع توسع ({expansion_ratio_15m:.1%})") 
+                mood = "NUCLEAR_CRAWL" if mood != "YUSR_EXPLOSION" else mood
 
             if is_5m_spark:
                 score += 40 
@@ -361,31 +351,31 @@ async def intelligence_scanner():
                 reasons.append(f"📊 فوليوم مضاعف: السيولة الحالية تتجاوز 200% من المتوسط") 
 
             # ==========================================
-            # 🌋 [ 4. دمج استخبارات كيلتنر، العقود، والأدوات الجديدة (Boosters) ]
+            # 🌋 [ 5. دمج استخبارات كيلتنر، العقود، والأدوات الجديدة (Boosters) ]
             # ==========================================
             if (upper > kc_upper) and expansion_ratio_15m > 1.05: 
                 score += 30 
                 reasons.append("🌋 كسر الانضغاط (k): السعر تحرر من ضغط كيلتنر بقوة هائلة") 
 
-            if oi_change > 5 and is_crawling_up: 
+            if oi_change > 5 and (is_crawling_up or is_yusr_detected): 
                 score += 30 
                 reasons.append(f"🐳 وقود الحيتان: الاهتمام المفتوح يرتفع بالتزامن مع الصعود (+{oi_change}%)") 
 
-            # --- الإضافة الجديدة: تعزيز النقاط بناءً على الـ ADX (قوة الانفجار) ---
             if adx_val > 25 and is_crawling_up:
                 score += 20
-                reasons.append(f"🌪️ قوة الاتجاه (ADX): مسار انفجاري مؤكد ({adx_val})")
+                reasons.append(f"🌪️ قوة الاتجاه (A): مسار انفجاري مؤكد ({adx_val})")
 
             # ==========================================
-            # 🛡️ [ 5. فلاتر الحماية الصارمة (لعنة على التلاعب) ]
+            # 🛡️ [ 6. فلاتر الحماية الصارمة (لعنة مقبرة الحيتان) ]
             # ==========================================
-            # --- الإضافة الجديدة: فحص "الزبد" (Volume Delta بالسالب) مع OBV ---
-            if price > upper and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
-                score -= 100  
-                reasons.append("⚠️ فخ الحيتان أو زبد: صعود كاذب وتصريف مخفي للسيولة") 
+            # تدمير النقاط إذا كان هناك صعود وهمي والسيولة سالبة (تصريف)
+            if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
+                score -= 200  
+                intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
+                reasons.append("🚫 حماية مطلقة: تم رصد سيولة بيعية سالبة (زبد) خلف الصعود الوهمي.") 
 
             # ==========================================
-            # 🎯 [ 6. قرار الإطلاق النهائي وتحديث الاستخبارات ]
+            # 🎯 [ 7. قرار الإطلاق النهائي وتحديث الاستخبارات ]
             # ==========================================
             high_24h = float(coin.get('high_24h') or (price * 1.05)) 
             low_24h = float(coin.get('low_24h') or (price * 0.95)) 
@@ -398,11 +388,8 @@ async def intelligence_scanner():
             sc_whale = 1 if (oi_change > 5 and is_crawling_up) else 0 
 
             if is_crawling_up and is_5m_spark and is_volume_spike: 
-                score += 60               
-            # ==========================================
-            # 🎯 [ 6. قرار الإطلاق النهائي وتحديث الاستخبارات ]
-            # ==========================================
-            # (نكمل كود الـ upsert مع إضافة الحقول الجديدة)
+                score += 60  
+             
             if score >= 150:  
                 supabase.table("market_intelligence").upsert({ 
                     "symbol": symbol, 
@@ -413,20 +400,19 @@ async def intelligence_scanner():
                     "pump_score": int(score),  
                     "global_obv_status": "MOMENTUM_EXPLOSION", 
                     "multi_frame_liquidity_score": obv_slope_15m, 
-                    
-                    # --- تغذية الأعمدة الاستخباراتية الجديدة ---
-                    "is_squeezed": is_sqz,
-                    "yusr_power": y_power,
-                    "intelligence_report": intel_report,
-                    
                     "fib_golden_ratio": fib_618, 
-                    "trend_status": "NUCLEAR_EXPLOSION", 
+                    "trend_status": mood, 
                     "is_1h_confirmed": True, 
                     "score_crawling": sc_crawling, 
                     "score_spark": sc_spark, 
                     "score_volume": sc_volume, 
                     "score_keltner": sc_keltner, 
                     "score_whale": sc_whale,
+                    
+                    # --- تغذية أعمدة استخبارات أثر بكل دقة ---
+                    "is_squeezed": is_sqz,           # مصححة: كانت False دائماً
+                    "yusr_power": y_power,           # قوة الذيل الشرائي
+                    "intelligence_report": intel_report, # التقرير النصي الدقيق
                     "dynamic_sl_atr": stop_loss,
                     "market_emotion_rsi": mood,
                     "orderbook_imbalance_ratio": orderbook_ratio,
@@ -437,13 +423,13 @@ async def intelligence_scanner():
                     "last_updated": "now()" 
                 }).execute() 
 
-                await trigger_golden_signal(symbol, score, reasons, fib_618, price)
+                await trigger_golden_signal(symbol, score, reasons, fib_618, price) 
                 
     except Exception as e: 
         import logging 
-        logging.error(f"❌ خطأ داخلي في الرادار القناص v10.2: {e}") 
+        logging.error(f"❌ خطأ داخلي في الرادار القناص v10.3: {e}") 
 
-    print("✅ تم الانتهاء من مسح الزخم المتفجر والغطاء الجوي (v10.2).")
+    print("✅ تم الانتهاء من المسح الاستخباراتي والغطاء الجوي (v10.3).")
     
 # تحديث دالة التنبيه لتقبل السعر الحالي
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price):
