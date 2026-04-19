@@ -206,7 +206,6 @@ async def trade_reaper():
         await asyncio.sleep(8) # وقت مثالي لضمان تحديث سريع وحماية من الحظر
 
         
-
 async def intelligence_scanner():
     """
     الرادار v10.2 (القلعة المحصنة)
@@ -300,6 +299,42 @@ async def intelligence_scanner():
             whale_detected = coin.get('whale_absorption_detected') or False
 
             # ==========================================
+            # 💎 [ الفراغ 12: مصفوفة استخبارات اليسر بعد العسر ]
+            # ==========================================
+            
+            # 1. استخراج بيانات الشمعة الحالية (15m) للتحليل الاستخباراتي
+            o_15 = float(coin.get('open_15m') or 0)
+            h_15 = float(coin.get('high_15m') or 0)
+            l_15 = float(coin.get('low_15m') or 0)
+            c_15 = price  # السعر الحالي يمثل الإغلاق اللحظي
+            
+            # 2. تحليل بصمة الشمعة (الذيل الانعكاسي)
+            body_15m = abs(c_15 - o_15)
+            lower_wick_15m = min(o_15, c_15) - l_15
+            total_range_15m = h_15 - l_15
+            
+            # 3. رصد "العسر" (الانضغاط الشديد)
+            # نستخدم قيمة BBW الحالية لتحديد ما إذا كانت العملة في منطقة ضيق انفجاري
+            is_sqz = bbw_15m < 0.065  
+            
+            # 4. رصد "اليسر" (قوة الدفع من الأسفل)
+            wick_ratio = (lower_wick_15m / total_range_15m) if total_range_15m > 0 else 0
+            # شرط أثر: الذيل يمثل أكثر من 60% من الشمعة وضعف حجم الجسم مع سيولة حقيقية
+            is_yusr_detected = (lower_wick_15m > (body_15m * 2)) and (wick_ratio > 0.6) and (vol_delta >= 0)
+            
+            # 5. صياغة التقرير الاستخباراتي وتحديد القوة
+            y_power = round(wick_ratio * 100, 1) if is_yusr_detected else 0
+            intel_report = "جاري المراقبة بحثاً عن اليسر..."
+            
+            if is_sqz and is_yusr_detected:
+                score += 85  # مكافأة اختراق "ضيق" بـ "افتتاح" مؤكد
+                intel_report = f"🎯  | ذيل شرائي {y_power}% بعد ضيق شديد بسيولة حقيقية."
+                reasons.append(f"🔥 رصد: بصمة افتتاح مؤكدة بقوة {y_power}%")
+                mood = "YUSR_EXPLOSION"
+            elif is_sqz:
+                intel_report = "⚠️ ضيق (ضيق شديد) | نرقب ظهور الانفتاح ( الانعكاسي)."
+
+            # ==========================================
             # 🔥 [ 3. المحرك الهجومي: تحليل الثلاثية المتفجرة ]
             # ==========================================
             is_crawling_up = (
@@ -363,8 +398,11 @@ async def intelligence_scanner():
             sc_whale = 1 if (oi_change > 5 and is_crawling_up) else 0 
 
             if is_crawling_up and is_5m_spark and is_volume_spike: 
-                score += 60  
-             
+                score += 60               
+            # ==========================================
+            # 🎯 [ 6. قرار الإطلاق النهائي وتحديث الاستخبارات ]
+            # ==========================================
+            # (نكمل كود الـ upsert مع إضافة الحقول الجديدة)
             if score >= 150:  
                 supabase.table("market_intelligence").upsert({ 
                     "symbol": symbol, 
@@ -375,7 +413,12 @@ async def intelligence_scanner():
                     "pump_score": int(score),  
                     "global_obv_status": "MOMENTUM_EXPLOSION", 
                     "multi_frame_liquidity_score": obv_slope_15m, 
-                    "is_squeezed": False, 
+                    
+                    # --- تغذية الأعمدة الاستخباراتية الجديدة ---
+                    "is_squeezed": is_sqz,
+                    "yusr_power": y_power,
+                    "intelligence_report": intel_report,
+                    
                     "fib_golden_ratio": fib_618, 
                     "trend_status": "NUCLEAR_EXPLOSION", 
                     "is_1h_confirmed": True, 
@@ -384,8 +427,6 @@ async def intelligence_scanner():
                     "score_volume": sc_volume, 
                     "score_keltner": sc_keltner, 
                     "score_whale": sc_whale,
-                    
-                    # --- تغذية أعمدة الجدول الجديدة بكل دقة ---
                     "dynamic_sl_atr": stop_loss,
                     "market_emotion_rsi": mood,
                     "orderbook_imbalance_ratio": orderbook_ratio,
@@ -396,7 +437,7 @@ async def intelligence_scanner():
                     "last_updated": "now()" 
                 }).execute() 
 
-                await trigger_golden_signal(symbol, score, reasons, fib_618, price) 
+                await trigger_golden_signal(symbol, score, reasons, fib_618, price)
                 
     except Exception as e: 
         import logging 
@@ -404,7 +445,6 @@ async def intelligence_scanner():
 
     print("✅ تم الانتهاء من مسح الزخم المتفجر والغطاء الجوي (v10.2).")
     
-
 # تحديث دالة التنبيه لتقبل السعر الحالي
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price):
     text = (
