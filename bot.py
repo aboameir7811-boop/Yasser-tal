@@ -2871,14 +2871,32 @@ async def update_crypto_market_data():
 
                 for i, tf in enumerate(timeframes):
                     if results[i] and isinstance(results[i], list):
-                        # استخراج البيانات الأساسية + سيولة الحيتان (Index 9)
-                        highs = [float(k[2]) for k in results[i]]
-                        lows = [float(k[3]) for k in results[i]]
-                        closes = [float(k[4]) for k in results[i]]
-                        volumes = [float(k[5]) for k in results[i]]
-                        taker_buy_vols = [float(k[9]) for k in results[i]] # استخبارات السيولة الحقيقية
+                        # --- [ 1. تجهيز البيانات للتحليل الاستخباراتي ] ---
+                        # تحويل البيانات إلى DataFrame لتتمكن دالة الأنماط من قراءتها
+                        df_tf = pd.DataFrame(results[i], columns=[
+                            'timestamp', 'open', 'high', 'low', 'close', 'volume',
+                            'close_time', 'quote_av', 'trades', 'tb_base_av', 'tb_quote_av', 'ignore'
+                        ])
                         
-                        # الحسابات القديمة (المحافظة عليها كاملة)
+                        # تحويل الأعمدة الرقمية لضمان دقة العمليات الحسابية
+                        for col in ['open', 'high', 'low', 'close', 'volume']:
+                            df_tf[col] = df_tf[col].astype(float)
+
+                        # --- [ 2. تشغيل رادار الأنماط (pdf_patterns) ] ---
+                        # استخراج النمط الحالي للشمعة الأخيرة
+                        current_pattern = detect_all_pdf_patterns(df_tf)
+                        
+                        # استخراج توقيت افتتاح الشمعة الحالية (لتحريك نظام الإزاحة في سوبابيس)
+                        last_candle_open_ts = datetime.fromtimestamp(int(results[i][-1][0]) / 1000).isoformat()
+
+                        # --- [ 3. استخراج البيانات الأساسية للمؤشرات ] ---
+                        highs = df_tf['high'].tolist()
+                        lows = df_tf['low'].tolist()
+                        closes = df_tf['close'].tolist()
+                        volumes = df_tf['volume'].tolist()
+                        taker_buy_vols = [float(k[9]) for k in results[i]] # سيولة الحيتان
+                        
+                        # --- [ 4. الحسابات الفنية الاستخباراتية ] ---
                         upper, mid, lower = calculate_bollinger(closes)
                         bbw_value = (upper - lower) / mid if mid > 0 else 0
                         atr_val = calculate_atr(highs, lows, closes)
@@ -2886,41 +2904,29 @@ async def update_crypto_market_data():
                         obv_val = calculate_obv(closes, volumes)
                         obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
 
-                        # الأدوات المحرمة v10.2 (الإضافات الجديدة)
+                        # الأدوات المحرمة v10.2
                         adx_val = calculate_adx(highs, lows, closes) # قوة الانفجار
                         v_delta = calculate_volume_delta(taker_buy_vols, volumes) # كاشف الزبد
                         rsi_val = calculate_rsi(closes)
-                        mood = get_market_mood(rsi_val) # سيكولوجية 78/22                      
-                        # --- [ إضافة أثر: محرك الأهداف والمناطق ] ---
-                        # --- [ غرفة عمليات أثر: محرك الأهداف والاستخبارات ] ---
+                        mood = get_market_mood(rsi_val) # سيكولوجية 78/22
+                        
+                        # --- [ 5. محرك الأهداف والمناطق (أثر) - حصري لفريم 15m ] ---
                         if tf == '15m':
-                            # 1. تحديد المناطق والأهداف
                             record["entry_zone_start"] = round(price * 0.998, 6)
                             record["entry_zone_end"] = round(price * 1.002, 6)
                             record["dca_protection_price"] = round(price - (atr_val * 1.5), 6)
                             record["target_1"] = round(price + (atr_val * 1.2), 6)
                             record["target_2"] = round(price + (atr_val * 2.5), 6)
                             record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
-                            
-                            # 2. تشغيل مصفوفة الاستخبارات (اليسر بعد العسر)
-                            o_15, h_15, l_15, c_15 = float(results[i][-1][1]), float(results[i][-1][2]), float(results[i][-1][3]), float(results[i][-1][4])
-                            is_yusr, yusr_pow, report = intelligence_matrix_yusr(o_15, h_15, l_15, c_15, bbw_value, kc_mid, v_delta)
-                            
-                            if is_yusr:
-                                record["intelligence_report"] = report
-                                record["yusr_power"] = yusr_pow
-                                record["is_squeezed"] = True
-                                record["market_mood"] = "YUSR_EXPLOSION" # حالة خاصة للعملات المنفجرة
-                            else:
-                                record["intelligence_report"] = "جاري المراقبة..."
-                                record["yusr_power"] = 0
-                                record["is_squeezed"] = bbw_value < 0.07
-                                record["market_mood"] = get_market_mood(rsi_val)
+                            record["market_mood"] = mood
 
-                        # --- [ نهاية الإضافة ] ---
+                        # --- [ 6. حقن البيانات الشامل في السجل ] ---
+                        record.update({
+                            # أعمدة رادار الأنماط الجديدة (لتفعيل الإزاحة الآلية)
+                            f"f{tf}_c1": current_pattern,
+                            f"last_f{tf}_ts": last_candle_open_ts,                            
 
                         # تحديث السجل بدمج كل البيانات (القديمة + الجديدة)
-                        record.update({
                             f"ema_20_{tf}": calculate_ema(closes, 20),
                             f"ema_50_{tf}": calculate_ema(closes, 50),
                             f"ema_100_{tf}": calculate_ema(closes, 100),
@@ -2957,7 +2963,7 @@ async def update_crypto_market_data():
                 await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
     
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
-    
+
 
 async def unified_trading_system():
     """هذه الدالة هي المايسترو: تحديث البيانات -> انتظار دقيقة -> تحليل الرادار"""
