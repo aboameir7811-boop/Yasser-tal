@@ -11,4 +11,3 @@ requests
 ccxt
 pandas
 numpy
-pandas_ta
