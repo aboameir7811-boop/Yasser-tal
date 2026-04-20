@@ -2806,6 +2806,261 @@ def intelligence_matrix_yusr(open_p, high_p, low_p, close_p, bbw, kc_mid, v_delt
     return False, 0, ""
     
 # ==========================================
+# 1. دالة تحليل أنماط الشموع اليابانية
+# ==========================================
+
+def detect_all_pdf_patterns(df):
+    if len(df) < 5:
+        return "Not enough data"
+
+    # تحويل البيانات لمصفوفات Numpy للسرعة
+    op = df['open'].values
+    hi = df['high'].values
+    lo = df['low'].values
+    cl = df['close'].values
+    
+    # حسابات أساسية
+    body = np.abs(cl - op)
+    upper_wick = hi - np.maximum(op, cl)
+    lower_wick = np.minimum(op, cl) - lo
+    candle_range = hi - lo
+    
+    # تجنب القسمة على صفر
+    candle_range = np.where(candle_range == 0, 0.00001, candle_range)
+    direction = np.where(cl > op, 1, -1)
+    avg_body = np.convolve(body, np.ones(20)/20, mode='same') 
+    
+    # نسبة التسامح للقمم والقيعان المتساوية
+    tolerance = avg_body * 0.1 
+
+    # المؤشرات المكانية (لآخر 5 شموع لتحديد النماذج المعقدة)
+    curr, prev, pprev, p3, p4 = -1, -2, -3, -4, -5
+
+    # --- 1. الشروط الأساسية للفحص السريع ---
+    is_doji = body <= (candle_range * 0.1)
+    is_marubozu = body >= (candle_range * 0.95)
+    is_dragon_doji = is_doji & (lower_wick >= body * 3) & (upper_wick <= candle_range * 0.1)
+    is_gravestone_doji = is_doji & (upper_wick >= body * 3) & (lower_wick <= candle_range * 0.1)
+    is_hammer_type = (lower_wick >= body * 2) & (upper_wick <= candle_range * 0.1) & (body > candle_range * 0.1)
+    is_star_type = (upper_wick >= body * 2) & (lower_wick <= candle_range * 0.1) & (body > candle_range * 0.1)
+    is_spinning_top = (body < avg_body * 0.8) & (upper_wick > body) & (lower_wick > body)
+    is_long_body = body > avg_body * 1.5
+
+    # الفجوات السعرية (Gaps)
+    gap_up = lo[curr] > hi[prev]
+    gap_down = hi[curr] < lo[prev]
+
+    # حساب الاتجاه البسيط (مقارنة الإغلاق السابق بـ 4 شموع قبلها) - يُستخدم للأنماط الفردية
+    prev_trend = 1 if cl[prev] > cl[p4] else -1 
+
+    res = "Normal"
+    
+    # ==========================================
+    # --- 2. الأنماط الخماسية والرباعية (5 & 4 Candles) ---
+    # ==========================================
+
+    # Rising Three Methods (صاعد)
+    if direction[p4] == 1 and is_long_body[p4] and \
+       direction[p3] == -1 and direction[pprev] == -1 and direction[prev] == -1 and \
+       direction[curr] == 1 and cl[curr] > hi[p4] and \
+       max(hi[p3], hi[pprev], hi[prev]) < hi[p4] and min(lo[p3], lo[pprev], lo[prev]) > lo[p4]:
+        res = "Rising_Three_Methods_Bullish"
+
+    # Falling Three Methods (هابط)
+    elif direction[p4] == -1 and is_long_body[p4] and \
+         direction[p3] == 1 and direction[pprev] == 1 and direction[prev] == 1 and \
+         direction[curr] == -1 and cl[curr] < lo[p4] and \
+         max(hi[p3], hi[pprev], hi[prev]) < hi[p4] and min(lo[p3], lo[pprev], lo[prev]) > lo[p4]:
+        res = "Falling_Three_Methods_Bearish"
+
+    # Concealing Baby Swallow (ابتلاع الطفل الرضيع - هابط يتحول لصاعد)
+    elif direction[p3] == -1 and is_marubozu[p3] and direction[pprev] == -1 and is_marubozu[pprev] and \
+         direction[prev] == -1 and is_star_type[prev] and gap_down and \
+         direction[curr] == -1 and cl[curr] > cl[prev] and op[curr] > hi[prev]:
+        res = "Concealing_Baby_Swallow_Bullish"
+
+    # Mat Hold (القبضة المحكمة - صاعد)
+    elif direction[p4] == 1 and is_long_body[p4] and \
+         direction[p3] == -1 and lo[p3] > hi[p4] and \
+         direction[pprev] == -1 and direction[prev] == -1 and \
+         min(lo[p3], lo[pprev], lo[prev]) > lo[p4] and \
+         direction[curr] == 1 and cl[curr] > hi[p3]:
+        res = "Mat_Hold_Bullish"
+
+    # ==========================================
+    # --- 3. الأنماط الثلاثية (3 Candles) ---
+    # ==========================================
+
+    # Abandoned Baby (الطفل المهجور)
+    elif direction[pprev] == -1 and is_doji[prev] and lo[pprev] > hi[prev] and direction[curr] == 1 and lo[curr] > hi[prev]:
+        res = "Abandoned_Baby_Bullish"
+    elif direction[pprev] == 1 and is_doji[prev] and hi[pprev] < lo[prev] and direction[curr] == -1 and hi[curr] < lo[prev]:
+        res = "Abandoned_Baby_Bearish"
+
+    # Morning / Evening Stars
+    elif direction[pprev] == -1 and direction[curr] == 1 and cl[curr] > (op[pprev] + cl[pprev])/2 and op[prev] < cl[pprev] and cl[prev] < op[curr]:
+        res = "Morning_Doji_Star_Bullish" if is_doji[prev] else "Morning_Star_Bullish"
+    elif direction[pprev] == 1 and direction[curr] == -1 and cl[curr] < (op[pprev] + cl[pprev])/2 and op[prev] > cl[pprev] and cl[prev] > op[curr]:
+        res = "Evening_Doji_Star_Bearish" if is_doji[prev] else "Evening_Star_Bearish"
+
+    # Three White Soldiers / Three Black Crows
+    elif direction[pprev] == 1 and direction[prev] == 1 and direction[curr] == 1 and cl[curr] > cl[prev] > cl[pprev] and op[curr] > op[prev] > op[pprev]:
+        res = "Three_White_Soldiers_Bullish"
+    elif direction[pprev] == -1 and direction[prev] == -1 and direction[curr] == -1 and cl[curr] < cl[prev] < cl[pprev] and op[curr] < op[prev] < op[pprev]:
+        res = "Three_Black_Crows_Bearish"
+
+    # Three Inside Up / Down
+    elif direction[pprev] == -1 and direction[prev] == 1 and op[prev] > cl[pprev] and cl[prev] < op[pprev] and direction[curr] == 1 and cl[curr] > cl[prev]:
+        res = "Three_Inside_Up_Bullish"
+    elif direction[pprev] == 1 and direction[prev] == -1 and op[prev] < cl[pprev] and cl[prev] > op[pprev] and direction[curr] == -1 and cl[curr] < cl[prev]:
+        res = "Three_Inside_Down_Bearish"
+
+    # Three Outside Up / Down
+    elif direction[pprev] == -1 and direction[prev] == 1 and op[prev] < cl[pprev] and cl[prev] > op[pprev] and direction[curr] == 1 and cl[curr] > cl[prev]:
+        res = "Three_Outside_Up_Bullish"
+    elif direction[pprev] == 1 and direction[prev] == -1 and op[prev] > cl[pprev] and cl[prev] < op[pprev] and direction[curr] == -1 and cl[curr] < cl[prev]:
+        res = "Three_Outside_Down_Bearish"
+
+    # Upside / Downside Tasuki Gap
+    elif direction[pprev] == 1 and direction[prev] == 1 and lo[prev] > hi[pprev] and direction[curr] == -1 and op[curr] < cl[prev] and cl[curr] < op[prev] and cl[curr] > hi[pprev]:
+        res = "Upside_Tasuki_Gap_Bullish"
+    elif direction[pprev] == -1 and direction[prev] == -1 and hi[prev] < lo[pprev] and direction[curr] == 1 and op[curr] > cl[prev] and cl[curr] > op[prev] and cl[curr] < lo[pprev]:
+        res = "Downside_Tasuki_Gap_Bearish"
+
+    # Tri-Star (النجوم الثلاثة)
+    elif is_doji[pprev] and is_doji[prev] and is_doji[curr]:
+        res = "Tri_Star_Pattern"
+
+    # Advance Block (التقدم المعاق - هابط)
+    elif direction[pprev] == 1 and direction[prev] == 1 and direction[curr] == 1 and \
+         op[prev] > op[pprev] and op[prev] < cl[pprev] and \
+         op[curr] > op[prev] and op[curr] < cl[prev] and \
+         body[curr] < body[prev] < body[pprev] and \
+         upper_wick[curr] > upper_wick[prev]:
+        res = "Advance_Block_Bearish"
+
+    # Stalled Pattern / Deliberation (نموذج التروي - هابط)
+    elif direction[pprev] == 1 and is_long_body[pprev] and \
+         direction[prev] == 1 and is_long_body[prev] and \
+         direction[curr] == 1 and body[curr] < (avg_body[curr] * 0.5) and \
+         op[curr] >= (cl[prev] - tolerance[curr]):
+        res = "Stalled_Pattern_Bearish"
+
+    # Upside Gap Two Crows (غرابان بفجوة صاعدة - هابط)
+    elif direction[pprev] == 1 and is_long_body[pprev] and \
+         direction[prev] == -1 and lo[prev] > hi[pprev] and \
+         direction[curr] == -1 and op[curr] > op[prev] and cl[curr] < cl[prev] and cl[curr] > op[pprev]:
+        res = "Upside_Gap_Two_Crows_Bearish"
+
+    # Unique Three River Bottom (نهر الثلاثة الفريد - صاعد)
+    elif direction[pprev] == -1 and is_long_body[pprev] and \
+         direction[prev] == -1 and lower_wick[prev] >= (body[prev] * 2) and cl[prev] > lo[pprev] and \
+         direction[curr] == 1 and body[curr] < avg_body[curr] and cl[curr] < cl[prev]:
+        res = "Unique_Three_River_Bottom_Bullish"
+
+    # Stick Sandwich (الساندوتش - صاعد)
+    elif direction[pprev] == -1 and direction[prev] == 1 and direction[curr] == -1 and \
+         op[curr] > cl[prev] and cl[curr] < op[prev] and \
+         abs(cl[curr] - cl[pprev]) <= tolerance[curr]:
+        res = "Stick_Sandwich_Bullish"
+
+    # ==========================================
+    # --- 4. الأنماط الثنائية (2 Candles) ---
+    # ==========================================
+
+    # Engulfing (الابتلاع)
+    elif direction[prev] == -1 and direction[curr] == 1 and op[curr] <= cl[prev] and cl[curr] >= op[prev]:
+        res = "Bullish_Engulfing"
+    elif direction[prev] == 1 and direction[curr] == -1 and op[curr] >= cl[prev] and cl[curr] <= op[prev]:
+        res = "Bearish_Engulfing"
+
+    # Harami & Harami Cross (الهارامي والهارامي الصليب)
+    elif direction[prev] == -1 and direction[curr] == 1 and op[curr] > cl[prev] and cl[curr] < op[prev]:
+        res = "Bullish_Harami_Cross" if is_doji[curr] else "Bullish_Harami"
+    elif direction[prev] == 1 and direction[curr] == -1 and op[curr] < cl[prev] and cl[curr] > op[prev]:
+        res = "Bearish_Harami_Cross" if is_doji[curr] else "Bearish_Harami"
+
+    # Piercing Line & Dark Cloud Cover
+    elif direction[prev] == -1 and direction[curr] == 1 and op[curr] < cl[prev] and cl[curr] > (op[prev] + cl[prev])/2 and cl[curr] < op[prev]:
+        res = "Bullish_Piercing_Line"
+    elif direction[prev] == 1 and direction[curr] == -1 and op[curr] > cl[prev] and cl[curr] < (op[prev] + cl[prev])/2 and cl[curr] > op[prev]:
+        res = "Bearish_Dark_Cloud_Cover"
+
+    # Kicker
+    elif direction[prev] == -1 and direction[curr] == 1 and op[curr] >= op[prev] and lo[curr] > hi[prev]:
+        res = "Bullish_Kicker"
+    elif direction[prev] == 1 and direction[curr] == -1 and op[curr] <= op[prev] and hi[curr] < lo[prev]:
+        res = "Bearish_Kicker"
+
+    # Meeting Lines (خطوط التلاقي)
+    elif direction[prev] == -1 and direction[curr] == 1 and abs(cl[curr] - cl[prev]) <= tolerance[curr]:
+        res = "Meeting_Lines_Bullish"
+    elif direction[prev] == 1 and direction[curr] == -1 and abs(cl[curr] - cl[prev]) <= tolerance[curr]:
+        res = "Meeting_Lines_Bearish"
+
+    # Separating Lines (خطوط الانفصال)
+    elif direction[prev] == -1 and direction[curr] == 1 and abs(op[curr] - op[prev]) <= tolerance[curr]:
+        res = "Separating_Lines_Bullish"
+    elif direction[prev] == 1 and direction[curr] == -1 and abs(op[curr] - op[prev]) <= tolerance[curr]:
+        res = "Separating_Lines_Bearish"
+
+    # Matching Low (القيعان المتطابقة)
+    elif direction[prev] == -1 and direction[curr] == -1 and abs(cl[curr] - cl[prev]) <= tolerance[curr]:
+        res = "Matching_Low_Bullish"
+
+    # Homing Pigeon (الحمامة الزاجلة)
+    elif direction[prev] == -1 and direction[curr] == -1 and op[curr] < op[prev] and cl[curr] > cl[prev]:
+        res = "Homing_Pigeon_Bullish"
+
+    # On Neck / In Neck
+    elif direction[prev] == -1 and direction[curr] == 1 and abs(cl[curr] - lo[prev]) <= tolerance[curr]:
+        res = "On_Neck_Bearish"
+    elif direction[prev] == -1 and direction[curr] == 1 and cl[curr] > cl[prev] and cl[curr] < (op[prev] + cl[prev])/2:
+        res = "In_Neck_Bearish"
+
+    # Tweezer Top / Bottom
+    elif direction[prev] == 1 and direction[curr] == -1 and abs(hi[curr] - hi[prev]) <= tolerance[curr]:
+        res = "Tweezer_Top_Bearish"
+    elif direction[prev] == -1 and direction[curr] == 1 and abs(lo[curr] - lo[prev]) <= tolerance[curr]:
+        res = "Tweezer_Bottom_Bullish"
+
+    # Thrusting Line (خط الدفع - هابط)
+    elif direction[prev] == -1 and direction[curr] == 1 and \
+         op[curr] < lo[prev] and cl[curr] > cl[prev] and cl[curr] < (op[prev] + cl[prev])/2:
+        res = "Thrusting_Line_Bearish"
+
+    # Doji Star (نجمة الدوجي - بداية انعكاس)
+    elif is_long_body[prev] and is_doji[curr]:
+        if direction[prev] == 1 and lo[curr] > hi[prev]:
+            res = "Doji_Star_Bearish"
+        elif direction[prev] == -1 and hi[curr] < lo[prev]:
+            res = "Doji_Star_Bullish" 
+
+    # ==========================================
+    # --- 5. الأنماط الفردية (1 Candle) ---
+    # ==========================================
+    
+    # تم وضع شروط المطرقة ضمن سلسلة الـ elif لمنعها من الكتابة فوق الأنماط الثنائية أو الثلاثية
+    elif is_hammer_type[curr]:
+        res = "Hammer_Bullish" if prev_trend == -1 else "Hanging_Man_Bearish"
+    elif is_star_type[curr]:
+        res = "Inverted_Hammer_Bullish" if prev_trend == -1 else "Shooting_Star_Bearish"
+        
+    # Belt Hold (الحزام الممسوك)
+    elif direction[curr] == 1 and is_long_body[curr] and lower_wick[curr] <= tolerance[curr]:
+        res = "Belt_Hold_Bullish"
+    elif direction[curr] == -1 and is_long_body[curr] and upper_wick[curr] <= tolerance[curr]:
+        res = "Belt_Hold_Bearish"
+    
+    elif is_dragon_doji[curr]: res = "Dragon_Doji_Bullish"
+    elif is_gravestone_doji[curr]: res = "Gravestone_Doji_Bearish"
+    elif is_doji[curr]: res = "Neutral_Doji"
+    elif is_marubozu[curr]: res = "Marubozu_Bullish" if direction[curr] == 1 else "Marubozu_Bearish"
+    elif is_spinning_top[curr]: res = "Spinning_Top"
+
+    return res
+    
+# ==========================================
 # --- [ دوال التحليل و الجلب ] ---
 # ==========================================   
 async def fetch_klines(session, symbol, interval, limit=100):
