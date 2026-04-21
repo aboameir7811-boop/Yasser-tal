@@ -3127,21 +3127,24 @@ async def update_crypto_market_data():
                 for i, tf in enumerate(timeframes):
                     if results[i] and isinstance(results[i], list):
                         # --- [ 1. تجهيز البيانات للتحليل الاستخباراتي ] ---
-                        # تحويل البيانات إلى DataFrame لتتمكن دالة الأنماط من قراءتها
                         df_tf = pd.DataFrame(results[i], columns=[
                             'timestamp', 'open', 'high', 'low', 'close', 'volume',
                             'close_time', 'quote_av', 'trades', 'tb_base_av', 'tb_quote_av', 'ignore'
                         ])
                         
-                        # تحويل الأعمدة الرقمية لضمان دقة العمليات الحسابية
                         for col in ['open', 'high', 'low', 'close', 'volume']:
                             df_tf[col] = df_tf[col].astype(float)
 
-                        # --- [ 2. تشغيل رادار الأنماط (pdf_patterns) ] ---
-                        # استخراج النمط الحالي للشمعة الأخيرة
-                        current_pattern = detect_all_pdf_patterns(df_tf)
-                        
-                        # استخراج توقيت افتتاح الشمعة الحالية (لتحريك نظام الإزاحة في سوبابيس)
+                        # --- [ 2. تشغيل رادار الأنماط (pdf_patterns) لآخر 5 شموع ] ---
+                        patterns = []
+                        for j in range(5):
+                            # اقتطاع البيانات بترتيب عكسي لقراءة تاريخ الشموع (j=0 الحالية، j=1 السابقة...)
+                            sub_df = df_tf if j == 0 else df_tf.iloc[:-j]
+                            
+                            pattern_name = detect_all_pdf_patterns(sub_df)
+                            patterns.append(pattern_name if pattern_name else "Normal")
+
+                        # استخراج توقيت افتتاح الشمعة الحالية
                         last_candle_open_ts = datetime.fromtimestamp(int(results[i][-1][0]) / 1000).isoformat()
 
                         # --- [ 3. استخراج البيانات الأساسية للمؤشرات ] ---
@@ -3165,7 +3168,7 @@ async def update_crypto_market_data():
                         rsi_val = calculate_rsi(closes)
                         mood = get_market_mood(rsi_val) # سيكولوجية 78/22
                         
-                        # --- [ 5. محرك الأهداف والمناطق (أثر) - حصري لفريم 15m ] ---
+                        # --- [ 5. محرك الأهداف والمناطق - حصري لفريم 15m ] ---
                         if tf == '15m':
                             record["entry_zone_start"] = round(price * 0.998, 6)
                             record["entry_zone_end"] = round(price * 1.002, 6)
@@ -3177,11 +3180,15 @@ async def update_crypto_market_data():
 
                         # --- [ 6. حقن البيانات الشامل في السجل ] ---
                         record.update({
-                            # أعمدة رادار الأنماط الجديدة (لتفعيل الإزاحة الآلية)
-                            f"f{tf}_c1": current_pattern,
+                            # أعمدة رادار الأنماط الخمسة
+                            f"f{tf}_c1": patterns[0],
+                            f"f{tf}_c2": patterns[1],
+                            f"f{tf}_c3": patterns[2],
+                            f"f{tf}_c4": patterns[3],
+                            f"f{tf}_c5": patterns[4],
                             f"last_f{tf}_ts": last_candle_open_ts,                            
 
-                        # تحديث السجل بدمج كل البيانات (القديمة + الجديدة)
+                            # تحديث السجل بدمج كل البيانات
                             f"ema_20_{tf}": calculate_ema(closes, 20),
                             f"ema_50_{tf}": calculate_ema(closes, 50),
                             f"ema_100_{tf}": calculate_ema(closes, 100),
@@ -3191,8 +3198,8 @@ async def update_crypto_market_data():
                             f"bb_lower_{tf}": lower,
                             f"bbw_{tf}": bbw_value,
                             f"atr_{tf}": atr_val,
-                            f"adx_{tf}": adx_val,               # جديد: قوة الاتجاه
-                            f"volume_delta_{tf}": v_delta,      # جديد: صافي السيولة
+                            f"adx_{tf}": adx_val,
+                            f"volume_delta_{tf}": v_delta,
                             f"kc_upper_{tf}": kc_up,
                             f"kc_middle_{tf}": kc_mid,
                             f"kc_lower_{tf}": kc_low,
@@ -3201,11 +3208,11 @@ async def update_crypto_market_data():
                             f"obv_{tf}": obv_val,
                             f"obv_prev_{tf}": obv_prev_val,
                             f"obv_slope_{tf}": obv_val - obv_prev_val,
-                            # تحديثات خاصة بفريم الـ 15 دقيقة (غرفة العمليات)
+                            
+                            # تحديثات خاصة بفريم الـ 15 دقيقة
                             "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                             "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                         })
-
 
                 final_records.append(record)
             except Exception as e: 
