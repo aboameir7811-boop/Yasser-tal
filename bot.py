@@ -459,6 +459,10 @@ async def intelligence_scanner():
             # ==========================================
             # 🎯 [ 9. قرار الإطلاق النهائي وتحديث الاستخبارات ]
             # ==========================================
+            # --- [ تأمين المتغيرات المفقودة لمنع توقف الرادار ] ---
+            is_sqz = bbw_15m < 0.065  # تعريف حالة الانضغاط
+            intel_report = f"إشارة {mood} مرصودة بدقة عالية" # تأمين التقرير النصي
+            
             # حساب مستويات فيبوناتشي الاستراتيجية
             high_24h = float(coin.get('high_24h') or (price * 1.05)) 
             low_24h = float(coin.get('low_24h') or (price * 0.95)) 
@@ -475,14 +479,25 @@ async def intelligence_scanner():
             if is_crawling_up and is_5m_spark and is_volume_spike: 
                 score += 60  
 
-            # --- [ تحديد نوع الإشارة بناءً على السكور النهائي ] ---
+            # --- [ تحديد نوع الإشارة بناءً على السكور النهائي (وضع القناص) ] ---
             signal_type = "NONE"
-            if score >= 150:
-                signal_type = "LONG"
-            elif score <= -150:
-                signal_type = "SHORT"
+            
+            # رفعنا العتبة إلى 200 لضمان الجودة العالية وعدم الإزعاج
+            if score >= 200:
+                # شرط صارم: لا تدخل شراء إلا إذا كان السعر فوق EMA 50 أو عند دعم قوي
+                if is_near_support or is_uptrend:
+                    signal_type = "LONG"
+                else:
+                    reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
 
-            # تنفيذ الإطلاق عند رصد فرصة حقيقية (أكبر من 150 أو أصغر من -150)
+            elif score <= -200:
+                # شرط صارم: لا تدخل بيع إلا إذا كان السعر عند مقاومة أو كسر ترند
+                if is_near_resistance or is_downtrend:
+                    signal_type = "SHORT"
+                else:
+                    reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي (ليس عند مقاومة)")
+
+            # تنفيذ الإطلاق عند رصد فرصة حقيقية توافق شروط القناص
             if signal_type != "NONE":  
                 supabase.table("market_intelligence").upsert({ 
                     "symbol": symbol, 
@@ -525,7 +540,8 @@ async def intelligence_scanner():
         logging.error(f"❌ خطأ داخلي في الرادار القناص v10.4: {e}") 
 
     print(f"✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v10.4).")
-             
+
+
 # تحديث دالة التنبيه لتقبل السعر الحالي والاتجاه (v10.4)
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG"):
     # تخصيص المظهر بناءً على الاتجاه
