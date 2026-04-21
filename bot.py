@@ -205,15 +205,13 @@ async def trade_reaper():
             
         await asyncio.sleep(8) # وقت مثالي لضمان تحديث سريع وحماية من الحظر
 
-        
-       
+
 async def intelligence_scanner():
     """
-    الرادار v10.3 (القلعة المحصنة + استخبارات أثر)
-    يدمج وحشية "زحف الإعصار" مع "اليسر بعد العسر"
-    ويطبق فلتر "الغطاء الجوي لفريم الساعة" كشرط أساسي وصارم.
+    الرادار v10.4 (القلعة المحصنة + استخبارات أثر + قناص الأنماط)
+    يدمج وحشية "زحف الإعصار" مع "اليسر بعد العسر" والمسح الشامل لجميع أنماط الشموع.
     """
-    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار يمسح السوق بحثاً عن الانفجارات واستخبارات اليسر...")
+    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار يمسح السوق بحثاً عن الانفجارات واستخبارات الأنماط...")
     
     try:
         res = supabase.table("crypto_market_simulation").select("*").execute()
@@ -226,14 +224,9 @@ async def intelligence_scanner():
             symbol = coin['symbol']
             score = 0
             reasons = []
-            # ==========================================
-            # 🛑 [ تعطيل مؤقت: صمام أمان الملك ]
-            # ==========================================
-            # kill_switch = coin.get('is_kill_switch_active') or False
-            # if kill_switch:
-            #     continue             
-            # ملاحظة: تم التعطيل لأغراض الاختبار لرصد سلوك الرادار مع كافة العملات
+            
             kill_switch = False # قيمة افتراضية لضمان عدم توقف الكود
+            
             # ==========================================
             # 🛠️ [ 1. استخراج ترسانة البيانات الأساسية ]
             # ==========================================
@@ -273,7 +266,6 @@ async def intelligence_scanner():
             bbw_prev_5m = float(coin.get('bbw_prev_5m') or 0) 
             expansion_ratio_5m = (bbw_5m / bbw_prev_5m) if bbw_prev_5m > 0 else 1.0 
 
-            # --- [ استخراج الأدوات المحرمة واستخبارات الشموع ] ---
             vol_delta = float(coin.get('volume_delta_15m') or 0)
             adx_val = float(coin.get('adx_15m') or 0)
             stop_loss = float(coin.get('stop_loss_atr') or 0)
@@ -286,8 +278,39 @@ async def intelligence_scanner():
             l_15 = float(coin.get('low_15m') or 0)
             c_15 = price
 
+            # --- [ استخراج أنماط الشموع لجميع الفريمات ] ---
+            patterns = {
+                '5m': coin.get('f5m_c1', 'Normal'),
+                '15m': coin.get('f15m_c1', 'Normal'),
+                '1h': coin.get('f1h_c1', 'Normal'),
+                '2h': coin.get('f2h_c1', 'Normal'),
+                '4h': coin.get('f4h_c1', 'Normal'),
+                '1d': coin.get('f1d_c1', 'Normal')
+            }
+
             # ==========================================
-            # 💎 [ 3. المحرك الاستخباراتي: مصفوفة "اليسر بعد العسر" ]
+            # 🕯️ [ 3. محرك الشموع اليابانية الشامل (قناص الأنماط) ]
+            # ==========================================
+            # تحديد أوزان الفريمات (كلما كبر الفريم زادت قوة وتأثير النمط)
+            tf_weights = {'5m': 10, '15m': 20, '1h': 40, '2h': 45, '4h': 60, '1d': 80}
+            
+            for tf, pattern in patterns.items():
+                if pattern not in ["Normal", "Not enough data", None]:
+                    clean_name = pattern.replace("_", " ")
+                    weight = tf_weights.get(tf, 20)
+                    
+                    if "Bullish" in pattern:
+                        score += weight
+                        reasons.append(f"🟢 نمط شرائي ({tf}): تشكل {clean_name} (+{weight} نقطة)")
+                        if tf in ['1h', '2h', '4h', '1d']:
+                            mood = "BULLISH_PATTERN_CONFIRMED"
+                            
+                    elif "Bearish" in pattern:
+                        score -= int(weight * 1.5) # عقوبة قاسية للنماذج السلبية لتجنب الفخاخ
+                        reasons.append(f"🔴 تحذير بيعي ({tf}): تشكل {clean_name} (-{int(weight * 1.5)} نقطة)")
+
+            # ==========================================
+            # 💎 [ 4. المحرك الاستخباراتي: مصفوفة "اليسر بعد العسر" ]
             # ==========================================
             body_15m = abs(c_15 - o_15)
             lower_wick_15m = min(o_15, c_15) - l_15
@@ -300,13 +323,13 @@ async def intelligence_scanner():
             
             intel_report = "جاري المراقبة..."
             if is_sqz and is_yusr_detected:
-                score += 100  # ضربة قاضية للنقاط لأنها أفضل فرصة من القاع
+                score += 100  
                 intel_report = f"🎯 شرائي يكسر الضيق {y_power}% يكسر الضيق."
                 reasons.append(f"💎 رصد: شرائي مخفي يمتص الضيق بقوة {y_power}%")
                 mood = "YUSR_EXPLOSION"
                 
             # ==========================================
-            # 🛡️ [ تطوير الغطاء الجوي: من شرط صارم إلى معزز زخم ]
+            # 🛡️ [ 5. الغطاء الجوي: معزز الزخم 1H ]
             # ==========================================
             is_1h_ready = (
                 (price > ema20_1h) and              
@@ -315,17 +338,16 @@ async def intelligence_scanner():
                 (ema20_1h > ema50_1h > ema100_1h)   
             )
 
-            # بدلاً من continue، سنقوم فقط بإضافة النقاط وتحديث الحالة
             if is_1h_ready:
                 score += 50
                 reasons.append("🛡️ غطاء جوي (1H): ترتيب هجومي مثالي يدعم الانفجار")
                 is_1h_confirmed = True
             else:
-                # إذا لم يتحقق، الرادار يستمر لكن بوعي أن الاتجاه العام ليس "مثالياً" بعد
                 reasons.append("⚠️ تنبيه: الانفجار محلي (فريمات صغيرة) بدون غطاء جوي 1H")
                 is_1h_confirmed = False
+                
             # ==========================================
-            # 🔥 [ 4. المحرك الهجومي: تحليل الثلاثية المتفجرة (زحف الإعصار) ]
+            # 🔥 [ 6. المحرك الهجومي: زحف الإعصار ]
             # ==========================================
             is_crawling_up = (
                 (price >= ema20) and  
@@ -353,7 +375,7 @@ async def intelligence_scanner():
                 reasons.append(f"📊 فوليوم مضاعف: السيولة الحالية تتجاوز 200% من المتوسط") 
 
             # ==========================================
-            # 🌋 [ 5. دمج استخبارات كيلتنر، العقود، والأدوات الجديدة (Boosters) ]
+            # 🌋 [ 7. دمج استخبارات كيلتنر والعقود ]
             # ==========================================
             if (upper > kc_upper) and expansion_ratio_15m > 1.05: 
                 score += 30 
@@ -368,16 +390,15 @@ async def intelligence_scanner():
                 reasons.append(f"🌪️ قوة الاتجاه (A): مسار انفجاري مؤكد ({adx_val})")
 
             # ==========================================
-            # 🛡️ [ 6. فلاتر الحماية الصارمة (لعنة مقبرة الحيتان) ]
+            # 🛡️ [ 8. فلاتر الحماية الصارمة ]
             # ==========================================
-            # تدمير النقاط إذا كان هناك صعود وهمي والسيولة سالبة (تصريف)
             if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
                 score -= 200  
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
                 reasons.append("🚫 حماية مطلقة: تم رصد سيولة بيعية سالبة (زبد) خلف الصعود الوهمي.") 
 
             # ==========================================
-            # 🎯 [ 7. قرار الإطلاق النهائي وتحديث الاستخبارات ]
+            # 🎯 [ 9. قرار الإطلاق النهائي وتحديث الاستخبارات ]
             # ==========================================
             high_24h = float(coin.get('high_24h') or (price * 1.05)) 
             low_24h = float(coin.get('low_24h') or (price * 0.95)) 
@@ -411,10 +432,9 @@ async def intelligence_scanner():
                     "score_keltner": sc_keltner, 
                     "score_whale": sc_whale,
                     
-                    # --- تغذية أعمدة استخبارات أثر بكل دقة ---
-                    "is_squeezed": is_sqz,           # مصححة: كانت False دائماً
-                    "yusr_power": y_power,           # قوة الذيل الشرائي
-                    "intelligence_report": intel_report, # التقرير النصي الدقيق
+                    "is_squeezed": is_sqz,
+                    "yusr_power": y_power,
+                    "intelligence_report": intel_report,
                     "dynamic_sl_atr": stop_loss,
                     "market_emotion_rsi": mood,
                     "orderbook_imbalance_ratio": orderbook_ratio,
@@ -429,10 +449,11 @@ async def intelligence_scanner():
                 
     except Exception as e: 
         import logging 
-        logging.error(f"❌ خطأ داخلي في الرادار القناص v10.3: {e}") 
+        logging.error(f"❌ خطأ داخلي في الرادار القناص v10.4: {e}") 
 
-    print("✅ تم الانتهاء من المسح الاستخباراتي والغطاء الجوي (v10.3).")
-    
+    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v10.4).")
+
+
 # تحديث دالة التنبيه لتقبل السعر الحالي
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price):
     text = (
