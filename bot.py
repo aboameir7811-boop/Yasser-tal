@@ -486,15 +486,20 @@ async def intelligence_scanner():
         logging.error(f"❌ خطأ داخلي في الرادار القناص v10.4: {e}") 
 
     print(f"✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v10.4).")
+             
+# تحديث دالة التنبيه لتقبل السعر الحالي والاتجاه (v10.4)
+async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG"):
+    # تخصيص المظهر بناءً على الاتجاه
+    is_long = direction == "LONG"
+    emoji_main = "🚀" if is_long else "📉"
+    trade_label = "شراء (LONG)" if is_long else "بيع (SHORT)"
+    color_circle = "🟢" if is_long else "🔴"
     
-         
-# تحديث دالة التنبيه لتقبل السعر الحالي
-async def trigger_golden_signal(symbol, score, reasons, fib_618, price):
     text = (
-        f"🚨 <b>إشعار مهم: فرصة ذهبية!</b> 🚨\n\n"
+        f"🚨 <b>إشعار مهم: فرصة {trade_label}!</b> {emoji_main}\n\n"
         f"🪙 <b>العملة:</b> <code>{symbol}</code>\n"
         f"💵 <b>السعر لحظة الرصد:</b> <code>{price}</code>\n"
-        f"🔥 <b>درجة الانفجار:</b> <code>{score}/100</code> 🟢\n"
+        f"🔥 <b>درجة الانفجار:</b> <code>{score}/100</code> {color_circle}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
         f"🕵️‍♂️ <b>الأسرار المرصودة:</b>\n"
     )
@@ -506,25 +511,27 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price):
         f"\n📐 <b>المستويات الفنية:</b>\n"
         f"👈 النسبة الذهبية (0.618): <code>{fib_618:,.4f}</code>\n"
         f"━━━━━━━━━━━━━━━━━━\n"
-        f"<i>⚠️ هذه البيانات سرية ومرسلة لك فقط.</i>"
+        f"<i>⚠️ هذه البيانات استخباراتية ومرسلة لك يا أثير فقط.</i>"
     )
 
-    # أزرار التحكم
+    # أزرار التحكم الديناميكية
     keyboard = types.InlineKeyboardMarkup()
-    # زر لإصدار التوصية وزر للرجوع للشارت
-    keyboard.add(types.InlineKeyboardButton(f"⚡ إصدار توصية VIP لـ {symbol}", callback_data=f"vip_signal:{ADMIN_ID}:{symbol}"))
+    
+    # زر إصدار التوصية (سيرسل نوع الاتجاه أيضاً للـ Callback)
+    callback_vip = f"vip_signal:{ADMIN_ID}:{symbol}:{direction}"
+    keyboard.add(types.InlineKeyboardButton(f"⚡ إصدار توصية VIP ({trade_label})", callback_data=callback_vip))
+    
+    # زر عرض الشارت
     keyboard.add(types.InlineKeyboardButton(f"📊 عرض شارت {symbol}", callback_data=f"coin_view:{ADMIN_ID}:{symbol}:15m"))
 
     try:
-        # استخدام parse_mode="HTML" مع النص النظيف
         await bot.send_message(chat_id=ADMIN_ID, text=text, reply_markup=keyboard, parse_mode="HTML")
     except Exception as e:
-        # في حال حدوث خطأ في الصيغة، يطبع لك النص الذي تسبب في المشكلة لتحليله
+        import logging
         logging.error(f"❌ HTML Parse Error: {e}")
-        # محاولة إرسال النص كرسالة عادية بدون تنسيق لكي لا تضيع عليك الصفقة
-        clean_text = text.replace("<b>", "").replace("</b>", "").replace("<code>", "").replace("</code>", "").replace("<i>", "").replace("</i>", "")
-        await bot.send_message(chat_id=ADMIN_ID, text=f"⚠️ خطأ في التنسيق، إليك البيانات الخام:\n\n{clean_text}")
-        
+        # نسخة احتياطية في حال خطأ التنسيق لضمان عدم ضياع الصفقة
+        clean_text = f"إشارة {trade_label} لعملة {symbol}\nالسعر: {price}\nالسكور: {score}"
+        await bot.send_message(chat_id=ADMIN_ID, text=f"⚠️ خطأ في التنسيق، إليك البيانات الأساسية:\n\n{clean_text}")
 # ==========================================
 # 🛠️ 1. دوال القوالب (صناعة القالب بناءً على الأعمدة)
 # ==========================================
