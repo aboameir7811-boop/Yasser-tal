@@ -504,7 +504,6 @@ async def intelligence_scanner():
                     "score_whale": sc_whale,
                     
                     "is_squeezed": is_sqz,
-                    "yusr_power": y_power,
                     "intelligence_report": intel_report,
                     "dynamic_sl_atr": stop_loss,
                     "market_emotion_rsi": mood,
