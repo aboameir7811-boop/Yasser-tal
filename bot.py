@@ -289,63 +289,103 @@ async def intelligence_scanner():
             }
 
             # ==========================================
-            # 🕯️ [ 3. محرك الشموع اليابانية الشامل (قناص الأنماط والسياق) ]
+            # 🕯️ [ 3. محرك الشموع اليابانية الصارم (قناص الأنماط والسياق) ]
             # ==========================================
-            # تحديد أوزان الفريمات (الأوزان معدلة لتتناسب مع حساسية الرادار)
-            tf_weights = {'5m': 5, '15m': 10, '1h': 20, '2h': 25, '4h': 35, '1d': 50}
             
-            # --- [ هندسة السياق: تحديد مناطق القيمة العشوائية vs الموثوقة ] ---
-            # منطقة دعم (شراء): السعر قريب من قاع البولنجر أو يختبر متوسطات قوية 50/100
-            is_near_support = (price <= lower * 1.015) or (price <= ema50 * 1.015) or (price <= ema100 * 1.015)
-            # منطقة مقاومة (بيع): السعر يضرب قمة البولنجر أو ممتد بشكل مفرط فوق EMA 20
+            # --- [ هندسة السياق ومناطق القيمة ] ---
+            # 1. الاتجاه العام (الترند)
+            is_uptrend = (ema20_1h > ema50_1h > ema100_1h)
+            is_downtrend = (ema20_1h < ema50_1h < ema100_1h)
+
+            # 2. مناطق القيمة (الدعم والمقاومة + الفيبوناتشي)
+            # النسبة الذهبية 61.8%
+            high_24h = float(coin.get('high_24h') or (price * 1.05)) 
+            low_24h = float(coin.get('low_24h') or (price * 0.95)) 
+            fib_618 = high_24h - (0.618 * (high_24h - low_24h)) 
+            
+            # دعم: بولنجر سفلي، أو EMA50، أو قريب جداً من النسبة الذهبية
+            is_near_support = (price <= lower * 1.015) or (price <= ema50 * 1.015) or (abs(price - fib_618) / fib_618 <= 0.01)
+            # مقاومة: بولنجر علوي، أو ممتد بعيداً عن EMA20
             is_near_resistance = (price >= upper * 0.985) or (price >= ema20 * 1.03)
 
+            # 3. تأكيد السيولة (حجم التداول)
+            has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2) # فوليوم أعلى من المتوسط بـ 20% على الأقل
+
             for tf, pattern in patterns.items():
-                if pattern not in ["Normal", "Not enough data", "Neutral_Doji", "Spinning_Top", None]:
-                    clean_name = pattern.replace("_", " ")
-                    weight = tf_weights.get(tf, 20)
-                    
-                    # 🟢 --- [ رصد صفقات الشراء (Long) ] ---
-                    if "صاعد" in pattern:
-                        # فلتر السياق: هل النمط في منطقة دعم وهل السيولة إيجابية؟
-                        if is_near_support and vol_delta >= 0:
+                if pattern in ["Normal", "Not enough data", "Neutral_Doji", "Spinning_Top", None]:
+                    continue
+
+                clean_name = pattern.replace("_", " ")
+                is_bullish = "صاعد" in pattern
+                is_bearish = "هابط" in pattern
+                
+                # --- [ 1. فريم اليوم (1D) - السيولة المؤسساتية (دقة 90%) ] ---
+                if tf == '1d' and any(x in pattern for x in ["طرق", "القبضة", "الطفل_المهجور", "الجنود", "الغربان", "ماروبوزو", "دوجي_التنين", "شاهد_القبر"]):
+                    weight = 100
+                    if has_volume_confirmation: # شرط الفوليوم إجباري
+                        if is_bullish and (is_near_support or is_uptrend):
                             score += weight
-                            reasons.append(f"🟢 [LONG] نمط {clean_name} ({tf}): موثّق بدعم وسيولة شرائية (+{weight})")
-                            if tf in ['1h', '2h', '4h', '1d']:
-                                mood = "BULLISH_PATTERN_CONFIRMED"
-                        else:
-                            # عقوبة أو تجاهل: النمط ظهر في منتصف الشارت أو بسيولة بيعية
-                            reasons.append(f"⚠️ [تجاهل] {clean_name} ({tf}): ظهر في منطقة عشوائية أو بدون سيولة داعمة.")
+                            reasons.append(f"🏛️ [1D - استراتيجي] {clean_name}: سيولة مؤسساتية عند منطقة دعم/ترند (+{weight})")
+                        elif is_bearish and (is_near_resistance or is_downtrend):
+                            score -= int(weight * 1.5)
+                            reasons.append(f"🔴 [1D - تحذير] {clean_name}: تصريف مؤسساتي عند مقاومة (-{int(weight * 1.5)})")
 
-                    # 🔴 --- [ رصد صفقات البيع المكشوف (Short) ] ---
-                    elif "هابط" in pattern:
-                        # فلتر السياق: هل النمط في منطقة مقاومة وهل السيولة سلبية تصريفية؟
-                        if is_near_resistance and vol_delta <= 0:
-                            score -= int(weight * 1.5) # خصم مضاعف لنقاط السكور لتوجيه الرادار للبيع
-                            reasons.append(f"🔴 [SHORT] نمط {clean_name} ({tf}): موثّق بمقاومة وتصريف حيتان (-{int(weight * 1.5)})")
-                            if tf in ['1h', '2h', '4h', '1d']:
-                                mood = "BEARISH_PATTERN_CONFIRMED"
-                        else:
-                            reasons.append(f"⚠️ [تجاهل] {clean_name} ({tf}): فخ بيعي محتمل في منطقة غير استراتيجية.")
-                            
-            # ==========================================
-            # 💎 [ 4. المحرك الاستخباراتي: مصفوفة "اليسر بعد العسر" ]
-            # ==========================================
-            body_15m = abs(c_15 - o_15)
-            lower_wick_15m = min(o_15, c_15) - l_15
-            total_range_15m = h_15 - l_15
-            wick_ratio = (lower_wick_15m / total_range_15m) if total_range_15m > 0 else 0
+                # --- [ 2. فريم 4 ساعات (4H) - الانعكاسات الكبرى (دقة 80%) ] ---
+                elif tf == '4h' and any(x in pattern for x in ["نجمة", "ثلاثة", "الساندوتش", "مطرقة", "المشنوق", "الشهاب"]):
+                    weight = 60
+                    if has_volume_confirmation:
+                        if is_bullish and is_near_support:
+                            score += weight
+                            reasons.append(f"🛡️ [4H - سوينج] {clean_name}: ارتداد قوي من منطقة دعم مؤكدة (+{weight})")
+                        elif is_bearish and is_near_resistance:
+                            score -= int(weight * 1.5)
+                            reasons.append(f"🔴 [4H - فخ] {clean_name}: رفض سعري عنيف عند المقاومة (-{int(weight * 1.5)})")
 
-            is_sqz = bbw_15m < 0.065
-            is_yusr_detected = (lower_wick_15m > (body_15m * 2)) and (wick_ratio > 0.6) and (vol_delta > 0)
-            y_power = round(wick_ratio * 100, 1) if is_yusr_detected else 0
-            
-            intel_report = "جاري المراقبة..."
-            if is_sqz and is_yusr_detected:
-                score += 100  
-                intel_report = f"🎯 شرائي يكسر الضيق {y_power}% يكسر الضيق."
-                reasons.append(f"💎 رصد: شرائي مخفي يمتص الضيق بقوة {y_power}%")
-                mood = "YUSR_EXPLOSION"
+                # --- [ 3. فريم الساعتين (2H) - صيد الزخم (دقة 70%) ] ---
+                elif tf == '2h' and any(x in pattern for x in ["تاسوكي", "التقدم", "ابتلاع", "الراكل", "الحزام"]):
+                    weight = 40
+                    # يقبل النمط هنا إذا توافق مع الترند (استمرار) أو عند الدعم القوي
+                    if is_bullish and (is_uptrend or is_near_support) and vol_delta >= 0:
+                        score += weight
+                        reasons.append(f"🎯 [2H - زخم] {clean_name}: تأكيد قوة شرائية مع الاتجاه (+{weight})")
+                    elif is_bearish and (is_downtrend or is_near_resistance) and vol_delta <= 0:
+                        score -= int(weight * 1.5)
+                        reasons.append(f"🔴 [2H - بيع] {clean_name}: سيطرة بيعية واضحة (-{int(weight * 1.5)})")
+
+                # --- [ 4. فريم الساعة (1H) - تأكيد الكسر (دقة 60%) ] ---
+                elif tf == '1h' and any(x in pattern for x in ["هارامي", "الثاقب", "السحابة", "الملقط", "التلاقي", "الانفصال"]):
+                    weight = 25
+                    if has_volume_confirmation:
+                        if is_bullish and is_near_support:
+                            score += weight
+                            reasons.append(f"⏱️ [1H - يومي] {clean_name}: ارتداد تكتيكي مدعوم بسيولة (+{weight})")
+                        elif is_bearish and is_near_resistance:
+                            score -= int(weight * 1.5)
+                            reasons.append(f"🔴 [1H - يومي] {clean_name}: ضغط بيعي عند مقاومة (-{int(weight * 1.5)})")
+
+                # --- [ 5. فريم 15 دقيقة (15m) - سكالبينج سريع (دقة 50%) ] ---
+                elif tf == '15m' and any(x in pattern for x in ["على_الرقبة", "في_الرقبة", "دفع", "نجمة_دوجي"]):
+                    weight = 15
+                    # لا نتداول هنا إلا إذا كان الـ RSI الخاص بك (78/22) يدعم الفكرة
+                    if is_bullish and rsi_15m <= 35 and is_uptrend: # تصحيح في ترند صاعد
+                        score += weight
+                        reasons.append(f"⚡ [15m - مضاربة] {clean_name}: نهاية تصحيح (RSI={rsi_15m:.0f}) (+{weight})")
+                    elif is_bearish and rsi_15m >= 65 and is_downtrend:
+                        score -= int(weight * 1.2)
+                        reasons.append(f"🔴 [15m - مضاربة] {clean_name}: ذروة شراء في ترند هابط (-{int(weight * 1.2)})")
+
+                # --- [ 6. فريم 5 دقائق (5m) - المراقبة اللحظية ] ---
+                elif tf == '5m' and "النجوم_الثلاثة" in pattern:
+                    # لا نأخذها إلا إذا كانت مصحوبة بانضغاط البولنجر الشديد
+                    if is_sqz:
+                        weight = 10
+                        score += weight if is_bullish else -weight
+                        reasons.append(f"🔍 [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار من منطقة ضيقة (+{weight})")
+
+                else:
+                    # أي نمط يظهر في منتصف الشارت أو بدون فوليوم يتم تجاهله تماماً
+                    reasons.append(f"🔇 [تجاهل الضجيج] {clean_name} ({tf}): ظهر في سياق ضعيف أو منطقة عشوائية.")
+                    
                 
             # ==========================================
             # 🛡️ [ 5. الغطاء الجوي: معزز الزخم 1H ]
