@@ -292,7 +292,7 @@ async def intelligence_scanner():
             # 🕯️ [ 3. محرك الشموع اليابانية الشامل (قناص الأنماط) ]
             # ==========================================
             # تحديد أوزان الفريمات (كلما كبر الفريم زادت قوة وتأثير النمط)
-            tf_weights = {'5m': 10, '15m': 20, '1h': 40, '2h': 45, '4h': 60, '1d': 80}
+            tf_weights = {'5m': 5, '15m': 10, '1h': 20, '2h': 22, '4h': 30, '1d': 40}
             
             for tf, pattern in patterns.items():
                 if pattern not in ["Normal", "Not enough data", None]:
