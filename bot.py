@@ -485,7 +485,7 @@ async def intelligence_scanner():
             
             # [ مدمج من 4H: فلتر الانهيار الكلي ]
             if rsi_4h < 40 and ema20_4h < ema50_4h:
-                score -= 100
+                score -= 10
                 reasons.append("⚠️ الفريم الأكبر (4H) منهار، تم إبطال الهجوم الشرائي لمنع التعلق.")
                 
             if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
