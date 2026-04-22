@@ -313,7 +313,7 @@ async def intelligence_scanner():
             is_squeeze_firing = (not is_squeeze_on) and (expansion_ratio_15m > 1.05) and (obv_slope_15m > 0)
 
             if is_squeeze_firing and oi_change > 5:
-                score += 150
+                score += 30
                 reasons.append(f"🌋 انفجار الانضغاط (Squeeze Fire): البولنجر يكسر كيلتنر مع دخول سيولة قوية (OI: +{oi_change}%)")
             elif is_squeeze_on:
                 reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل كيلتنر، ننتظر الانفجار.")
@@ -321,18 +321,18 @@ async def intelligence_scanner():
             # 2. Short Squeeze (إبادة البائعين)
             is_short_squeeze = (funding_rate < -0.01) and (price >= lower) and (rsi_15m <= 25)
             if is_short_squeeze and obv_slope_15m > 0:
-                score += 140
+                score += 30
                 reasons.append(f"🩸 إبادة البائعين: التمويل سالب جداً ({funding_rate}%) والسعر يصنع قاعاً مع RSI ({rsi_15m:.1f})")
 
             # 3. مصيدة السيولة (Liquidity Sweep)
             is_liquidity_sweep = (price > lower) and (vol_15m > vol_ma_15m * 2.5) and (rsi_15m < 25)
             if is_liquidity_sweep:
-                score += 130
+                score += 30
                 reasons.append(f"🪤 مصيدة السيولة: الحيتان ضربوا الستوب لوز واشتروا الكميات بقوة (الفوليوم: {vol_15m:.1f})")
 
             # 4. تراكم الحطب (Open Interest Accumulation)
             if oi_change > 15 and bbw_15m < 0.05:
-                score += 50
+                score += 30
                 reasons.append(f"🪵 تكديس الحطب: السعر ميت ولكن الاهتمام المفتوح يرتفع بجنون (+{oi_change}%)")
 
             # 5. غطاء الفريم الأكبر 4H
@@ -376,7 +376,7 @@ async def intelligence_scanner():
 
                 # فريم 2H
                 elif tf == '2h' and any(x in pattern for x in ["تاسوكي", "التقدم", "ابتلاع", "الراكل", "الحزام"]):
-                    weight = 40
+                    weight = 50
                     if is_bullish and (is_uptrend or is_near_support) and vol_delta >= 0:
                         score += weight
                         reasons.append(f"🎯 [2H - زخم] {clean_name}: تأكيد قوة شرائية مع الاتجاه (+{weight})")
@@ -386,7 +386,7 @@ async def intelligence_scanner():
 
                 # فريم 1H
                 elif tf == '1h' and any(x in pattern for x in ["هارامي", "الثاقب", "السحابة", "الملقط", "التلاقي", "الانفصال"]):
-                    weight = 25
+                    weight = 30
                     if has_volume_confirmation:
                         if is_bullish and is_near_support:
                             score += weight
@@ -425,7 +425,7 @@ async def intelligence_scanner():
             )
 
             if is_1h_ready:
-                score += 50
+                score += 30
                 reasons.append("🛡️ غطاء جوي (1H): ترتيب هجومي مثالي يدعم الانفجار")
                 is_1h_confirmed = True
             else:
@@ -451,17 +451,17 @@ async def intelligence_scanner():
             intel_report = f"إشارة {mood} مرصودة بدقة عالية"
 
             if is_crawling_up:
-                score += 50 
+                score += 30 
                 intel_report = "🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية." if mood != "YUSR_EXPLOSION" else intel_report
                 reasons.append(f"🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية مع توسع ({expansion_ratio_15m:.1%})") 
                 mood = "NUCLEAR_CRAWL" if mood != "YUSR_EXPLOSION" else mood
 
             if is_5m_spark:
-                score += 40 
+                score += 30 
                 reasons.append(f"🔥 شرارة الانفجار: توسع عنيف جداً في فريم 5m ({expansion_ratio_5m:.1%})") 
 
             if is_volume_spike:
-                score += 40 
+                score += 30 
                 reasons.append(f"📊 فوليوم مضاعف: السيولة الحالية تتجاوز 200% من المتوسط") 
 
             # ==========================================
@@ -505,7 +505,7 @@ async def intelligence_scanner():
 
             # تعزيز سكور الشراء عند اكتمال المثلث الذهبي
             if is_crawling_up and is_5m_spark and is_volume_spike: 
-                score += 60  
+                score += 30  
 
             # --- [ تحديد نوع الإشارة بناءً على السكور النهائي ] ---
             signal_type = "NONE"
@@ -516,7 +516,7 @@ async def intelligence_scanner():
                 else:
                     reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
 
-            elif score <= -200:
+            elif score <= -205:
                 if is_near_resistance or is_downtrend:
                     signal_type = "SHORT"
                 else:
