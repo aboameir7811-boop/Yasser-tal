@@ -3191,16 +3191,28 @@ async def update_crypto_market_data():
             logging.error(f"❌ فشل الاتصال بـ API: {e}")
             return
 
-        # الفلتر الخاص بك: السعر >= 0.003
+        # ==========================================
+        # 🛡️ [ فلاتر تنظيف الرادار ]
+        # ==========================================
+        # 1. قائمة العملات المستقرة والمربوطة بالدولار (لا نريدها)
+        STABLE_COINS = {
+            "USDCUSDT", "FDUSDUSDT", "TUSDUSDT", "BUSDUSDT", 
+            "DAIUSDT", "EURUSDT", "AEURUSDT", "USDPUSDT", "USDDUSDT"
+        }
+
+        # 2. الفلتر الشامل:
         top_coins = [
             c for c in ticker_data 
             if isinstance(c, dict) 
             and c.get('symbol', '').endswith('USDT') 
-            and float(c.get('lastPrice', 0)) >= 0.001
+            and c.get('symbol') not in STABLE_COINS  # 🚫 استبعاد العملات المستقرة
+            and float(c.get('lastPrice', 0)) >= 0.001 # السعر أعلى من 0.001
+            and float(c.get('quoteVolume', 0)) > 50000 # 🚫 استبعاد العملات الميتة (يجب أن يكون الفوليوم أكبر من 50 ألف دولار)
+            and float(c.get('highPrice', 0)) != float(c.get('lowPrice', 0)) # 🚫 استبعاد العملات المتوقفة عن الحركة تماماً
         ]
         
-        # ترتيب حسب أعلى سيولة واختيار أعلى 200 عملة
-        top_coins = sorted(top_coins, key=lambda x: float(x.get('quoteVolume', 0)), reverse=True)[:300]
+        # 3. ترتيب حسب أعلى سيولة واختيار أعلى 600 عملة (توسيع نطاق الرادار)
+        top_coins = sorted(top_coins, key=lambda x: float(x.get('quoteVolume', 0)), reverse=True)[:600]
         
         timeframes = ['5m', '15m', '1h', '2h', '4h', '1d']
         final_records = []
@@ -3223,9 +3235,10 @@ async def update_crypto_market_data():
                     "change_24h": change_percent,
                     "last_tick_direction": "UP" if change_percent >= 0 else "DOWN",
                     "updated_at": "now()",
-                    # إضافة توقيت التحديث بالملي ثانية لضمان "المرصاد"
                     "last_api_update_ms": int(datetime.now().timestamp() * 1000)
                 }
+                
+                # (بقية الكود الخاص بك يكتمل هنا...)
                 
                 tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
                 results = await asyncio.gather(*tasks)
