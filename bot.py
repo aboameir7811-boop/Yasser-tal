@@ -3373,27 +3373,238 @@ async def update_crypto_market_data():
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
 
 
+async def fetch_klines(session, symbol, interval, limit=300): # تم رفع الحد إلى 300 لحساب EMA 200 بأمان
+    url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+    try:
+        async with session.get(url, timeout=10) as res:
+            if res.status == 200: 
+                return await res.json()
+    except Exception as e:
+        logging.error(f"❌ خطأ في جلب بيانات {symbol} فريم {interval}: {e}")
+    return None
+
+def clean_nans(d):
+    """دالة سحرية لتنظيف أي NaN وتحويله إلى None لكي يقبله سوبابيس بدون أخطاء"""
+    cleaned = {}
+    for k, v in d.items():
+        if isinstance(v, float) and math.isnan(v):
+            cleaned[k] = None
+        elif isinstance(v, dict):
+            cleaned[k] = clean_nans(v)
+        else:
+            cleaned[k] = v
+    return cleaned
+
+async def run_forensic_autopsy(symbol, change_percent):
+    """
+    🕵️‍♂️ وحدة التحقيق الجنائي المتقدمة (المحقق كونان v2.0)
+    النسخة المحمية ضد الانهيار (Crash-Proof) والمتوافقة مع قاعدة البيانات.
+    """
+    event_type = "PUMP" if change_percent >= 40 else "DUMP"
+    print(f"\n🕵️‍♂️ [المحقق كونان] فتح ملف تحقيق شامل للعملة {symbol} | الحدث: {event_type} ({change_percent}%)")
+    
+    timeframes = ['1h', '2h', '4h', '1d']
+    klines_data = {}
+    
+    async with aiohttp.ClientSession() as session:
+        # جلب بيانات جميع الفريمات في وقت واحد (مع limit=300 من الدالة)
+        tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
+        results = await asyncio.gather(*tasks)
+        
+        for i, tf in enumerate(timeframes):
+            if results[i]: klines_data[tf] = results[i]
+            
+    if '1h' not in klines_data or len(klines_data['1h']) < 30:
+        print(f"⚠️ [المحقق كونان] الأدلة غير كافية لعملة {symbol}. إغلاق الملف.")
+        return
+
+    # ==========================================
+    # 🕵️‍♂️ 1. تحديد "ساعة الصفر" من فريم الساعة (1H)
+    # ==========================================
+    df_1h = pd.DataFrame(klines_data['1h'], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'qav', 'num_trades', 'taker_base_vol', 'taker_quote_vol', 'ignore'])
+    for col in ['open', 'high', 'low', 'close', 'volume']:
+        df_1h[col] = df_1h[col].astype(float)
+        
+    # البحث عن أكبر شمعة (ساعة الانفجار/الانهيار)
+    df_1h['body_size'] = abs(df_1h['close'] - df_1h['open']) / df_1h['open'] * 100
+    point_zero_idx = df_1h['body_size'].idxmax()
+    
+    if point_zero_idx < 25:
+        print(f"⚠️ [المحقق كونان] الانفجار حدث مبكراً جداً في السجل، لا يوجد تاريخ كافي للتحليل. {symbol}")
+        return
+
+    # توقيت الانفجار بالضبط لقص بقية الفريمات بناءً عليه
+    point_zero_timestamp = int(df_1h.iloc[point_zero_idx]['timestamp'])
+
+    # ==========================================
+    # 🧬 2. دالة تشريح الفريمات (تعمل على بيانات ما قبل الكارثة فقط)
+    # ==========================================
+    def dissect_timeframe(tf_data, tf_name):
+        past_data = [k for k in tf_data if int(k[0]) < point_zero_timestamp]
+        
+        if len(past_data) < 25: return None
+        
+        highs = [float(k[2]) for k in past_data]
+        lows = [float(k[3]) for k in past_data]
+        closes = [float(k[4]) for k in past_data]
+        volumes = [float(k[5]) for k in past_data]
+        
+        upper, mid, lower = calculate_bollinger(closes) if len(closes) >= 20 else (None, None, None)
+        bbw_val = (upper - lower) / mid if (mid and mid > 0) else 0
+        kc_up, kc_mid, kc_low = calculate_keltner_channels(highs, lows, closes) if len(closes) >= 20 else (None, None, None)
+        
+        obv_val = calculate_obv(closes, volumes)
+        obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
+        
+        atr_val = calculate_atr(highs, lows, closes) if len(closes) >= 14 else None
+        adx_val = calculate_adx(highs, lows, closes) if len(closes) >= 14 else None
+        rsi_val = calculate_rsi(closes) if len(closes) >= 14 else None
+        
+        # استخراج أنماط الشموع بأمان
+        patterns = []
+        try:
+            df_patterns = pd.DataFrame(past_data[-5:], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'ct', 'qav', 'nt', 'tbv', 'tqv', 'ig'])
+            patterns = [detect_all_pdf_patterns(df_patterns.iloc[:-j] if j > 0 else df_patterns) for j in range(len(df_patterns))]
+        except Exception:
+            pass
+
+        return {
+            # استخدام حماية الأطوال لتجنب انهيار المؤشرات
+            f"ema_20_{tf_name}": calculate_ema(closes, 20) if len(closes) >= 20 else None,
+            f"ema_50_{tf_name}": calculate_ema(closes, 50) if len(closes) >= 50 else None,
+            f"ema_100_{tf_name}": calculate_ema(closes, 100) if len(closes) >= 100 else None,
+            f"ema_200_{tf_name}": calculate_ema(closes, 200) if (tf_name == '1h' and len(closes) >= 200) else None,
+            f"rsi_{tf_name}": rsi_val,
+            f"obv_{tf_name}": obv_val,
+            f"obv_slope_{tf_name}": obv_val - obv_prev_val if obv_val else None,
+            f"atr_{tf_name}": atr_val,
+            f"adx_{tf_name}": adx_val,
+            f"bb_upper_{tf_name}": upper,
+            f"bb_middle_{tf_name}": mid,
+            f"bb_lower_{tf_name}": lower,
+            f"bbw_{tf_name}": bbw_val,
+            f"was_squeezed_{tf_name}": bool(bbw_val < 0.07) if bbw_val else None,
+            f"kc_upper_{tf_name}": kc_up,
+            f"kc_middle_{tf_name}": kc_mid,
+            f"kc_lower_{tf_name}": kc_low,
+            "patterns": patterns,
+            "last_volume": volumes[-1],
+            "avg_volume_20": sum(volumes[-20:]) / 20 if len(volumes) >= 20 else (sum(volumes)/len(volumes) if volumes else 0),
+            "last_close": closes[-1]
+        }
+
+    # ==========================================
+    # 🧪 3. استخراج تقارير الفريمات
+    # ==========================================
+    report_1h = dissect_timeframe(klines_data.get('1h', []), '1h')
+    report_2h = dissect_timeframe(klines_data.get('2h', []), '2h')
+    report_4h = dissect_timeframe(klines_data.get('4h', []), '4h')
+    report_1d = dissect_timeframe(klines_data.get('1d', []), '1d')
+
+    if not report_1h: 
+        print(f"⚠️ [المحقق كونان] فشل تشريح فريم الساعة لعملة {symbol}. إغلاق الملف.")
+        return
+
+    # حساب سياق السوق
+    vol_spike_ratio = report_1h['last_volume'] / report_1h['avg_volume_20'] if report_1h.get('avg_volume_20', 0) > 0 else 1
+    market_mood = get_market_mood(report_1h.get('rsi_1h', 50)) 
+
+    metadata_json = {
+        "patterns_1h": report_1h.get('patterns', []),
+        "patterns_2h": report_2h.get('patterns', []) if report_2h else [],
+        "patterns_4h": report_4h.get('patterns', []) if report_4h else [],
+        "trigger_candle_timestamp_ms": point_zero_timestamp
+    }
+
+    # ==========================================
+    # 📑 4. تجميع التقرير النهائي (متطابق 100% مع الجدول)
+    # ==========================================
+    raw_record = {
+        "symbol": symbol,
+        "event_type": event_type,
+        "price_change_percent": float(change_percent),
+        "price_before_event": float(report_1h['last_close']),
+        "volume_before_event": float(report_1h['last_volume']),
+        
+        "btc_correlation_at_event": 0.0,
+        "funding_rate_at_event": 0.0,
+        "volume_spike_ratio": float(vol_spike_ratio),
+        "market_mood_at_event": market_mood,
+        
+        "ema_20_1h": report_1h.get('ema_20_1h'),
+        "ema_50_1h": report_1h.get('ema_50_1h'),
+        "ema_100_1h": report_1h.get('ema_100_1h'),
+        "ema_200_1h": report_1h.get('ema_200_1h'),
+        "rsi_1h": report_1h.get('rsi_1h'),
+        "obv_1h": report_1h.get('obv_1h'),
+        "obv_slope_1h": report_1h.get('obv_slope_1h'),
+        "atr_1h": report_1h.get('atr_1h'),
+        "adx_1h": report_1h.get('adx_1h'),
+        "bb_upper_1h": report_1h.get('bb_upper_1h'),
+        "bb_middle_1h": report_1h.get('bb_middle_1h'),
+        "bb_lower_1h": report_1h.get('bb_lower_1h'),
+        "bbw_1h": report_1h.get('bbw_1h'),
+        "was_squeezed_1h": report_1h.get('was_squeezed_1h'),
+        "kc_upper_1h": report_1h.get('kc_upper_1h'),
+        "kc_middle_1h": report_1h.get('kc_middle_1h'),
+        "kc_lower_1h": report_1h.get('kc_lower_1h'),
+        
+        **{k: v for k, v in (report_2h or {}).items() if k in ['ema_20_2h', 'ema_50_2h', 'ema_100_2h', 'rsi_2h', 'obv_2h', 'obv_slope_2h', 'atr_2h', 'adx_2h', 'bb_upper_2h', 'bb_middle_2h', 'bb_lower_2h', 'bbw_2h', 'was_squeezed_2h', 'kc_upper_2h', 'kc_middle_2h', 'kc_lower_2h']},
+        **{k: v for k, v in (report_4h or {}).items() if k in ['ema_20_4h', 'ema_50_4h', 'ema_100_4h', 'rsi_4h', 'obv_4h', 'obv_slope_4h', 'atr_4h', 'adx_4h', 'bb_upper_4h', 'bb_middle_4h', 'bb_lower_4h', 'bbw_4h', 'was_squeezed_4h', 'kc_upper_4h', 'kc_middle_4h', 'kc_lower_4h']},
+        
+        "rsi_1d": report_1d.get('rsi_1d') if report_1d else None,
+        "is_above_ema_200_1d": bool(report_1d['last_close'] > report_1d['ema_200_1d']) if report_1d and report_1d.get('ema_200_1d') else None,
+        
+        "metadata": json.dumps(metadata_json)
+    }
+
+    # 🔥 السحر هنا: تنظيف التقرير من أي NaN لكي لا يرفضه السوبابيس 🔥
+    forensic_record = clean_nans(raw_record)
+
+    # ==========================================
+    # 💾 5. الرفع إلى قاعدة البيانات (يدوياً عبر API)
+    # ==========================================
+    # ملاحظة: نرسل السجل داخل قائمة [forensic_record] لأن الدالة تتوقع JSON Array
+    success = await async_manual_upsert("forensic_reports", [forensic_record])
+    
+    if success:
+        print(f"✅ [المحقق كونان] تم إيداع ملف {symbol} في الأرشيف بنجاح.")
+    else:
+        print(f"❌ [المحقق كونان] فشل إرسال الأدلة.. راقب سجل الأخطاء أعلاه.")
+        
+
+
 async def unified_trading_system():
-    """هذه الدالة هي المايسترو: تحديث البيانات -> انتظار دقيقة -> تحليل الرادار"""
+    """
+    المايسترو: إدارة المحطات (المصنع + الرادار) بترتيب تسلسلي صارم.
+    """
+    logging.info("🚀 [النظام الموحد] تم التشغيل... تحت مراقبة WatchDog.")
+    
     while True:
         try:
-            # أولاً: المصنع يشتغل ويحدث كل الفريمات والجندي المجهول
+            # 1. المصنع: تحديث البيانات وحقنها في سوبابيس
+            print("\n🏭 [المصنع] بدء جولة التحديث الشاملة...")
             await update_crypto_market_data()
-            print("✅ المصنع أكمل الحقن بنجاح. انتظار 60 ثانية للرادار...")
+            print("✅ [المصنع] اكتمل التحديث. انتظار (120 ثانية) قبل المسح...")
+            
+            # فاصل زمني لضمان استقرار البيانات
             await asyncio.sleep(120)
 
-            # ثانياً: المصنع ينادي الرادار (تعال شف شغلك)
-            print("📡 نداء للرادار: البيانات جاهزة في سوبابيس، ابدأ المسح...")
+            # 2. الرادار: تحليل الفرص والمسح الذكي
+            print("📡 [الرادار] بدء جولة مسح الرادار...")
             await intelligence_scanner()
-            
-            # ثالثاً: الرادار يخلص وينتظر دقيقة قبل الجولة الجديدة للمصنع
-            print("⏳ جولة كاملة تمت. استراحة 60 ثانية قبل التحديث القادم...")
+            print("✅ [الرادار] انتهى المسح بنجاح.")
+
+            # 3. استراحة المحارب قبل الدورة الجديدة
+            print("⏳ [النظام] جولة كاملة تمت. استراحة 60 ثانية...")
             await asyncio.sleep(60)
             
         except Exception as e:
-            logging.error(f"⚠️ خطأ في النظام الموحد: {e}")
-            await asyncio.sleep(30) # انتظار قصير للتعافي
-            
+            logging.error(f"⚠️ [خطأ في المايسترو]: {e}")
+            # تعافي سريع للعودة للعمل فوراً
+            await asyncio.sleep(30)
+
+
 # ==========================================
 # 5. نهاية الملف: نظام الإنعاش الأبدي 24/7 (النبض الذاتي) ⚡
 # ==========================================
@@ -3450,7 +3661,7 @@ async def watch_dog(task_func, *args):
             await asyncio.sleep(10) # انتظار بسيط لتجنب التكرار السريع عند الخطأ
 
 async def main_startup():
-    # أ) إعداد سيرفر الويب للبقاء Online
+    # أ) إعداد سيرفر الويب للبقاء Online (مهم للمنصات مثل Render/Heroku)
     app = web.Application()
     app.router.add_get('/', handle_ping)
     app.router.add_get('/login', handle_telegram_login)
@@ -3471,21 +3682,25 @@ async def main_startup():
     
     # 3. النظام الموحد (المصنع + الرادار)
     asyncio.create_task(watch_dog(unified_trading_system))
-       
-    # ج) تشغيل البوت الرئيسي (Aiogram) مع نظام إعادة المحاولة
+        
+    # ج) تشغيل البوت الرئيسي (Aiogram) مع نظام إعادة المحاولة الصامد
     while True:
         try:
             logging.info("🚀 إقلاع محرك التليجرام... النظام تحت الحماية القصوى.")
-            await dp.skip_updates()
-            await dp.start_polling()
+            # تنظيف التحديثات المعلقة لضمان عدم حدوث تداخل عند إعادة التشغيل
+            await bot.delete_webhook(drop_pending_updates=True)
+            await dp.start_polling(bot)
         except Exception as e:
             logging.error(f"❌ خطأ في البوت: {e}")
-            await asyncio.sleep(10) # انتظر 10 ثوانٍ وأعد المحاولة تلقائياً
+            logging.info("🔄 محاولة إعادة التشغيل تلقائياً خلال 10 ثوانٍ...")
+            await asyncio.sleep(10)
 
 if __name__ == '__main__':
     try:
+        # تشغيل المحرك الرئيسي
         asyncio.run(main_startup())
     except KeyboardInterrupt:
-        logging.info("🛑 تم إيقاف النظام يدوياً.")
+        logging.info("🛑 تم إيقاف النظام يدوياً من قبل أثير.")
+    except Exception as e:
+        logging.critical(f"💥 انهيار غير متوقع في النظام: {e}")
         
-    
