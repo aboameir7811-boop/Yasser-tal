@@ -313,7 +313,7 @@ async def intelligence_scanner():
             is_squeeze_firing = (not is_squeeze_on) and (expansion_ratio_15m > 1.05) and (obv_slope_15m > 0)
 
             if is_squeeze_firing and oi_change > 5:
-                score += 30
+                score += 50
                 reasons.append(f"🌋 انفجار الانضغاط (Squeeze Fire): B يكسر K مع دخول سيولة قوية (OI: +{oi_change}%)")
             elif is_squeeze_on:
                 reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل k ننتظر الانفجار.")
@@ -426,7 +426,7 @@ async def intelligence_scanner():
             )
 
             if is_1h_ready:
-                score += 30
+                score += 50
                 reasons.append("🛡️ غطاء جوي (1H): ترتيب هجومي مثالي يدعم الانفجار")
                 is_1h_confirmed = True
             else:
@@ -452,13 +452,13 @@ async def intelligence_scanner():
             intel_report = f"إشارة {mood} مرصودة بدقة عالية"
 
             if is_crawling_up:
-                score += 30 
+                score += 50 
                 intel_report = "🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية." if mood != "YUSR_EXPLOSION" else intel_report
                 reasons.append(f"🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية مع توسع ({expansion_ratio_15m:.1%})") 
                 mood = "NUCLEAR_CRAWL" if mood != "YUSR_EXPLOSION" else mood
 
             if is_5m_spark:
-                score += 30 
+                score += 50 
                 reasons.append(f"🔥 شرارة الانفجار: توسع عنيف جداً في فريم 5m ({expansion_ratio_5m:.1%})") 
 
             if is_volume_spike:
@@ -469,7 +469,7 @@ async def intelligence_scanner():
             # 🌋 [ 7. دمج استخبارات كيلتنر والعقود ]
             # ==========================================
             if (upper > kc_upper) and expansion_ratio_15m > 1.05: 
-                score += 30 
+                score += 50 
                 reasons.append("🌋 كسر الانضغاط (k): السعر تحرر من ضغط  بقوة هائلة") 
 
             if oi_change > 5 and (is_crawling_up or is_yusr_detected): 
@@ -486,11 +486,11 @@ async def intelligence_scanner():
             
             # [ مدمج من 4H: فلتر الانهيار الكلي ]
             if rsi_4h < 40 and ema20_4h < ema50_4h:
-                score -= 10
+                score -= 2
                 reasons.append("⚠️ الفريم الأكبر (4H) منهار، تم إبطال الهجوم الشرائي لمنع التعلق.")
                 
             if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
-                score -= 20  
+                score -= 200  
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
                 reasons.append("🚫 حماية مطلقة: تم رصد سيولة بيعية سالبة (زبد) خلف الصعود الوهمي.") 
 
@@ -517,7 +517,7 @@ async def intelligence_scanner():
                 else:
                     reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
 
-            elif score <= -100:
+            elif score <= -206:
                 if is_near_resistance or is_downtrend:
                     signal_type = "SHORT"
                 else:
