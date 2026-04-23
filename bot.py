@@ -338,7 +338,7 @@ async def intelligence_scanner():
             # 5. غطاء الفريم الأكبر 4H
             is_4h_bullish = (ema20_4h > ema50_4h) and (rsi_4h > 50)
             if is_4h_bullish and score > 0:
-                score += 60
+                score += 80
                 reasons.append("🛡️ غطاء مالي (4H): الاتجاه العام صاعد ويدعم الانفجار القادم")
 
             # ==========================================
@@ -490,7 +490,7 @@ async def intelligence_scanner():
                 reasons.append("⚠️ الفريم الأكبر (4H) منهار، تم إبطال الهجوم الشرائي لمنع التعلق.")
                 
             if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
-                score -= 200  
+                score -= 20  
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
                 reasons.append("🚫 حماية مطلقة: تم رصد سيولة بيعية سالبة (زبد) خلف الصعود الوهمي.") 
 
@@ -506,7 +506,7 @@ async def intelligence_scanner():
 
             # تعزيز سكور الشراء عند اكتمال المثلث الذهبي
             if is_crawling_up and is_5m_spark and is_volume_spike: 
-                score += 30  
+                score += 60  
 
             # --- [ تحديد نوع الإشارة بناءً على السكور النهائي ] ---
             signal_type = "NONE"
@@ -517,7 +517,7 @@ async def intelligence_scanner():
                 else:
                     reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
 
-            elif score <= -206:
+            elif score <= -100:
                 if is_near_resistance or is_downtrend:
                     signal_type = "SHORT"
                 else:
