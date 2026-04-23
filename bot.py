@@ -516,7 +516,7 @@ async def intelligence_scanner():
                 else:
                     reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
 
-            elif score <= -205:
+            elif score <= -206:
                 if is_near_resistance or is_downtrend:
                     signal_type = "SHORT"
                 else:
@@ -3207,7 +3207,7 @@ async def update_crypto_market_data():
             and c.get('symbol', '').endswith('USDT') 
             and c.get('symbol') not in STABLE_COINS  # 🚫 استبعاد العملات المستقرة
             and float(c.get('lastPrice', 0)) >= 0.001 # السعر أعلى من 0.001
-            and float(c.get('quoteVolume', 0)) > 50000 # 🚫 استبعاد العملات الميتة (يجب أن يكون الفوليوم أكبر من 50 ألف دولار)
+            and float(c.get('quoteVolume', 0)) > 10000 # 🚫 استبعاد العملات الميتة (يجب أن يكون الفوليوم أكبر من 50 ألف دولار)
             and float(c.get('highPrice', 0)) != float(c.get('lowPrice', 0)) # 🚫 استبعاد العملات المتوقفة عن الحركة تماماً
         ]
         
