@@ -314,9 +314,9 @@ async def intelligence_scanner():
 
             if is_squeeze_firing and oi_change > 5:
                 score += 30
-                reasons.append(f"🌋 انفجار الانضغاط (Squeeze Fire): البولنجر يكسر كيلتنر مع دخول سيولة قوية (OI: +{oi_change}%)")
+                reasons.append(f"🌋 انفجار الانضغاط (Squeeze Fire): B يكسر K مع دخول سيولة قوية (OI: +{oi_change}%)")
             elif is_squeeze_on:
-                reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل كيلتنر، ننتظر الانفجار.")
+                reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل k ننتظر الانفجار.")
 
             # 2. Short Squeeze (إبادة البائعين)
             is_short_squeeze = (funding_rate < -0.01) and (price >= lower) and (rsi_15m <= 25)
@@ -338,8 +338,8 @@ async def intelligence_scanner():
             # 5. غطاء الفريم الأكبر 4H
             is_4h_bullish = (ema20_4h > ema50_4h) and (rsi_4h > 50)
             if is_4h_bullish and score > 0:
-                score += 40
-                reasons.append("🛡️ غطاء جوي (4H): الاتجاه العام صاعد ويدعم الانفجار القادم")
+                score += 60
+                reasons.append("🛡️ غطاء مالي (4H): الاتجاه العام صاعد ويدعم الانفجار القادم")
 
             # ==========================================
             # 🕯️ [ 4. محرك الشموع اليابانية الصارم (قناص الأنماط والسياق) ]
@@ -352,8 +352,8 @@ async def intelligence_scanner():
                 is_bullish = "صاعد" in pattern
                 is_bearish = "هابط" in pattern
                 
-                # فريم 1D
-                if tf == '1d' and any(x in pattern for x in ["طرق", "القبضة", "الطفل_المهجور", "الجنود", "الغربان", "ماروبوزو", "دوجي_التنين", "شاهد_القبر"]):
+                # فريم 1D (أصبح يقبل جميع الأنماط بقوة 100)
+                if tf == '1d':
                     weight = 100
                     if has_volume_confirmation: 
                         if is_bullish and (is_near_support or is_uptrend):
@@ -410,10 +410,11 @@ async def intelligence_scanner():
                     if is_sqz:
                         weight = 10
                         score += weight if is_bullish else -weight
-                        reasons.append(f"🔍 [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار من منطقة ضيقة (+{weight})")
-                else:
-                    reasons.append(f"🔇 [تجاهل الضجيج] {clean_name} ({tf}): ظهر في سياق ضعيف أو منطقة عشوائية.")
+                        reasons.append(f"🔍 [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار من منطقة ضيقة ({'+' if is_bullish else '-'}{weight})")
                 
+                # تم إزالة قسم else الخاص بتسجيل "تجاهل الضجيج" حتى لا يظهر في رسالة التيليجرام
+                
+
             # ==========================================
             # 🛡️ [ 5. الغطاء الجوي: معزز الزخم 1H ]
             # ==========================================
@@ -469,7 +470,7 @@ async def intelligence_scanner():
             # ==========================================
             if (upper > kc_upper) and expansion_ratio_15m > 1.05: 
                 score += 30 
-                reasons.append("🌋 كسر الانضغاط (k): السعر تحرر من ضغط كيلتنر بقوة هائلة") 
+                reasons.append("🌋 كسر الانضغاط (k): السعر تحرر من ضغط  بقوة هائلة") 
 
             if oi_change > 5 and (is_crawling_up or is_yusr_detected): 
                 score += 30 
@@ -3192,24 +3193,52 @@ async def update_crypto_market_data():
             return
 
         # ==========================================
-        # 🛡️ [ فلاتر تنظيف الرادار ]
+        # 🛡️ [ فلاتر تنظيف الرادار الاستخباراتية ]
         # ==========================================
-        # 1. قائمة العملات المستقرة والمربوطة بالدولار (لا نريدها)
+        # 1. قائمة العملات المستقرة المعروفة (محدثة)
         STABLE_COINS = {
             "USDCUSDT", "FDUSDUSDT", "TUSDUSDT", "BUSDUSDT", 
-            "DAIUSDT", "EURUSDT", "AEURUSDT", "USDPUSDT", "USDDUSDT"
+            "DAIUSDT", "EURUSDT", "AEURUSDT", "USDPUSDT", "USDDUSDT",
+            "PYUSDUSDT", "EURIUSDT"
         }
 
-        # 2. الفلتر الشامل:
-        top_coins = [
-            c for c in ticker_data 
-            if isinstance(c, dict) 
-            and c.get('symbol', '').endswith('USDT') 
-            and c.get('symbol') not in STABLE_COINS  # 🚫 استبعاد العملات المستقرة
-            and float(c.get('lastPrice', 0)) >= 0.001 # السعر أعلى من 0.001
-            and float(c.get('quoteVolume', 0)) > 10000 # 🚫 استبعاد العملات الميتة (يجب أن يكون الفوليوم أكبر من 50 ألف دولار)
-            and float(c.get('highPrice', 0)) != float(c.get('lowPrice', 0)) # 🚫 استبعاد العملات المتوقفة عن الحركة تماماً
-        ]
+        # 2. الفلتر الشامل (طرد الميت، الموقوف، والمستقر):
+        top_coins = []
+        for c in ticker_data:
+            if not isinstance(c, dict): continue
+            
+            symbol = c.get('symbol', '')
+            if not symbol.endswith('USDT'): continue
+            if symbol in STABLE_COINS: continue # 🚫 استبعاد العملات المستقرة المعروفة
+            
+            # استخراج البيانات الحيوية للعملة
+            last_price = float(c.get('lastPrice', 0))
+            quote_volume = float(c.get('quoteVolume', 0))
+            high_price = float(c.get('highPrice', 0))
+            low_price = float(c.get('lowPrice', 0))
+            trades_count = int(c.get('count', 0)) # 👈 السر هنا: عدد الصفقات الفعلية
+
+            # --- [ شروط الصرامة الفنية ] ---
+            # أ. السعر يجب أن يكون منطقياً
+            if last_price < 0.001: continue
+            
+            # ب. صائد العملات المستقرة المجهولة: إذا كان السعر حول 1 دولار والتذبذب بين القمة والقاع أقل من 1.5%
+            if 0.98 <= last_price <= 1.02 and low_price > 0:
+                price_volatility = (high_price - low_price) / low_price
+                if price_volatility < 0.015: 
+                    continue # 🚫 طرد فوري (عملة مستقرة مجهولة أو لا تتحرك)
+                    
+            # ج. فلتر العملات الموقوفة أو ما قبل الإطلاق (يجب أن يكون هناك أكثر من 1000 صفقة تمت في 24 ساعة)
+            if trades_count < 1000: continue
+            
+            # د. فلتر السيولة: استبعاد العملات الميتة سيولياً (تم الرفع إلى 100 ألف دولار كحد أدنى للاستراتيجية)
+            if quote_volume < 100000: continue
+            
+            # هـ. استبعاد العملات المتجمدة تماماً (القمة تساوي القاع)
+            if high_price == low_price: continue
+            
+            # إذا نجت العملة من كل الفلاتر السابقة، فهي حية وتستحق المراقبة
+            top_coins.append(c)
         
         # 3. ترتيب حسب أعلى سيولة واختيار أعلى 600 عملة (توسيع نطاق الرادار)
         top_coins = sorted(top_coins, key=lambda x: float(x.get('quoteVolume', 0)), reverse=True)[:600]
@@ -3237,8 +3266,6 @@ async def update_crypto_market_data():
                     "updated_at": "now()",
                     "last_api_update_ms": int(datetime.now().timestamp() * 1000)
                 }
-                
-                # (بقية الكود الخاص بك يكتمل هنا...)
                 
                 tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
                 results = await asyncio.gather(*tasks)
