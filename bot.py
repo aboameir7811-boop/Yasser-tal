@@ -2717,25 +2717,22 @@ async def async_manual_upsert(table_name, records):
         "Content-Type": "application/json",
         "Prefer": "resolution=merge-duplicates"
     }
-    
-    # 🚨 التعديل هنا: إضافة on_conflict للرابط ليفهم سوبابيس أن التحديث يعتمد على هذين العمودين
-    endpoint = f"{SUPABASE_URL}/rest/v1/{table_name}?on_conflict=symbol,trigger_candle_timestamp_ms"
-    
+    endpoint = f"{SUPABASE_URL}/rest/v1/{table_name}"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(endpoint, json=records, headers=headers, timeout=30) as response:
                 if response.status in [200, 201, 204]:
-                    print(f"✅ [سوبابيس] تم رفع البيانات بنجاح إلى {table_name}")
                     return True
                 else:
+                    # طباعة الخطأ القادم من سوبابيس بالتفصيل
                     error_text = await response.text()
-                    print(f"❌ [سوبابيس] فشل الرفع إلى {table_name}!")
+                    print(f"❌ فشل الرفع إلى {table_name}!")
                     print(f"📊 الحالة: {response.status}")
-                    print(f"📝 رسالة الخطأ: {error_text}")
+                    print(f"📝 رسالة الخطأ من سوبابيس: {error_text}")
                     return False
     except Exception as e:
-        print(f"⚠️ [سوبابيس] خطأ تقني أثناء الاتصال: {str(e)}")
-        return False
+        print(f"⚠️ خطأ تقني أثناء محاولة الرفع: {str(e)}")
+        return False       
         
 # ==========================================
 # --- [ دوال الحساب الرياضي ] ---
