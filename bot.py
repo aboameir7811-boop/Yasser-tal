@@ -3380,7 +3380,7 @@ async def update_crypto_market_data():
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
 
 
-async def fetch_klines(session, symbol, interval, limit=300): # تم رفع الحد إلى 300 لحساب EMA 200 بأمان
+async def fetch_klines1(session, symbol, interval, limit=300): # تم رفع الحد إلى 300 لحساب EMA 200 بأمان
     url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
     try:
         async with session.get(url, timeout=10) as res:
@@ -3415,7 +3415,7 @@ async def run_forensic_autopsy(symbol, change_percent):
     
     async with aiohttp.ClientSession() as session:
         # جلب بيانات جميع الفريمات في وقت واحد (مع limit=300 من الدالة)
-        tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
+        tasks = [fetch_klines1(session, symbol, tf) for tf in timeframes]
         results = await asyncio.gather(*tasks)
         
         for i, tf in enumerate(timeframes):
