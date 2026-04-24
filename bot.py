@@ -3572,44 +3572,56 @@ async def run_forensic_autopsy(symbol, change_percent):
     else:
         print(f"❌ [المحقق كونان] فشل إرسال الأدلة.. راقب سجل الأخطاء أعلاه.")
         
-
-
 async def unified_trading_system():
     """
-    المايسترو: (المصنع -> المحقق -> الرادار)
-    ترتيب تسلسلي يضمن تحليل كل شيء قبل البدء بالمسح.
+    المايسترو: يدير المصنع، ثم يزرع المحقق بناءً على شروط الانفجار، ثم يشغل الرادار.
     """
-    logging.info("🚀 [النظام الموحد] انطلق المايسترو... المحقق كونان قيد العمل.")
+    logging.info("🚀 [المايسترو] انطلق النظام.. تم دمج المحقق كونان بنجاح!")
     
+    # قائمة لمتابعة العملات التي تم التحقيق معها (لمنع التكرار في نفس الجلسة)
+    forensic_investigated_coins = set()
+
     while True:
         try:
-            # 1. المصنع: تحديث البيانات
-            print("\n🏭 [المصنع] بدء جولة التحديث الشاملة...")
-            await update_crypto_market_data()
-            print("✅ [المصنع] اكتمل التحديث.")
-
-            # 2. المحقق كونان: تشريح العملات المتفجرة (اختياري: يمكنك تمرير عملة معينة أو تركه يكتشفها)
-            # هنا أضفناه كخطوة أساسية لفحص "الجثث" أو الانفجارات السابقة
-            print("🕵️‍♂️ [المحقق] بدء فحص السجلات الجنائية للعملات...")
-            # ملاحظة: يمكنك استدعاؤه هنا لعملات محددة اكتشفها المصنع
-            # await run_forensic_autopsy(symbol, change_percent) 
+            # 1. المصنع: جلب وتحديث البيانات
+            print("\n🏭 [1/3] المصنع: تحديث البيانات وجلب قائمة السوق...")
+            # نفترض هنا أن المصنع يعيد لك قائمة top_coins
+            top_coins = await update_crypto_market_data() 
             
-            print("⏳ انتظار (120 ثانية) لاستقرار البيانات قبل المسح...")
+            # 2. زرع المحقق كونان (كودك الرهيب)
+            if top_coins:
+                print(f"🕵️‍♂️ [2/3] المحقق: فحص {len(top_coins)} عملة لزرع التحقيقات...")
+                for coin in top_coins:
+                    symbol = coin.get('symbol')
+                    try:
+                        price = float(coin.get('lastPrice', 0))
+                        change_percent = float(coin.get('priceChangePercent', 0))
+                        
+                        # المنطق الخاص بك: انفجار +40% أو انهيار -10%
+                        if (change_percent >= 40 or change_percent <= -40) and symbol not in forensic_investigated_coins:
+                            forensic_investigated_coins.add(symbol)
+                            print(f"🚨 [كشف انفجار] {symbol} ( {change_percent}% ) -> إرسال المحقق فوراً!")
+                            # تشغيل التحقيق في الخلفية
+                            asyncio.create_task(run_forensic_autopsy(symbol, change_percent))
+                    
+                    except Exception as e:
+                        continue # تخطي أي عملة فيها بيانات خاطئة
+
+            print("✅ اكتملت مرحلة التشريح. انتظار (120 ثانية) للاستقرار...")
             await asyncio.sleep(120)
 
-            # 3. الرادار: صيد الفرص الحالية
-            print("📡 [الرادار] بدء جولة مسح الرادار...")
+            # 3. الرادار: المسح الذكي
+            print("📡 [3/3] الرادار: بدء صيد الفرص...")
             await intelligence_scanner()
-            print("✅ [الرادار] انتهى المسح بنجاح.")
-
-            # 4. استراحة الدورة
-            print("⏳ [النظام] جولة كاملة تمت. استراحة 60 ثانية...")
+            
+            print("⏳ [المايسترو] دورة كاملة تمت. استراحة 60 ثانية.")
             await asyncio.sleep(60)
             
         except Exception as e:
             logging.error(f"⚠️ [خطأ في المايسترو]: {e}")
             await asyncio.sleep(30)
-            
+
+
 # ==========================================
 # 5. نهاية الملف: نظام الإنعاش الأبدي 24/7 (النبض الذاتي) ⚡
 # ==========================================
