@@ -3562,7 +3562,12 @@ async def run_forensic_autopsy(symbol, change_percent):
         "rsi_1d": report_1d.get('rsi_1d') if report_1d else None,
         "is_above_ema_200_1d": bool(report_1d['last_close'] > report_1d['ema_200_1d']) if report_1d and report_1d.get('ema_200_1d') else None,
         
-        "metadata": json.dumps(metadata_json)
+        # ✅ التعديل الأول: إرسال القاموس مباشرة بدون json.dumps
+        "metadata": metadata_json,
+        
+        # ✅ التعديل الثاني: إضافة العمود المفقود كجزء رئيسي من السجل
+        "trigger_candle_timestamp_ms": int(point_zero_timestamp)
+                        
     }
 
     # 🔥 السحر هنا: تنظيف التقرير من أي NaN لكي لا يرفضه السوبابيس 🔥
