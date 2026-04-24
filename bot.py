@@ -3619,7 +3619,7 @@ async def unified_trading_system():
                         change_percent = float(coin.get('priceChangePercent', 0))
                         
                         # المنطق الخاص بك: انفجار +40% أو انهيار -10%
-                        if (change_percent >= 40 or change_percent <= -10) and symbol not in forensic_investigated_coins:
+                        if (change_percent >= 1 or change_percent <= -10) and symbol not in forensic_investigated_coins:
                             forensic_investigated_coins.add(symbol)
                             print(f"🚨 [كشف انفجار] {symbol} ( {change_percent}% ) -> إرسال المحقق فوراً!")
                             # تشغيل التحقيق في الخلفية (تمت حمايته بـ try-except داخلياً الآن)
