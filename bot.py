@@ -3168,6 +3168,45 @@ def detect_all_pdf_patterns(df):
     
 
 # ==========================================
+# --- [ 📡 الرادار الذكي: قناص الفجوات والسيولة ] ---
+# ==========================================
+def extract_smart_money_concepts(df):
+    """
+    مستخرج مفاهيم الأموال الذكية (SMC): 
+    يعيد تقريراً عن الفجوات العادلة (FVG) وانفجار السيولة لأحدث الشموع.
+    """
+    if len(df) < 25:
+        return {"fvg": "None", "volume_anomaly": False, "strict_pattern": "None"}
+    
+    # 1. الفجوات العادلة (Fair Value Gaps - FVG)
+    bullish_fvg = df['low'].iloc[-1] > df['high'].iloc[-3]
+    bearish_fvg = df['high'].iloc[-1] < df['low'].iloc[-3]
+    
+    # 2. انفجار السيولة (Volume Anomaly)
+    vol_sma_20 = df['volume'].iloc[-21:-1].mean()
+    current_vol = df['volume'].iloc[-1]
+    volume_anomaly = current_vol >= (vol_sma_20 * 2)
+    
+    # 3. التشريح الصارم للذيول (Strict Wicks)
+    body = abs(df['close'].iloc[-1] - df['open'].iloc[-1])
+    upper_wick = df['high'].iloc[-1] - max(df['open'].iloc[-1], df['close'].iloc[-1])
+    lower_wick = min(df['open'].iloc[-1], df['close'].iloc[-1]) - df['low'].iloc[-1]
+    
+    strict_pattern = "None"
+    if lower_wick >= (2 * body) and upper_wick <= (0.2 * body) and body > 0:
+        strict_pattern = "Strict_Hammer"
+    elif upper_wick >= (2 * body) and lower_wick <= (0.2 * body) and body > 0:
+        strict_pattern = "Strict_Shooting_Star"
+
+    fvg_status = "Bullish_FVG" if bullish_fvg else "Bearish_FVG" if bearish_fvg else "None"
+    
+    return {
+        "fvg": fvg_status,
+        "volume_anomaly": volume_anomaly,
+        "strict_pattern": strict_pattern
+    }
+    
+# ==========================================
 # --- [ دوال التحليل و الجلب ] ---
 # ==========================================   
 async def fetch_klines(session, symbol, interval, limit=100):
@@ -3180,7 +3219,7 @@ async def fetch_klines(session, symbol, interval, limit=100):
 
 
 async def update_crypto_market_data():
-    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة OBV الاستخباراتي)...")
+    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة رادار الفجوات والسيولة)...")
     
     async with aiohttp.ClientSession() as session:
         try:
@@ -3195,52 +3234,39 @@ async def update_crypto_market_data():
         # ==========================================
         # 🛡️ [ فلاتر تنظيف الرادار الاستخباراتية ]
         # ==========================================
-        # 1. قائمة العملات المستقرة المعروفة (محدثة)
         STABLE_COINS = {
             "USDCUSDT", "FDUSDUSDT", "TUSDUSDT", "BUSDUSDT", 
             "DAIUSDT", "EURUSDT", "AEURUSDT", "USDPUSDT", "USDDUSDT",
             "PYUSDUSDT", "EURIUSDT"
         }
 
-        # 2. الفلتر الشامل (طرد الميت، الموقوف، والمستقر):
         top_coins = []
         for c in ticker_data:
             if not isinstance(c, dict): continue
             
             symbol = c.get('symbol', '')
             if not symbol.endswith('USDT'): continue
-            if symbol in STABLE_COINS: continue # 🚫 استبعاد العملات المستقرة المعروفة
+            if symbol in STABLE_COINS: continue 
             
-            # استخراج البيانات الحيوية للعملة
             last_price = float(c.get('lastPrice', 0))
             quote_volume = float(c.get('quoteVolume', 0))
             high_price = float(c.get('highPrice', 0))
             low_price = float(c.get('lowPrice', 0))
-            trades_count = int(c.get('count', 0)) # 👈 السر هنا: عدد الصفقات الفعلية
+            trades_count = int(c.get('count', 0)) 
 
-            # --- [ شروط الصرامة الفنية ] ---
-            # أ. السعر يجب أن يكون منطقياً
             if last_price < 0.001: continue
             
-            # ب. صائد العملات المستقرة المجهولة: إذا كان السعر حول 1 دولار والتذبذب بين القمة والقاع أقل من 1.5%
             if 0.98 <= last_price <= 1.02 and low_price > 0:
                 price_volatility = (high_price - low_price) / low_price
                 if price_volatility < 0.015: 
-                    continue # 🚫 طرد فوري (عملة مستقرة مجهولة أو لا تتحرك)
+                    continue 
                     
-            # ج. فلتر العملات الموقوفة أو ما قبل الإطلاق (يجب أن يكون هناك أكثر من 1000 صفقة تمت في 24 ساعة)
             if trades_count < 1000: continue
-            
-            # د. فلتر السيولة: استبعاد العملات الميتة سيولياً (تم الرفع إلى 100 ألف دولار كحد أدنى للاستراتيجية)
             if quote_volume < 100000: continue
-            
-            # هـ. استبعاد العملات المتجمدة تماماً (القمة تساوي القاع)
             if high_price == low_price: continue
             
-            # إذا نجت العملة من كل الفلاتر السابقة، فهي حية وتستحق المراقبة
             top_coins.append(c)
         
-        # 3. ترتيب حسب أعلى سيولة واختيار أعلى 600 عملة (توسيع نطاق الرادار)
         top_coins = sorted(top_coins, key=lambda x: float(x.get('quoteVolume', 0)), reverse=True)[:600]
         
         timeframes = ['5m', '15m', '1h', '2h', '4h', '1d']
@@ -3252,7 +3278,6 @@ async def update_crypto_market_data():
                 price = float(coin.get('lastPrice', 0))
                 change_percent = float(coin.get('priceChangePercent', 0))
                 
-                # إعداد السجل الأساسي
                 record = {
                     "symbol": symbol,
                     "name": symbol.replace("USDT", ""),
@@ -3264,7 +3289,8 @@ async def update_crypto_market_data():
                     "change_24h": change_percent,
                     "last_tick_direction": "UP" if change_percent >= 0 else "DOWN",
                     "updated_at": "now()",
-                    "last_api_update_ms": int(datetime.now().timestamp() * 1000)
+                    "last_api_update_ms": int(datetime.now().timestamp() * 1000),
+                    "radar_pass": False  # حقل موافقة الرادار الجديد
                 }
                 
                 tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
@@ -3272,7 +3298,6 @@ async def update_crypto_market_data():
 
                 for i, tf in enumerate(timeframes):
                     if results[i] and isinstance(results[i], list):
-                        # --- [ 1. تجهيز البيانات للتحليل الاستخباراتي ] ---
                         df_tf = pd.DataFrame(results[i], columns=[
                             'timestamp', 'open', 'high', 'low', 'close', 'volume',
                             'close_time', 'quote_av', 'trades', 'tb_base_av', 'tb_quote_av', 'ignore'
@@ -3281,26 +3306,23 @@ async def update_crypto_market_data():
                         for col in ['open', 'high', 'low', 'close', 'volume']:
                             df_tf[col] = df_tf[col].astype(float)
 
-                        # --- [ 2. تشغيل رادار الأنماط (pdf_patterns) لآخر 5 شموع ] ---
+                        # تشغيل رادار الأموال الذكية الجديد
+                        smc_data = extract_smart_money_concepts(df_tf)
+
                         patterns = []
                         for j in range(5):
-                            # اقتطاع البيانات بترتيب عكسي لقراءة تاريخ الشموع (j=0 الحالية، j=1 السابقة...)
                             sub_df = df_tf if j == 0 else df_tf.iloc[:-j]
-                            
                             pattern_name = detect_all_pdf_patterns(sub_df)
                             patterns.append(pattern_name if pattern_name else "Normal")
 
-                        # استخراج توقيت افتتاح الشمعة الحالية
                         last_candle_open_ts = datetime.fromtimestamp(int(results[i][-1][0]) / 1000).isoformat()
 
-                        # --- [ 3. استخراج البيانات الأساسية للمؤشرات ] ---
                         highs = df_tf['high'].tolist()
                         lows = df_tf['low'].tolist()
                         closes = df_tf['close'].tolist()
                         volumes = df_tf['volume'].tolist()
-                        taker_buy_vols = [float(k[9]) for k in results[i]] # سيولة الحيتان
+                        taker_buy_vols = [float(k[9]) for k in results[i]] 
                         
-                        # --- [ 4. الحسابات الفنية الاستخباراتية ] ---
                         upper, mid, lower = calculate_bollinger(closes)
                         bbw_value = (upper - lower) / mid if mid > 0 else 0
                         atr_val = calculate_atr(highs, lows, closes)
@@ -3308,13 +3330,11 @@ async def update_crypto_market_data():
                         obv_val = calculate_obv(closes, volumes)
                         obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
 
-                        # الأدوات المحرمة v10.2
-                        adx_val = calculate_adx(highs, lows, closes) # قوة الانفجار
-                        v_delta = calculate_volume_delta(taker_buy_vols, volumes) # كاشف الزبد
+                        adx_val = calculate_adx(highs, lows, closes) 
+                        v_delta = calculate_volume_delta(taker_buy_vols, volumes) 
                         rsi_val = calculate_rsi(closes)
-                        mood = get_market_mood(rsi_val) # سيكولوجية 78/22
+                        mood = get_market_mood(rsi_val) 
                         
-                        # --- [ 5. محرك الأهداف والمناطق - حصري لفريم 15m ] ---
                         if tf == '15m':
                             record["entry_zone_start"] = round(price * 0.998, 6)
                             record["entry_zone_end"] = round(price * 1.002, 6)
@@ -3324,17 +3344,13 @@ async def update_crypto_market_data():
                             record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
                             record["market_mood"] = mood
 
-                        # --- [ 6. حقن البيانات الشامل في السجل ] ---
                         record.update({
-                            # أعمدة رادار الأنماط الخمسة
                             f"f{tf}_c1": patterns[0],
                             f"f{tf}_c2": patterns[1],
                             f"f{tf}_c3": patterns[2],
                             f"f{tf}_c4": patterns[3],
                             f"f{tf}_c5": patterns[4],
                             f"last_f{tf}_ts": last_candle_open_ts,                            
-
-                            # تحديث السجل بدمج كل البيانات
                             f"ema_20_{tf}": calculate_ema(closes, 20),
                             f"ema_50_{tf}": calculate_ema(closes, 50),
                             f"ema_100_{tf}": calculate_ema(closes, 100),
@@ -3355,10 +3371,18 @@ async def update_crypto_market_data():
                             f"obv_prev_{tf}": obv_prev_val,
                             f"obv_slope_{tf}": obv_val - obv_prev_val,
                             
-                            # تحديثات خاصة بفريم الـ 15 دقيقة
+                            # ✨ حقول الأموال الذكية الجديدة ✨
+                            f"fvg_{tf}": smc_data["fvg"],
+                            f"vol_anomaly_{tf}": smc_data["volume_anomaly"],
+                            f"strict_pattern_{tf}": smc_data["strict_pattern"],
+                            
                             "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                             "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                         })
+                        
+                        # تفعيل الرادار للفرص الذهبية على فريم الساعة
+                        if tf == '1h' and (smc_data["volume_anomaly"] or smc_data["fvg"] != "None" or smc_data["strict_pattern"] != "None"):
+                            record["radar_pass"] = True
 
                 final_records.append(record)
             except Exception as e: 
@@ -3366,279 +3390,35 @@ async def update_crypto_market_data():
                 continue
 
         if final_records:
-            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الجندي المجهول' كاملة...")
+            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الرادار الذكي' كاملة...")
+            # إرجاع كود الرفع الخاص بك كما كان في ملفك الأصلي
             for i in range(0, len(final_records), 10):
                 await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
     
-    print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
-
-
-async def fetch_klines1(session, symbol, interval, limit=300): # تم رفع الحد إلى 300 لحساب EMA 200 بأمان
-    url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    try:
-        async with session.get(url, timeout=10) as res:
-            if res.status == 200: 
-                return await res.json()
-    except Exception as e:
-        logging.error(f"❌ خطأ في جلب بيانات {symbol} فريم {interval}: {e}")
-    return None
-
-def clean_nans(d):
-    """دالة سحرية لتنظيف أي NaN وتحويله إلى None لكي يقبله سوبابيس بدون أخطاء"""
-    cleaned = {}
-    for k, v in d.items():
-        if isinstance(v, float) and math.isnan(v):
-            cleaned[k] = None
-        elif isinstance(v, dict):
-            cleaned[k] = clean_nans(v)
-        else:
-            cleaned[k] = v
-    return cleaned
-
-                
-import traceback
-import json
-import asyncio
-import aiohttp
-import pandas as pd
-import logging
-
-async def run_forensic_autopsy(symbol, change_percent):
-    """
-    🕵️‍♂️ وحدة التحقيق الجنائي المتقدمة (المحقق كونان v2.0)
-    النسخة المحمية ضد الانهيار (Crash-Proof) والمتوافقة مع قاعدة البيانات.
-    """
-    try:
-        event_type = "PUMP" if change_percent >= 40 else "DUMP"
-        print(f"\n🕵️‍♂️ [المحقق كونان] فتح ملف تحقيق شامل للعملة {symbol} | الحدث: {event_type} ({change_percent}%)")
-        
-        timeframes = ['1h', '2h', '4h', '1d']
-        klines_data = {}
-        
-        async with aiohttp.ClientSession() as session:
-            # جلب بيانات جميع الفريمات في وقت واحد
-            tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
-            results = await asyncio.gather(*tasks)
-            
-            for i, tf in enumerate(timeframes):
-                if results[i]: klines_data[tf] = results[i]
-                
-        if '1h' not in klines_data or len(klines_data['1h']) < 30:
-            print(f"⚠️ [المحقق كونان] الأدلة غير كافية لعملة {symbol}. إغلاق الملف.")
-            return
-
-        # ==========================================
-        # 🕵️‍♂️ 1. تحديد "ساعة الصفر" من فريم الساعة (1H)
-        # ==========================================
-        df_1h = pd.DataFrame(klines_data['1h'], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'qav', 'num_trades', 'taker_base_vol', 'taker_quote_vol', 'ignore'])
-        for col in ['open', 'high', 'low', 'close', 'volume']:
-            df_1h[col] = df_1h[col].astype(float)
-            
-        # البحث عن أكبر شمعة (ساعة الانفجار/الانهيار)
-        df_1h['body_size'] = abs(df_1h['close'] - df_1h['open']) / df_1h['open'] * 100
-        point_zero_idx = df_1h['body_size'].idxmax()
-        
-        if point_zero_idx < 25:
-            print(f"⚠️ [المحقق كونان] الانفجار حدث مبكراً جداً في السجل، لا يوجد تاريخ كافي للتحليل. {symbol}")
-            return
-
-        # توقيت الانفجار بالضبط لقص بقية الفريمات بناءً عليه
-        point_zero_timestamp = int(df_1h.iloc[point_zero_idx]['timestamp'])
-
-        # ==========================================
-        # 🧬 2. دالة تشريح الفريمات (تعمل على بيانات ما قبل الكارثة فقط)
-        # ==========================================
-        def dissect_timeframe(tf_data, tf_name):
-            past_data = [k for k in tf_data if int(k[0]) < point_zero_timestamp]
-            
-            if len(past_data) < 25: return None
-            
-            highs = [float(k[2]) for k in past_data]
-            lows = [float(k[3]) for k in past_data]
-            closes = [float(k[4]) for k in past_data]
-            volumes = [float(k[5]) for k in past_data]
-            
-            upper, mid, lower = calculate_bollinger(closes) if len(closes) >= 20 else (None, None, None)
-            bbw_val = (upper - lower) / mid if (mid and mid > 0) else 0
-            kc_up, kc_mid, kc_low = calculate_keltner_channels(highs, lows, closes) if len(closes) >= 20 else (None, None, None)
-            
-            obv_val = calculate_obv(closes, volumes)
-            obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
-            
-            atr_val = calculate_atr(highs, lows, closes) if len(closes) >= 14 else None
-            adx_val = calculate_adx(highs, lows, closes) if len(closes) >= 14 else None
-            rsi_val = calculate_rsi(closes) if len(closes) >= 14 else None
-            
-            # استخراج أنماط الشموع بأمان
-            patterns = []
-            try:
-                df_patterns = pd.DataFrame(past_data[-5:], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'ct', 'qav', 'nt', 'tbv', 'tqv', 'ig'])
-                patterns = [detect_all_pdf_patterns(df_patterns.iloc[:-j] if j > 0 else df_patterns) for j in range(len(df_patterns))]
-            except Exception:
-                pass
-
-            return {
-                f"ema_20_{tf_name}": calculate_ema(closes, 20) if len(closes) >= 20 else None,
-                f"ema_50_{tf_name}": calculate_ema(closes, 50) if len(closes) >= 50 else None,
-                f"ema_100_{tf_name}": calculate_ema(closes, 100) if len(closes) >= 100 else None,
-                f"ema_200_{tf_name}": calculate_ema(closes, 200) if (tf_name == '1h' and len(closes) >= 200) else None,
-                f"rsi_{tf_name}": rsi_val,
-                f"obv_{tf_name}": obv_val,
-                f"obv_slope_{tf_name}": obv_val - obv_prev_val if obv_val else None,
-                f"atr_{tf_name}": atr_val,
-                f"adx_{tf_name}": adx_val,
-                f"bb_upper_{tf_name}": upper,
-                f"bb_middle_{tf_name}": mid,
-                f"bb_lower_{tf_name}": lower,
-                f"bbw_{tf_name}": bbw_val,
-                f"was_squeezed_{tf_name}": bool(bbw_val < 0.07) if bbw_val else None,
-                f"kc_upper_{tf_name}": kc_up,
-                f"kc_middle_{tf_name}": kc_mid,
-                f"kc_lower_{tf_name}": kc_low,
-                "patterns": patterns,
-                "last_volume": volumes[-1],
-                "avg_volume_20": sum(volumes[-20:]) / 20 if len(volumes) >= 20 else (sum(volumes)/len(volumes) if volumes else 0),
-                "last_close": closes[-1]
-            }
-
-        # ==========================================
-        # 🧪 3. استخراج تقارير الفريمات
-        # ==========================================
-        report_1h = dissect_timeframe(klines_data.get('1h', []), '1h')
-        report_2h = dissect_timeframe(klines_data.get('2h', []), '2h')
-        report_4h = dissect_timeframe(klines_data.get('4h', []), '4h')
-        report_1d = dissect_timeframe(klines_data.get('1d', []), '1d')
-
-        if not report_1h: 
-            print(f"⚠️ [المحقق كونان] فشل تشريح فريم الساعة لعملة {symbol}. إغلاق الملف.")
-            return
-
-        # حساب سياق السوق
-        vol_spike_ratio = report_1h['last_volume'] / report_1h['avg_volume_20'] if report_1h.get('avg_volume_20', 0) > 0 else 1
-        market_mood = get_market_mood(report_1h.get('rsi_1h', 50)) 
-
-        metadata_json = {
-            "patterns_1h": report_1h.get('patterns', []),
-            "patterns_2h": report_2h.get('patterns', []) if report_2h else [],
-            "patterns_4h": report_4h.get('patterns', []) if report_4h else [],
-            "trigger_candle_timestamp_ms": point_zero_timestamp
-        }
-
-        # ==========================================
-        # 📑 4. تجميع التقرير النهائي 
-        # ==========================================
-        raw_record = {
-            "symbol": symbol,
-            "event_type": event_type,
-            "price_change_percent": float(change_percent),
-            "price_before_event": float(report_1h['last_close']),
-            "volume_before_event": float(report_1h['last_volume']),
-            
-            "btc_correlation_at_event": 0.0,
-            "funding_rate_at_event": 0.0,
-            "volume_spike_ratio": float(vol_spike_ratio),
-            "market_mood_at_event": market_mood,
-            
-            "ema_20_1h": report_1h.get('ema_20_1h'),
-            "ema_50_1h": report_1h.get('ema_50_1h'),
-            "ema_100_1h": report_1h.get('ema_100_1h'),
-            "ema_200_1h": report_1h.get('ema_200_1h'),
-            "rsi_1h": report_1h.get('rsi_1h'),
-            "obv_1h": report_1h.get('obv_1h'),
-            "obv_slope_1h": report_1h.get('obv_slope_1h'),
-            "atr_1h": report_1h.get('atr_1h'),
-            "adx_1h": report_1h.get('adx_1h'),
-            "bb_upper_1h": report_1h.get('bb_upper_1h'),
-            "bb_middle_1h": report_1h.get('bb_middle_1h'),
-            "bb_lower_1h": report_1h.get('bb_lower_1h'),
-            "bbw_1h": report_1h.get('bbw_1h'),
-            "was_squeezed_1h": report_1h.get('was_squeezed_1h'),
-            "kc_upper_1h": report_1h.get('kc_upper_1h'),
-            "kc_middle_1h": report_1h.get('kc_middle_1h'),
-            "kc_lower_1h": report_1h.get('kc_lower_1h'),
-            
-            **{k: v for k, v in (report_2h or {}).items() if k in ['ema_20_2h', 'ema_50_2h', 'ema_100_2h', 'rsi_2h', 'obv_2h', 'obv_slope_2h', 'atr_2h', 'adx_2h', 'bb_upper_2h', 'bb_middle_2h', 'bb_lower_2h', 'bbw_2h', 'was_squeezed_2h', 'kc_upper_2h', 'kc_middle_2h', 'kc_lower_2h']},
-            **{k: v for k, v in (report_4h or {}).items() if k in ['ema_20_4h', 'ema_50_4h', 'ema_100_4h', 'rsi_4h', 'obv_4h', 'obv_slope_4h', 'atr_4h', 'adx_4h', 'bb_upper_4h', 'bb_middle_4h', 'bb_lower_4h', 'bbw_4h', 'was_squeezed_4h', 'kc_upper_4h', 'kc_middle_4h', 'kc_lower_4h']},
-            
-            "rsi_1d": report_1d.get('rsi_1d') if report_1d else None,
-            "is_above_ema_200_1d": bool(report_1d['last_close'] > report_1d['ema_200_1d']) if report_1d and report_1d.get('ema_200_1d') else None,
-            
-            # ✅ تم التعديل: إرسال القاموس مباشرة (بدون json.dumps) لكي يقبله حقل JSONB
-            "metadata": metadata_json,
-            
-            # ✅ تم التعديل: إضافة حقل التوقيت الأساسي لتطابق القيد الفريد (Unique Constraint)
-            "trigger_candle_timestamp_ms": int(point_zero_timestamp)
-        }
-
-        # 🔥 السحر هنا: تنظيف التقرير من أي NaN لكي لا يرفضه السوبابيس
-        forensic_record = clean_nans(raw_record)
-        
-        print(f"✅ [المحقق كونان] تم تجهيز البيانات لـ {symbol} بنجاح، جاري الرفع إلى الأرشيف...")
-
-        # ==========================================
-        # 💾 5. الرفع إلى قاعدة البيانات
-        # ==========================================
-        success = await async_manual_upsert("forensic_reports", [forensic_record])
-        
-        if success:
-            print(f"🎉 [المحقق كونان] تم إيداع ملف {symbol} في الأرشيف بنجاح.")
-        else:
-            print(f"❌ [المحقق كونان] فشل إرسال الأدلة إلى سوبابيس لعملة {symbol}.")
-
-    except Exception as e:
-        # 🚨 مصيدة الأخطاء الصامتة: هذا الجزء سيكشف لك سبب الانهيار إذا لم يصل للرفع
-        print(f"\n☠️ [المحقق كونان] انهيار قاتل أثناء تحليل {symbol}: {str(e)}")
-        print(traceback.format_exc())
-        
-
+    print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")                            
+                            
+                    
 async def unified_trading_system():
-    """
-    المايسترو: يدير المصنع، ثم يزرع المحقق بناءً على شروط الانفجار، ثم يشغل الرادار.
-    """
-    logging.info("🚀 [المايسترو] انطلق النظام.. تم دمج المحقق كونان بنجاح!")
-    
-    # قائمة لمتابعة العملات التي تم التحقيق معها (لمنع التكرار في نفس الجلسة)
-    forensic_investigated_coins = set()
-
+    """هذه الدالة هي المايسترو: تحديث البيانات -> انتظار دقيقة -> تحليل الرادار"""
     while True:
         try:
-            # 1. المصنع: جلب وتحديث البيانات
-            print("\n🏭 [1/3] المصنع: تحديث البيانات وجلب قائمة السوق...")
-            top_coins = await update_crypto_market_data() 
-            
-            # 2. زرع المحقق كونان
-            if top_coins:
-                print(f"🕵️‍♂️ [2/3] المحقق: فحص {len(top_coins)} عملة لزرع التحقيقات...")
-                for coin in top_coins:
-                    symbol = coin.get('symbol')
-                    try:
-                        price = float(coin.get('lastPrice', 0))
-                        change_percent = float(coin.get('priceChangePercent', 0))
-                        
-                        # المنطق الخاص بك: انفجار +40% أو انهيار -10%
-                        if (change_percent >= 1 or change_percent <= -10) and symbol not in forensic_investigated_coins:
-                            forensic_investigated_coins.add(symbol)
-                            print(f"🚨 [كشف انفجار] {symbol} ( {change_percent}% ) -> إرسال المحقق فوراً!")
-                            # تشغيل التحقيق في الخلفية (تمت حمايته بـ try-except داخلياً الآن)
-                            asyncio.create_task(run_forensic_autopsy(symbol, change_percent))
-                    
-                    except Exception as e:
-                        continue 
-
-            print("✅ اكتملت مرحلة التشريح. انتظار (120 ثانية) للاستقرار...")
+            # أولاً: المصنع يشتغل ويحدث كل الفريمات والجندي المجهول
+            await update_crypto_market_data()
+            print("✅ المصنع أكمل الحقن بنجاح. انتظار 60 ثانية للرادار...")
             await asyncio.sleep(120)
 
-            # 3. الرادار: المسح الذكي
-            print("📡 [3/3] الرادار: بدء صيد الفرص...")
+            # ثانياً: المصنع ينادي الرادار (تعال شف شغلك)
+            print("📡 نداء للرادار: البيانات جاهزة في سوبابيس، ابدأ المسح...")
             await intelligence_scanner()
             
-            print("⏳ [المايسترو] دورة كاملة تمت. استراحة 60 ثانية.")
+            # ثالثاً: الرادار يخلص وينتظر دقيقة قبل الجولة الجديدة للمصنع
+            print("⏳ جولة كاملة تمت. استراحة 60 ثانية قبل التحديث القادم...")
             await asyncio.sleep(60)
             
         except Exception as e:
-            logging.error(f"⚠️ [خطأ في المايسترو]: {e}")
-            await asyncio.sleep(30)
-            
+            logging.error(f"⚠️ خطأ في النظام الموحد: {e}")
+            await asyncio.sleep(30) # انتظار قصير للتعافي
+                        
 # ==========================================
 # 5. نهاية الملف: نظام الإنعاش الأبدي 24/7 (النبض الذاتي) ⚡
 # ==========================================
