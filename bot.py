@@ -316,7 +316,7 @@ async def intelligence_scanner():
                 score += 50
                 reasons.append(f"🌋 انفجار الانضغاط (Squeeze Fire): B يكسر K مع دخول سيولة قوية (OI: +{oi_change}%)")
             elif is_squeeze_on:
-                reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل k ننتظر الانفجار.")
+                reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل k ننتظر موجة قادمة.")
 
             # 2. Short Squeeze (إبادة البائعين)
             is_short_squeeze = (funding_rate < -0.01) and (price >= lower) and (rsi_15m <= 25)
@@ -339,7 +339,7 @@ async def intelligence_scanner():
             is_4h_bullish = (ema20_4h > ema50_4h) and (rsi_4h > 50)
             if is_4h_bullish and score > 0:
                 score += 80
-                reasons.append("🛡️ غطاء مالي (4H): الاتجاه العام صاعد ويدعم الانفجار القادم")
+                reasons.append("🛡️ غطاء مالي (4H): الاتجاه العام صاعد ويدعم الموجة القادمة")
 
             # ==========================================
             # 🕯️ [ 4. محرك الشموع اليابانية الصارم (قناص الأنماط والسياق) ]
@@ -358,10 +358,10 @@ async def intelligence_scanner():
                     if has_volume_confirmation: 
                         if is_bullish and (is_near_support or is_uptrend):
                             score += weight
-                            reasons.append(f"🏛️ [1D - استراتيجي] {clean_name}: سيولة مؤسساتية عند منطقة دعم/ترند (+{weight})")
+                            reasons.append(f"🏛️:ا [1D - استراتيجي] {clean_name}: سيولة مؤسساتية عند منطقة دعم/ترند (+{weight})")
                         elif is_bearish and (is_near_resistance or is_downtrend):
                             score -= int(weight * 1.5)
-                            reasons.append(f"🔴 [1D - تحذير] {clean_name}: تصريف مؤسساتي عند مقاومة (-{int(weight * 1.5)})")
+                            reasons.append(f"🔴:ا [1D - تحذير] {clean_name}: تصريف مؤسساتي عند مقاومة (-{int(weight * 1.5)})")
 
                 # فريم 4H
                 elif tf == '4h' and any(x in pattern for x in ["نجمة", "ثلاثة", "الساندوتش", "مطرقة", "المشنوق", "الشهاب"]):
@@ -369,20 +369,20 @@ async def intelligence_scanner():
                     if has_volume_confirmation:
                         if is_bullish and is_near_support:
                             score += weight
-                            reasons.append(f"🛡️ [4H - سوينج] {clean_name}: ارتداد قوي من منطقة دعم مؤكدة (+{weight})")
+                            reasons.append(f"🛡️:ا [4H - سوينج] {clean_name}: ارتداد قوي من منطقة دعم مؤكدة (+{weight})")
                         elif is_bearish and is_near_resistance:
                             score -= int(weight * 1.5)
-                            reasons.append(f"🔴 [4H - فخ] {clean_name}: رفض سعري عنيف عند المقاومة (-{int(weight * 1.5)})")
+                            reasons.append(f"🔴:ا [4H - فخ] {clean_name}: رفض سعري عنيف عند المقاومة (-{int(weight * 1.5)})")
 
                 # فريم 2H
                 elif tf == '2h' and any(x in pattern for x in ["تاسوكي", "التقدم", "ابتلاع", "الراكل", "الحزام"]):
                     weight = 50
                     if is_bullish and (is_uptrend or is_near_support) and vol_delta >= 0:
                         score += weight
-                        reasons.append(f"🎯 [2H - زخم] {clean_name}: تأكيد قوة شرائية مع الاتجاه (+{weight})")
+                        reasons.append(f"🎯:ا [2H - زخم] {clean_name}: تأكيد قوة شرائية مع الاتجاه (+{weight})")
                     elif is_bearish and (is_downtrend or is_near_resistance) and vol_delta <= 0:
                         score -= int(weight * 1.5)
-                        reasons.append(f"🔴 [2H - بيع] {clean_name}: سيطرة بيعية واضحة (-{int(weight * 1.5)})")
+                        reasons.append(f"🔴:ا [2H - بيع] {clean_name}: سيطرة بيعية واضحة (-{int(weight * 1.5)})")
 
                 # فريم 1H
                 elif tf == '1h' and any(x in pattern for x in ["هارامي", "الثاقب", "السحابة", "الملقط", "التلاقي", "الانفصال"]):
@@ -390,27 +390,27 @@ async def intelligence_scanner():
                     if has_volume_confirmation:
                         if is_bullish and is_near_support:
                             score += weight
-                            reasons.append(f"⏱️ [1H - يومي] {clean_name}: ارتداد تكتيكي مدعوم بسيولة (+{weight})")
+                            reasons.append(f"⏱️:ا [1H - يومي] {clean_name}: ارتداد تكتيكي مدعوم بسيولة (+{weight})")
                         elif is_bearish and is_near_resistance:
                             score -= int(weight * 1.5)
-                            reasons.append(f"🔴 [1H - يومي] {clean_name}: ضغط بيعي عند مقاومة (-{int(weight * 1.5)})")
+                            reasons.append(f"🔴:ا [1H - يومي] {clean_name}: ضغط بيعي عند مقاومة (-{int(weight * 1.5)})")
 
                 # فريم 15m
                 elif tf == '15m' and any(x in pattern for x in ["على_الرقبة", "في_الرقبة", "دفع", "نجمة_دوجي"]):
                     weight = 15
                     if is_bullish and rsi_15m <= 35 and is_uptrend:
                         score += weight
-                        reasons.append(f"⚡ [15m - مضاربة] {clean_name}: نهاية تصحيح (RSI={rsi_15m:.0f}) (+{weight})")
+                        reasons.append(f"⚡:ا [15m - مضاربة] {clean_name}: نهاية تصحيح (RSI={rsi_15m:.0f}) (+{weight})")
                     elif is_bearish and rsi_15m >= 65 and is_downtrend:
                         score -= int(weight * 1.2)
-                        reasons.append(f"🔴 [15m - مضاربة] {clean_name}: ذروة شراء في ترند هابط (-{int(weight * 1.2)})")
+                        reasons.append(f"🔴:ا [15m - مضاربة] {clean_name}: ذروة شراء في ترند هابط (-{int(weight * 1.2)})")
 
                 # فريم 5m
                 elif tf == '5m' and "النجوم_الثلاثة" in pattern:
                     if is_sqz:
                         weight = 10
                         score += weight if is_bullish else -weight
-                        reasons.append(f"🔍 [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار من منطقة ضيقة ({'+' if is_bullish else '-'}{weight})")
+                        reasons.append(f"🔍:ا [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار من منطقة ضيقة ({'+' if is_bullish else '-'}{weight})")
                 
                 # تم إزالة قسم else الخاص بتسجيل "تجاهل الضجيج" حتى لا يظهر في رسالة التيليجرام
                 
@@ -511,7 +511,7 @@ async def intelligence_scanner():
             # --- [ تحديد نوع الإشارة بناءً على السكور النهائي ] ---
             signal_type = "NONE"
             
-            if score >= 200:
+            if score >= 250:
                 if is_near_support or is_uptrend:
                     signal_type = "LONG"
                 else:
