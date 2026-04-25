@@ -3413,7 +3413,7 @@ async def unified_trading_system():
             
             # ثالثاً: الرادار يخلص وينتظر دقيقة قبل الجولة الجديدة للمصنع
             print("⏳ جولة كاملة تمت. استراحة 60 ثانية قبل التحديث القادم...")
-            await asyncio.sleep(60)
+            await asyncio.sleep(120)
             
         except Exception as e:
             logging.error(f"⚠️ خطأ في النظام الموحد: {e}")
