@@ -3174,16 +3174,16 @@ def extract_smart_money_concepts(df):
     if len(df) < 25:
         return {"fvg": "None", "volume_anomaly": False, "strict_pattern": "None"}
     
-    # حسابات FVG
+    # 1. الفجوات العادلة (تحويل صريح لـ bool)
     bullish_fvg = bool(df['low'].iloc[-1] > df['high'].iloc[-3])
     bearish_fvg = bool(df['high'].iloc[-1] < df['low'].iloc[-3])
     
-    # انفجار السيولة (تحويل لـ bool بايثون الأصلي)
+    # 2. انفجار السيولة (هنا غالباً يقع الخطأ بسبب المتوسط)
     vol_sma_20 = df['volume'].iloc[-21:-1].mean()
     current_vol = df['volume'].iloc[-1]
     volume_anomaly = bool(current_vol >= (vol_sma_20 * 2))
     
-    # بقية الحسابات...
+    # 3. الأنماط الصارمة
     body = abs(df['close'].iloc[-1] - df['open'].iloc[-1])
     upper_wick = df['high'].iloc[-1] - max(df['open'].iloc[-1], df['close'].iloc[-1])
     lower_wick = min(df['open'].iloc[-1], df['close'].iloc[-1]) - df['low'].iloc[-1]
@@ -3198,10 +3198,9 @@ def extract_smart_money_concepts(df):
     
     return {
         "fvg": fvg_status,
-        "volume_anomaly": volume_anomaly, # الآن أصبحت قيمة نظيفة
+        "volume_anomaly": volume_anomaly,
         "strict_pattern": strict_pattern
     }
-
     
 # ==========================================
 # --- [ دوال التحليل و الجلب ] ---
@@ -3287,7 +3286,8 @@ async def update_crypto_market_data():
                     "last_tick_direction": "UP" if change_percent >= 0 else "DOWN",
                     "updated_at": "now()",
                     "last_api_update_ms": int(datetime.now().timestamp() * 1000),
-                    "radar_pass": False  # حقل موافقة الرادار الجديد
+                    "radar_pass": bool(record.get("radar_pass", False))
+             # حقل موافقة الرادار الجديد
                 }
                 
                 tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
@@ -3367,12 +3367,12 @@ async def update_crypto_market_data():
                             f"obv_{tf}": obv_val,
                             f"obv_prev_{tf}": obv_prev_val,
                             f"obv_slope_{tf}": obv_val - obv_prev_val,
-                            
+                            # ✨ حقن بيانات الرادار والتحليل مع ضمان التوافق مع JSON ✨
+
                             # ✨ حقول الأموال الذكية الجديدة ✨
-                            f"fvg_{tf}": smc_data["fvg"],
-                            f"vol_anomaly_{tf}": smc_data["volume_anomaly"],
-                            f"strict_pattern_{tf}": smc_data["strict_pattern"],
-                            
+                            f"fvg_{tf}": str(smc_data["fvg"]),
+                            f"vol_anomaly_{tf}": bool(smc_data["volume_anomaly"]),
+                            f"strict_pattern_{tf}": str(smc_data["strict_pattern"]),
                             "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                             "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                         })
@@ -3380,7 +3380,7 @@ async def update_crypto_market_data():
                         # تفعيل الرادار للفرص الذهبية على فريم الساعة
                         if tf == '1h' and (smc_data["volume_anomaly"] or smc_data["fvg"] != "None" or smc_data["strict_pattern"] != "None"):
                             record["radar_pass"] = True
-
+                            
                 final_records.append(record)
             except Exception as e: 
                 logging.error(f"❌ خطأ في معالجة {symbol}: {e}")
