@@ -517,7 +517,7 @@ async def intelligence_scanner():
                 else:
                     reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
 
-            elif score <= -206:
+            elif score <= -286:
                 if is_near_resistance or is_downtrend:
                     signal_type = "SHORT"
                 else:
@@ -3171,23 +3171,19 @@ def detect_all_pdf_patterns(df):
 # --- [ 📡 الرادار الذكي: قناص الفجوات والسيولة ] ---
 # ==========================================
 def extract_smart_money_concepts(df):
-    """
-    مستخرج مفاهيم الأموال الذكية (SMC): 
-    يعيد تقريراً عن الفجوات العادلة (FVG) وانفجار السيولة لأحدث الشموع.
-    """
     if len(df) < 25:
         return {"fvg": "None", "volume_anomaly": False, "strict_pattern": "None"}
     
-    # 1. الفجوات العادلة (Fair Value Gaps - FVG)
-    bullish_fvg = df['low'].iloc[-1] > df['high'].iloc[-3]
-    bearish_fvg = df['high'].iloc[-1] < df['low'].iloc[-3]
+    # حسابات FVG
+    bullish_fvg = bool(df['low'].iloc[-1] > df['high'].iloc[-3])
+    bearish_fvg = bool(df['high'].iloc[-1] < df['low'].iloc[-3])
     
-    # 2. انفجار السيولة (Volume Anomaly)
+    # انفجار السيولة (تحويل لـ bool بايثون الأصلي)
     vol_sma_20 = df['volume'].iloc[-21:-1].mean()
     current_vol = df['volume'].iloc[-1]
-    volume_anomaly = current_vol >= (vol_sma_20 * 2)
+    volume_anomaly = bool(current_vol >= (vol_sma_20 * 2))
     
-    # 3. التشريح الصارم للذيول (Strict Wicks)
+    # بقية الحسابات...
     body = abs(df['close'].iloc[-1] - df['open'].iloc[-1])
     upper_wick = df['high'].iloc[-1] - max(df['open'].iloc[-1], df['close'].iloc[-1])
     lower_wick = min(df['open'].iloc[-1], df['close'].iloc[-1]) - df['low'].iloc[-1]
@@ -3202,9 +3198,10 @@ def extract_smart_money_concepts(df):
     
     return {
         "fvg": fvg_status,
-        "volume_anomaly": volume_anomaly,
+        "volume_anomaly": volume_anomaly, # الآن أصبحت قيمة نظيفة
         "strict_pattern": strict_pattern
     }
+
     
 # ==========================================
 # --- [ دوال التحليل و الجلب ] ---
