@@ -3478,6 +3478,28 @@ def clean_nans(d):
             cleaned[k] = v
     return cleaned
 
+async def update_live_status(symbol, current_price, current_change):
+    try:
+        response = supabase.table("forensic_reports") \
+            .select("id") \
+            .eq("symbol", symbol) \
+            .order("trigger_candle_timestamp_ms", desc=True) \
+            .limit(1) \
+            .execute()
+
+        if response.data:
+            record_id = response.data[0]['id']
+            supabase.table("forensic_reports") \
+                .update({
+                    "price_after_event": float(current_price),
+                    "price_change_percent_final": float(current_change)
+                }) \
+                .eq("id", record_id) \
+                .execute()
+    except Exception as e:
+        logging.error(f"⚠️ فشل تحديث مسار {symbol}: {str(e)}")
+
+
 async def run_forensic_autopsy(symbol, change_percent):
     """
     🕵️‍♂️ وحدة التحقيق الجنائي المتقدمة (المحقق كونان v3.1 - إصدار أثير للتحليل العميق)
