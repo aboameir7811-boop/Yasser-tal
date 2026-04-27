@@ -3204,6 +3204,35 @@ def extract_smart_money_concepts(df):
         "strict_pattern": strict_pattern
     }
     
+def detect_divergence(prices, indicators):
+    """
+    🕵️‍♂️ كاشف الانحرافات (Divergence Detector)
+    يقارن بين قمم السعر وقمم المؤشر (RSI/OBV) لكشف التلاعب أو ضعف الاتجاه.
+    """
+    if len(prices) < 5 or len(indicators) < 5:
+        return "Normal"
+
+    try:
+        # قمة السعر الحالية مقارنة بالسابقة
+        price_higher_high = prices[-1] > prices[-5]
+        price_lower_low = prices[-1] < prices[-5]
+
+        # قمة المؤشر الحالية مقارنة بالسابقة
+        ind_higher_high = indicators[-1] > indicators[-5]
+        ind_lower_low = indicators[-1] < indicators[-5]
+
+        # 1. انحراف سلبي (Bearish Divergence): السعر يصعد والمؤشر يهبط
+        if price_higher_high and not ind_higher_high:
+            return "Bearish Divergence"
+
+        # 2. انحراف إيجابي (Bullish Divergence): السعر يهبط والمؤشر يصعد
+        if price_lower_low and not ind_lower_low:
+            return "Bullish Divergence"
+
+        return "Normal"
+    except Exception:
+        return "Normal"
+        
 # ==========================================
 # --- [ دوال التحليل و الجلب ] ---
 # ==========================================   
