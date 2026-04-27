@@ -15,6 +15,7 @@ import arabic_reshaper
 import math
 import pandas as pd
 import numpy as np
+import traceback
 from aiogram import types
 from datetime import datetime, timedelta # 💡 تمت الإضافة هنا
 from aiogram.dispatcher.filters import Text 
