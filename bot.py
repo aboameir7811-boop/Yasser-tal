@@ -208,8 +208,9 @@ async def trade_reaper():
 
 async def intelligence_scanner():
     """
-    الرادار v10.6 (القلعة المحصنة + بصمات الأموال الذكية SMC)
-    تم ضبط التوازن الفني، ودمج الفجوات العادلة (FVG) وشذوذ السيولة.
+    الرادار v10.5 (القلعة المحصنة + القنابل الموقوتة من 4H)
+    يدمج وحشية "زحف الإعصار" مع "اليسر بعد العسر"، المسح الشامل للأنماط، 
+    ونماذج انضغاط السيولة وإبادة البائعين (Short Squeeze).
     """
     print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار يمسح السوق بحثاً عن الانفجارات واستخبارات الأنماط...")
     
@@ -224,29 +225,53 @@ async def intelligence_scanner():
             symbol = coin['symbol']
             score = 0
             reasons = []
-            kill_switch = False
             
+            kill_switch = False # قيمة افتراضية لضمان عدم توقف الكود
+            
+            # ==========================================
+            # 🛠️ [ 1. استخراج ترسانة البيانات الأساسية ]
+            # ==========================================
             price = float(coin.get('current_price') or 0)
             
-            # --- [ بيانات 1H و 15m ] ---
-            ema20_1h, ema50_1h, ema100_1h = float(coin.get('ema_20_1h') or 0), float(coin.get('ema_50_1h') or 0), float(coin.get('ema_100_1h') or 0)
-            bb_upper_1h, bb_mid_1h = float(coin.get('bb_upper_1h') or 0), float(coin.get('bb_middle_1h') or 1)
+            # --- [ بيانات فريم الساعة 1H ] ---
+            ema20_1h = float(coin.get('ema_20_1h') or 0)
+            ema50_1h = float(coin.get('ema_50_1h') or 0)
+            ema100_1h = float(coin.get('ema_100_1h') or 0)
+            bb_upper_1h = float(coin.get('bb_upper_1h') or 0)
+            bb_mid_1h = float(coin.get('bb_middle_1h') or 1)
+                        
+            # ==========================================
+            # 🛠️ [ 2. استخراج بيانات 15m و 5m + (بيانات 4H و التمويل المدمجة) ]
+            # ==========================================
+            upper = float(coin.get('bb_upper_15m') or 0) 
+            lower = float(coin.get('bb_lower_15m') or 0) 
+            middle = float(coin.get('bb_middle_15m') or 1) 
             
-            upper, lower, middle = float(coin.get('bb_upper_15m') or 0), float(coin.get('bb_lower_15m') or 0), float(coin.get('bb_middle_15m') or 1)
-            kc_upper, kc_lower = float(coin.get('kc_upper_15m') or 0), float(coin.get('kc_lower_15m') or 0)
+            kc_upper = float(coin.get('kc_upper_15m') or 0) 
+            kc_lower = float(coin.get('kc_lower_15m') or 0) # [مدمج من 4H]
             
-            ema20, ema50, ema100 = float(coin.get('ema_20_15m') or 0), float(coin.get('ema_50_15m') or 0), float(coin.get('ema_100_15m') or 0)
-            rsi_15m = float(coin.get('rsi_15m') or 50)
-            vol_15m, vol_ma_15m = float(coin.get('volume_15m') or 0), float(coin.get('volume_ma_15m') or 1)
-            obv_slope_15m, oi_change = float(coin.get('obv_slope_15m') or 0), float(coin.get('open_interest_change_24h') or 0)
+            ema20 = float(coin.get('ema_20_15m') or 0) 
+            ema50 = float(coin.get('ema_50_15m') or 0) 
+            ema100 = float(coin.get('ema_100_15m') or 0) 
+            rsi_15m = float(coin.get('rsi_15m') or 50) 
             
+            vol_15m = float(coin.get('volume_15m') or 0) 
+            vol_ma_15m = float(coin.get('volume_ma_15m') or 1) 
+            obv_slope_15m = float(coin.get('obv_slope_15m') or 0) 
+            oi_change = float(coin.get('open_interest_change_24h') or 0) 
+            
+            # [ مدمج من 4H: بيانات العقود والفريم الأكبر ]
             funding_rate = float(coin.get('funding_rate') or 0)
-            ema20_4h, ema50_4h, rsi_4h = float(coin.get('ema_20_4h') or 0), float(coin.get('ema_50_4h') or 0), float(coin.get('rsi_4h') or 50)
+            ema20_4h = float(coin.get('ema_20_4h') or 0)
+            ema50_4h = float(coin.get('ema_50_4h') or 0)
+            rsi_4h = float(coin.get('rsi_4h') or 50)
             
-            bbw_15m, bbw_prev_15m = float(coin.get('bbw_15m') or 0), float(coin.get('bbw_prev_15m') or 0)
+            bbw_15m = float(coin.get('bbw_15m') or 0) 
+            bbw_prev_15m = float(coin.get('bbw_prev_15m') or 0) 
             expansion_ratio_15m = (bbw_15m / bbw_prev_15m) if bbw_prev_15m > 0 else 1.0 
 
-            bbw_5m, bbw_prev_5m = float(coin.get('bbw_5m') or 0), float(coin.get('bbw_prev_5m') or 0)
+            bbw_5m = float(coin.get('bbw_5m') or 0) 
+            bbw_prev_5m = float(coin.get('bbw_prev_5m') or 0) 
             expansion_ratio_5m = (bbw_5m / bbw_prev_5m) if bbw_prev_5m > 0 else 1.0 
 
             vol_delta = float(coin.get('volume_delta_15m') or 0)
@@ -256,15 +281,14 @@ async def intelligence_scanner():
             orderbook_ratio = float(coin.get('orderbook_imbalance_ratio') or 0)
             whale_detected = coin.get('whale_absorption_detected') or False
 
-            # ✨ [ جلب بيانات الأموال الذكية SMC ] ✨
-            fvg_1h = str(coin.get('fvg_1h') or 'None')
-            vol_anomaly_1h = int(coin.get('vol_anomaly_1h') or 0)
-            strict_pattern_1h = str(coin.get('strict_pattern_1h') or 'None')
-
+            # --- [ استخراج أنماط الشموع لجميع الفريمات ] ---
             patterns = {
-                '5m': coin.get('f5m_c1', 'Normal'), '15m': coin.get('f15m_c1', 'Normal'),
-                '1h': coin.get('f1h_c1', 'Normal'), '2h': coin.get('f2h_c1', 'Normal'),
-                '4h': coin.get('f4h_c1', 'Normal'), '1d': coin.get('f1d_c1', 'Normal')
+                '5m': coin.get('f5m_c1', 'Normal'),
+                '15m': coin.get('f15m_c1', 'Normal'),
+                '1h': coin.get('f1h_c1', 'Normal'),
+                '2h': coin.get('f2h_c1', 'Normal'),
+                '4h': coin.get('f4h_c1', 'Normal'),
+                '1d': coin.get('f1d_c1', 'Normal')
             }
 
             # --- [ هندسة السياق ومناطق القيمة ] ---
@@ -278,67 +302,48 @@ async def intelligence_scanner():
             is_near_support = (price <= lower * 1.015) or (price <= ema50 * 1.015) or (abs(price - fib_618) / fib_618 <= 0.01)
             is_near_resistance = (price >= upper * 0.985) or (price >= ema20 * 1.03)
             has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2)
-            is_sqz = bbw_15m < 0.065
+            is_sqz = bbw_15m < 0.065 # تعريف حالة الانضغاط
 
             # ==========================================
-            # 🧠 [ 1. محرك الأموال الذكية (SMC) الجديد ]
+            # 💣 [ 3. المحرك الاستخباراتي (القنابل الموقوتة المدمجة من 4H) ]
             # ==========================================
-            if fvg_1h == 'Bullish_FVG':
-                score += 60
-                reasons.append("🧲 فجوة عادلة شرائية: السعر ترك سيولة بالأسفل ومستعد للانطلاق")
-            elif fvg_1h == 'Bearish_FVG':
-                score -= 60
-                reasons.append("🧲 فجوة عادلة بيعية: السعر ترك فجوة هابطة كاسرة للترند")
-
-            if strict_pattern_1h == 'Strict_Hammer':
-                score += 70
-                reasons.append("🔨 مطرقة حيتان صارمة: ذيل سفلي عملاق يرفض الهبوط تماماً")
-            elif strict_pattern_1h == 'Strict_Shooting_Star':
-                score -= 70
-                reasons.append("☄️ شهاب بيعي صارم: رفض قوي جداً للقمة بضغط بيعي")
-
-            if vol_anomaly_1h == 1:
-                if price > ema50_1h or is_uptrend:
-                    score += 50
-                    reasons.append("🌊 شذوذ سيولة: فوليوم ضخم جداً يدخل مع الترند الصاعد")
-                elif price < ema50_1h or is_downtrend:
-                    score -= 50
-                    reasons.append("🌊 شذوذ سيولة سلبي: فوليوم ضخم جداً مع كسر الدعوم")
-
-            # ==========================================
-            # 💣 [ 2. المحرك الاستخباراتي المحسن ]
-            # ==========================================
+            
+            # 1. انضغاط TTM Squeeze
             is_squeeze_on = (upper < kc_upper) and (lower > kc_lower)
             is_squeeze_firing = (not is_squeeze_on) and (expansion_ratio_15m > 1.05) and (obv_slope_15m > 0)
 
             if is_squeeze_firing and oi_change > 5:
                 score += 50
-                reasons.append(f"🌋 انفجار الانضغاط: دخول سيولة قوية بزيادة {oi_change}%")
+                reasons.append(f"🌋 انفجار الانضغاط (Squeeze Fire): B يكسر K مع دخول سيولة قوية (OI: +{oi_change}%)")
+            elif is_squeeze_on:
+                reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل k ننتظر الانفجار.")
 
+            # 2. Short Squeeze (إبادة البائعين)
             is_short_squeeze = (funding_rate < -0.01) and (price >= lower) and (rsi_15m <= 25)
             if is_short_squeeze and obv_slope_15m > 0:
                 score += 30
-                reasons.append(f"🩸 إبادة البائعين: التمويل سالب جداً بنسبة {funding_rate}% والسعر يصنع قاعاً")
+                reasons.append(f"🩸 إبادة البائعين: التمويل سالب جداً ({funding_rate}%) والسعر يصنع قاعاً مع RSI ({rsi_15m:.1f})")
 
+            # 3. مصيدة السيولة (Liquidity Sweep)
             is_liquidity_sweep = (price > lower) and (vol_15m > vol_ma_15m * 2.5) and (rsi_15m < 25)
             if is_liquidity_sweep:
                 score += 30
-                reasons.append("🪤 مصيدة السيولة: الحيتان ضربوا الستوب لوز واشتروا بقوة")
+                reasons.append(f"🪤 مصيدة السيولة: الحيتان ضربوا الستوب لوز واشتروا الكميات بقوة (الفوليوم: {vol_15m:.1f})")
 
+            # 4. تراكم الحطب (Open Interest Accumulation)
             if oi_change > 15 and bbw_15m < 0.05:
                 score += 30
-                reasons.append(f"🪵 تكديس الحطب: السعر ميت ولكن الاهتمام المفتوح يرتفع بجنون بزيادة {oi_change}%")
+                reasons.append(f"🪵 تكديس الحطب: السعر ميت ولكن الاهتمام المفتوح يرتفع بجنون (+{oi_change}%)")
 
+            # 5. غطاء الفريم الأكبر 4H
             is_4h_bullish = (ema20_4h > ema50_4h) and (rsi_4h > 50)
             if is_4h_bullish and score > 0:
-                score += 50
-                reasons.append("🛡️ غطاء مالي 4H: الاتجاه العام صاعد ويدعم الموجة القادمة")
+                score += 80
+                reasons.append("🛡️ غطاء مالي (4H): الاتجاه العام صاعد ويدعم الانفجار القادم")
 
             # ==========================================
-            # 🕯️ [ 3. محرك الشموع اليابانية الصارم (مخصص للإنذارات والتأكيد) ]
+            # 🕯️ [ 4. محرك الشموع اليابانية الصارم (قناص الأنماط والسياق) ]
             # ==========================================
-            major_candle_alert = False  # متغير لتحديد هل يوجد إنذار قوي من الفريمات الكبيرة
-
             for tf, pattern in patterns.items():
                 if pattern in ["Normal", "Not enough data", "Neutral_Doji", "Spinning_Top", None]:
                     continue
@@ -347,60 +352,71 @@ async def intelligence_scanner():
                 is_bullish = "صاعد" in pattern
                 is_bearish = "هابط" in pattern
                 
-                # --- [ أ. الإنذارات الرئيسية (1D & 4H) ] ---
+                # فريم 1D (أصبح يقبل جميع الأنماط بقوة 100)
                 if tf == '1d':
                     weight = 100
                     if has_volume_confirmation: 
-                        major_candle_alert = True
                         if is_bullish and (is_near_support or is_uptrend):
                             score += weight
-                            reasons.append(f"🚨 🏛️ [إنذار 1D] {clean_name}: سيولة مؤسساتية مؤكدة")
+                            reasons.append(f"🏛️ [1D - استراتيجي] {clean_name}: سيولة مؤسساتية عند منطقة دعم/ترند (+{weight})")
                         elif is_bearish and (is_near_resistance or is_downtrend):
-                            score -= weight
-                            reasons.append(f"🚨 🔴 [إنذار 1D] {clean_name}: تصريف مؤسساتي")
+                            score -= int(weight * 1.5)
+                            reasons.append(f"🔴 [1D - تحذير] {clean_name}: تصريف مؤسساتي عند مقاومة (-{int(weight * 1.5)})")
 
+                # فريم 4H
                 elif tf == '4h' and any(x in pattern for x in ["نجمة", "ثلاثة", "الساندوتش", "مطرقة", "المشنوق", "الشهاب"]):
                     weight = 60
                     if has_volume_confirmation:
-                        major_candle_alert = True
                         if is_bullish and is_near_support:
                             score += weight
-                            reasons.append(f"🚨 🛡️ [إنذار 4H] {clean_name}: ارتداد قوي من منطقة دعم")
+                            reasons.append(f"🛡️ [4H - سوينج] {clean_name}: ارتداد قوي من منطقة دعم مؤكدة (+{weight})")
                         elif is_bearish and is_near_resistance:
-                            score -= weight
-                            reasons.append(f"🚨 🔴 [إنذار 4H] {clean_name}: رفض سعري عنيف")
+                            score -= int(weight * 1.5)
+                            reasons.append(f"🔴 [4H - فخ] {clean_name}: رفض سعري عنيف عند المقاومة (-{int(weight * 1.5)})")
 
-                # --- [ ب. فريمات التأكيد (2H, 1H, 15m, 5m) - لا تطلق إنذاراً ] ---
+                # فريم 2H
                 elif tf == '2h' and any(x in pattern for x in ["تاسوكي", "التقدم", "ابتلاع", "الراكل", "الحزام"]):
-                    weight = 30 
+                    weight = 50
                     if is_bullish and (is_uptrend or is_near_support) and vol_delta >= 0:
                         score += weight
-                        reasons.append(f"✅ [تأكيد 2H] {clean_name}: تأكيد قوة شرائية")
+                        reasons.append(f"🎯 [2H - زخم] {clean_name}: تأكيد قوة شرائية مع الاتجاه (+{weight})")
                     elif is_bearish and (is_downtrend or is_near_resistance) and vol_delta <= 0:
-                        score -= weight
-                        reasons.append(f"❌ [تأكيد 2H] {clean_name}: تأكيد قوة بيعية")
+                        score -= int(weight * 1.5)
+                        reasons.append(f"🔴 [2H - بيع] {clean_name}: سيطرة بيعية واضحة (-{int(weight * 1.5)})")
 
+                # فريم 1H
                 elif tf == '1h' and any(x in pattern for x in ["هارامي", "الثاقب", "السحابة", "الملقط", "التلاقي", "الانفصال"]):
-                    weight = 20
+                    weight = 30
                     if has_volume_confirmation:
                         if is_bullish and is_near_support:
                             score += weight
-                            reasons.append(f"✅ [تأكيد 1H] {clean_name}: ارتداد تكتيكي")
+                            reasons.append(f"⏱️ [1H - يومي] {clean_name}: ارتداد تكتيكي مدعوم بسيولة (+{weight})")
                         elif is_bearish and is_near_resistance:
-                            score -= weight
-                            reasons.append(f"❌ [تأكيد 1H] {clean_name}: ضغط بيعي محلي")
+                            score -= int(weight * 1.5)
+                            reasons.append(f"🔴 [1H - يومي] {clean_name}: ضغط بيعي عند مقاومة (-{int(weight * 1.5)})")
 
+                # فريم 15m
                 elif tf == '15m' and any(x in pattern for x in ["على_الرقبة", "في_الرقبة", "دفع", "نجمة_دوجي"]):
-                    weight = 10
+                    weight = 15
                     if is_bullish and rsi_15m <= 35 and is_uptrend:
                         score += weight
-                        reasons.append(f"✅ [تأكيد 15m] {clean_name}: نهاية تصحيح فرعي")
+                        reasons.append(f"⚡ [15m - مضاربة] {clean_name}: نهاية تصحيح (RSI={rsi_15m:.0f}) (+{weight})")
                     elif is_bearish and rsi_15m >= 65 and is_downtrend:
-                        score -= weight
-                        reasons.append(f"❌ [تأكيد 15m] {clean_name}: ذروة شراء فرعية")
+                        score -= int(weight * 1.2)
+                        reasons.append(f"🔴 [15m - مضاربة] {clean_name}: ذروة شراء في ترند هابط (-{int(weight * 1.2)})")
+
+                # فريم 5m
+                elif tf == '5m' and "النجوم_الثلاثة" in pattern:
+                    if is_sqz:
+                        weight = 10
+                        score += weight if is_bullish else -weight
+                        reasons.append(f"🔍 [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار من منطقة ضيقة ({'+' if is_bullish else '-'}{weight})")
+                
+                # تم إزالة قسم else الخاص بتسجيل "تجاهل الضجيج" حتى لا يظهر في رسالة التيليجرام
+                
 
             # ==========================================
-            # 🛡️ [ 4. الغطاء الجوي: معزز الزخم 1H ]
+            # 🛡️ [ 5. الغطاء الجوي: معزز الزخم 1H ]
             # ==========================================
             is_1h_ready = (
                 (price > ema20_1h) and             
@@ -411,14 +427,14 @@ async def intelligence_scanner():
 
             if is_1h_ready:
                 score += 50
-                reasons.append("🛡️ غطاء جوي 1H: ترتيب هجومي مثالي يدعم الانفجار")
+                reasons.append("🛡️ غطاء جوي (1H): ترتيب هجومي مثالي يدعم الانفجار")
                 is_1h_confirmed = True
             else:
-                reasons.append("⚠️ تنبيه: الانفجار محلي بدون غطاء جوي 1H")
+                reasons.append("⚠️ تنبيه: الانفجار محلي (فريمات صغيرة) بدون غطاء جوي 1H")
                 is_1h_confirmed = False
                 
             # ==========================================
-            # 🔥 [ 5. المحرك الهجومي: زحف الإعصار الأصلي ]
+            # 🔥 [ 6. المحرك الهجومي: زحف الإعصار ]
             # ==========================================
             is_crawling_up = (
                 (price >= ema20) and  
@@ -431,68 +447,81 @@ async def intelligence_scanner():
             is_5m_spark = expansion_ratio_5m > 1.20 
             is_volume_spike = vol_ma_15m > 0 and vol_15m > (vol_ma_15m * 2) 
             
+            # متغير افتراضي لتفادي خطأ is_yusr_detected (تم إضافته افتراضياً هنا إذا لم يكن موجوداً بالأصل)
             is_yusr_detected = mood == "YUSR_EXPLOSION"
             intel_report = f"إشارة {mood} مرصودة بدقة عالية"
 
             if is_crawling_up:
                 score += 50 
                 intel_report = "🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية." if mood != "YUSR_EXPLOSION" else intel_report
-                reasons.append(f"🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية مع توسع بنسبة {expansion_ratio_15m:.1%}") 
+                reasons.append(f"🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية مع توسع ({expansion_ratio_15m:.1%})") 
                 mood = "NUCLEAR_CRAWL" if mood != "YUSR_EXPLOSION" else mood
 
             if is_5m_spark:
                 score += 50 
-                reasons.append(f"🔥 شرارة الانفجار: توسع عنيف جداً في فريم 5m بنسبة {expansion_ratio_5m:.1%}") 
+                reasons.append(f"🔥 شرارة الانفجار: توسع عنيف جداً في فريم 5m ({expansion_ratio_5m:.1%})") 
 
             if is_volume_spike:
                 score += 30 
-                reasons.append("📊 فوليوم مضاعف: السيولة الحالية تتجاوز 200% من المتوسط") 
+                reasons.append(f"📊 فوليوم مضاعف: السيولة الحالية تتجاوز 200% من المتوسط") 
 
+            # ==========================================
+            # 🌋 [ 7. دمج استخبارات كيلتنر والعقود ]
+            # ==========================================
             if (upper > kc_upper) and expansion_ratio_15m > 1.05: 
-                score += 50
-                reasons.append("🌋 كسر الانضغاط السعري للأعلى") 
-                
-            if adx_val > 25 and is_crawling_up: 
+                score += 50 
+                reasons.append("🌋 كسر الانضغاط (k): السعر تحرر من ضغط  بقوة هائلة") 
+
+            if oi_change > 5 and (is_crawling_up or is_yusr_detected): 
+                score += 30 
+                reasons.append(f"🐳 وقود الحيتان: الاهتمام المفتوح يرتفع بالتزامن مع الصعود (+{oi_change}%)") 
+
+            if adx_val > 25 and is_crawling_up:
                 score += 20
-                reasons.append("🌪️ قوة الاتجاه: ترند صاعد في ذروة القوة")
+                reasons.append(f"🌪️ قوة الاتجاه (A): مسار انفجاري مؤكد ({adx_val})")
 
             # ==========================================
-            # 🛡️ [ 6. فلاتر الحماية الموزونة والمخففة ]
+            # 🛡️ [ 8. فلاتر الحماية الصارمة ]
             # ==========================================
-            if rsi_4h < 40 and ema20_4h < ema50_4h:
-                score -= 30 
-                reasons.append("⚠️ الفريم الأكبر 4H ضعيف")
-                
-            if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or vol_delta < 0): 
-                score -= 80  
-                reasons.append("🚫 حماية: رصد سيولة بيعية مخفية أثناء الصعود")
             
+            # [ مدمج من 4H: فلتر الانهيار الكلي ]
+            if rsi_4h < 40 and ema20_4h < ema50_4h:
+                score -= 2
+                reasons.append("⚠️ الفريم الأكبر (4H) منهار، تم إبطال الهجوم الشرائي لمنع التعلق.")
+                
+            if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
+                score -= 80  
+                intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
+                reasons.append("🚫 حماية مطلقة: تم رصد سيولة بيعية سالبة (زبد) خلف الصعود الوهمي.") 
+
             # ==========================================
-            # 🎯 [ قرار الإطلاق النهائي وتحديث الاستخبارات ]
+            # 🎯 [ 9. قرار الإطلاق النهائي وتحديث الاستخبارات ]
             # ==========================================
+            
             sc_crawling = 1 if is_crawling_up else 0 
             sc_spark = 1 if is_5m_spark else 0 
             sc_volume = 1 if is_volume_spike else 0 
             sc_keltner = 1 if (upper > kc_upper and expansion_ratio_15m > 1.05) else 0 
             sc_whale = 1 if (oi_change > 5 and is_crawling_up) else 0 
 
+            # تعزيز سكور الشراء عند اكتمال المثلث الذهبي
             if is_crawling_up and is_5m_spark and is_volume_spike: 
                 score += 60  
 
-            # --- [ تحديد نوع الإشارة: تم ضبط العتبات لتكون عادلة 200 للشراء و -200 للبيع ] ---
+            # --- [ تحديد نوع الإشارة بناءً على السكور النهائي ] ---
             signal_type = "NONE"
             
             if score >= 200:
-                if is_near_support or is_uptrend or (vol_anomaly_1h == 1):
+                if is_near_support or is_uptrend:
                     signal_type = "LONG"
                 else:
-                    reasons.append("🚫 تم الإلغاء: سكور الشراء عالٍ لكن المكان عشوائي")
+                    reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
 
-            elif score <= -200:
-                if is_near_resistance or is_downtrend or fvg_1h == 'Bearish_FVG':
+            elif score <= -206:
+                if is_near_resistance or is_downtrend:
                     signal_type = "SHORT"
                 else:
-                    reasons.append("🚫 تم الإلغاء: سكور البيع عالٍ لكن المكان عشوائي")
+                    reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي (ليس عند مقاومة)")
 
             if signal_type != "NONE":  
                 supabase.table("market_intelligence").upsert({ 
@@ -507,7 +536,7 @@ async def intelligence_scanner():
                     "multi_frame_liquidity_score": obv_slope_15m, 
                     "fib_golden_ratio": fib_618, 
                     "trend_status": mood, 
-                    "is_1h_confirmed": is_1h_confirmed, 
+                    "is_1h_confirmed": True, 
                     "score_crawling": sc_crawling, 
                     "score_spark": sc_spark, 
                     "score_volume": sc_volume, 
@@ -528,10 +557,11 @@ async def intelligence_scanner():
                 
     except Exception as e: 
         import logging 
-        logging.error(f"❌ خطأ داخلي في الرادار القناص v10.6: {e}") 
+        logging.error(f"❌ خطأ داخلي في الرادار القناص v10.5: {e}") 
 
-    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v10.6) بنجاح.")
-    
+    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v10.5) بنجاح.")
+
+
 
 # تحديث دالة التنبيه لتقبل السعر الحالي والاتجاه (v10.4)
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG"):
@@ -3186,7 +3216,7 @@ async def fetch_klines(session, symbol, interval, limit=100):
 
 
 async def update_crypto_market_data():
-    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة رادار الفجوات والسيولة)...")
+    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة OBV الاستخباراتي)...")
     
     async with aiohttp.ClientSession() as session:
         try:
@@ -3201,39 +3231,52 @@ async def update_crypto_market_data():
         # ==========================================
         # 🛡️ [ فلاتر تنظيف الرادار الاستخباراتية ]
         # ==========================================
+        # 1. قائمة العملات المستقرة المعروفة (محدثة)
         STABLE_COINS = {
             "USDCUSDT", "FDUSDUSDT", "TUSDUSDT", "BUSDUSDT", 
             "DAIUSDT", "EURUSDT", "AEURUSDT", "USDPUSDT", "USDDUSDT",
             "PYUSDUSDT", "EURIUSDT"
         }
 
+        # 2. الفلتر الشامل (طرد الميت، الموقوف، والمستقر):
         top_coins = []
         for c in ticker_data:
             if not isinstance(c, dict): continue
             
             symbol = c.get('symbol', '')
             if not symbol.endswith('USDT'): continue
-            if symbol in STABLE_COINS: continue 
+            if symbol in STABLE_COINS: continue # 🚫 استبعاد العملات المستقرة المعروفة
             
+            # استخراج البيانات الحيوية للعملة
             last_price = float(c.get('lastPrice', 0))
             quote_volume = float(c.get('quoteVolume', 0))
             high_price = float(c.get('highPrice', 0))
             low_price = float(c.get('lowPrice', 0))
-            trades_count = int(c.get('count', 0)) 
+            trades_count = int(c.get('count', 0)) # 👈 السر هنا: عدد الصفقات الفعلية
 
+            # --- [ شروط الصرامة الفنية ] ---
+            # أ. السعر يجب أن يكون منطقياً
             if last_price < 0.001: continue
             
+            # ب. صائد العملات المستقرة المجهولة: إذا كان السعر حول 1 دولار والتذبذب بين القمة والقاع أقل من 1.5%
             if 0.98 <= last_price <= 1.02 and low_price > 0:
                 price_volatility = (high_price - low_price) / low_price
                 if price_volatility < 0.015: 
-                    continue 
+                    continue # 🚫 طرد فوري (عملة مستقرة مجهولة أو لا تتحرك)
                     
+            # ج. فلتر العملات الموقوفة أو ما قبل الإطلاق (يجب أن يكون هناك أكثر من 1000 صفقة تمت في 24 ساعة)
             if trades_count < 1000: continue
+            
+            # د. فلتر السيولة: استبعاد العملات الميتة سيولياً (تم الرفع إلى 100 ألف دولار كحد أدنى للاستراتيجية)
             if quote_volume < 100000: continue
+            
+            # هـ. استبعاد العملات المتجمدة تماماً (القمة تساوي القاع)
             if high_price == low_price: continue
             
+            # إذا نجت العملة من كل الفلاتر السابقة، فهي حية وتستحق المراقبة
             top_coins.append(c)
         
+        # 3. ترتيب حسب أعلى سيولة واختيار أعلى 600 عملة (توسيع نطاق الرادار)
         top_coins = sorted(top_coins, key=lambda x: float(x.get('quoteVolume', 0)), reverse=True)[:600]
         
         timeframes = ['5m', '15m', '1h', '2h', '4h', '1d']
@@ -3245,6 +3288,7 @@ async def update_crypto_market_data():
                 price = float(coin.get('lastPrice', 0))
                 change_percent = float(coin.get('priceChangePercent', 0))
                 
+                # إعداد السجل الأساسي
                 record = {
                     "symbol": symbol,
                     "name": symbol.replace("USDT", ""),
@@ -3256,9 +3300,7 @@ async def update_crypto_market_data():
                     "change_24h": change_percent,
                     "last_tick_direction": "UP" if change_percent >= 0 else "DOWN",
                     "updated_at": "now()",
-                    "last_api_update_ms": int(datetime.now().timestamp() * 1000),
-                    "radar_pass": bool(record.get("radar_pass", False))
-             # حقل موافقة الرادار الجديد
+                    "last_api_update_ms": int(datetime.now().timestamp() * 1000)
                 }
                 
                 tasks = [fetch_klines(session, symbol, tf) for tf in timeframes]
@@ -3266,6 +3308,7 @@ async def update_crypto_market_data():
 
                 for i, tf in enumerate(timeframes):
                     if results[i] and isinstance(results[i], list):
+                        # --- [ 1. تجهيز البيانات للتحليل الاستخباراتي ] ---
                         df_tf = pd.DataFrame(results[i], columns=[
                             'timestamp', 'open', 'high', 'low', 'close', 'volume',
                             'close_time', 'quote_av', 'trades', 'tb_base_av', 'tb_quote_av', 'ignore'
@@ -3274,23 +3317,26 @@ async def update_crypto_market_data():
                         for col in ['open', 'high', 'low', 'close', 'volume']:
                             df_tf[col] = df_tf[col].astype(float)
 
-                        # تشغيل رادار الأموال الذكية الجديد
-                        smc_data = extract_smart_money_concepts(df_tf)
-
+                        # --- [ 2. تشغيل رادار الأنماط (pdf_patterns) لآخر 5 شموع ] ---
                         patterns = []
                         for j in range(5):
+                            # اقتطاع البيانات بترتيب عكسي لقراءة تاريخ الشموع (j=0 الحالية، j=1 السابقة...)
                             sub_df = df_tf if j == 0 else df_tf.iloc[:-j]
+                            
                             pattern_name = detect_all_pdf_patterns(sub_df)
                             patterns.append(pattern_name if pattern_name else "Normal")
 
+                        # استخراج توقيت افتتاح الشمعة الحالية
                         last_candle_open_ts = datetime.fromtimestamp(int(results[i][-1][0]) / 1000).isoformat()
 
+                        # --- [ 3. استخراج البيانات الأساسية للمؤشرات ] ---
                         highs = df_tf['high'].tolist()
                         lows = df_tf['low'].tolist()
                         closes = df_tf['close'].tolist()
                         volumes = df_tf['volume'].tolist()
-                        taker_buy_vols = [float(k[9]) for k in results[i]] 
+                        taker_buy_vols = [float(k[9]) for k in results[i]] # سيولة الحيتان
                         
+                        # --- [ 4. الحسابات الفنية الاستخباراتية ] ---
                         upper, mid, lower = calculate_bollinger(closes)
                         bbw_value = (upper - lower) / mid if mid > 0 else 0
                         atr_val = calculate_atr(highs, lows, closes)
@@ -3298,11 +3344,13 @@ async def update_crypto_market_data():
                         obv_val = calculate_obv(closes, volumes)
                         obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
 
-                        adx_val = calculate_adx(highs, lows, closes) 
-                        v_delta = calculate_volume_delta(taker_buy_vols, volumes) 
+                        # الأدوات المحرمة v10.2
+                        adx_val = calculate_adx(highs, lows, closes) # قوة الانفجار
+                        v_delta = calculate_volume_delta(taker_buy_vols, volumes) # كاشف الزبد
                         rsi_val = calculate_rsi(closes)
-                        mood = get_market_mood(rsi_val) 
+                        mood = get_market_mood(rsi_val) # سيكولوجية 78/22
                         
+                        # --- [ 5. محرك الأهداف والمناطق - حصري لفريم 15m ] ---
                         if tf == '15m':
                             record["entry_zone_start"] = round(price * 0.998, 6)
                             record["entry_zone_end"] = round(price * 1.002, 6)
@@ -3312,13 +3360,17 @@ async def update_crypto_market_data():
                             record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
                             record["market_mood"] = mood
 
+                        # --- [ 6. حقن البيانات الشامل في السجل ] ---
                         record.update({
+                            # أعمدة رادار الأنماط الخمسة
                             f"f{tf}_c1": patterns[0],
                             f"f{tf}_c2": patterns[1],
                             f"f{tf}_c3": patterns[2],
                             f"f{tf}_c4": patterns[3],
                             f"f{tf}_c5": patterns[4],
                             f"last_f{tf}_ts": last_candle_open_ts,                            
+
+                            # تحديث السجل بدمج كل البيانات
                             f"ema_20_{tf}": calculate_ema(closes, 20),
                             f"ema_50_{tf}": calculate_ema(closes, 50),
                             f"ema_100_{tf}": calculate_ema(closes, 100),
@@ -3338,34 +3390,25 @@ async def update_crypto_market_data():
                             f"obv_{tf}": obv_val,
                             f"obv_prev_{tf}": obv_prev_val,
                             f"obv_slope_{tf}": obv_val - obv_prev_val,
-                            # ✨ حقن بيانات الرادار والتحليل مع ضمان التوافق مع JSON ✨
-
-                            # ✨ حقول الأموال الذكية الجديدة ✨
-                            f"fvg_{tf}": str(smc_data["fvg"]),
-                            f"vol_anomaly_{tf}": bool(smc_data["volume_anomaly"]),
-                            f"strict_pattern_{tf}": str(smc_data["strict_pattern"]),
+                            
+                            # تحديثات خاصة بفريم الـ 15 دقيقة
                             "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                             "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                         })
-                        
-                        # تفعيل الرادار للفرص الذهبية على فريم الساعة
-                        if tf == '1h' and (smc_data["volume_anomaly"] or smc_data["fvg"] != "None" or smc_data["strict_pattern"] != "None"):
-                            record["radar_pass"] = True
-                            
+
                 final_records.append(record)
             except Exception as e: 
                 logging.error(f"❌ خطأ في معالجة {symbol}: {e}")
                 continue
 
         if final_records:
-            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الرادار الذكي' كاملة...")
-            # إرجاع كود الرفع الخاص بك كما كان في ملفك الأصلي
+            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الجندي المجهول' كاملة...")
             for i in range(0, len(final_records), 10):
                 await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
     
-    print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")                            
-                            
-                    
+    print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
+
+        
 async def unified_trading_system():
     """هذه الدالة هي المايسترو: تحديث البيانات -> انتظار دقيقة -> تحليل الرادار"""
     while True:
