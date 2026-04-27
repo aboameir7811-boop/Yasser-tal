@@ -65,7 +65,7 @@ bot_username = None
 # 1. إعدادات الجلسات والقيم الثابتة (Config & State)
 # ==========================================
 # --- منطقة تعريف المتغيرات العالمية (Global Variables) ---
-
+active_investigations = {}
 # 1. تخزين بيانات جلسات التداول المؤقتة لكل مستخدم
 trade_sessions = {} 
 
@@ -3774,15 +3774,14 @@ async def forensic_investigation_cycle(active_investigations):
     print(f"🏁 [المحقق] أنهى جولته. يتتبع حالياً {len(active_investigations)} ملف نشط.")
     
     
- async def unified_trading_system():
+async def unified_trading_system():
     """
     المايسترو الأكبر للنظام: 
     1. المصنع (تحديث الفريمات) -> 2. الرادار (صيد الفرص) -> 3. المحقق (أرشفة الانفجارات)
     """
     print("✅ بدء تشغيل النظام الموحد (المايسترو)...")
     
-    # قائمة الذاكرة الحية للمحقق (تُحفظ هنا لتبقى نشطة طوال عمل البوت)
-    active_investigations = {} 
+    # قائمة الذاكرة الحية للمحقق (تُحفظ هنا لتبقى نشطة طوال عمل البوت)     
     
     while True:
         try:
