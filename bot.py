@@ -209,11 +209,11 @@ async def trade_reaper():
 
 async def intelligence_scanner():
     """
-    الرادار v10.5 (القلعة المحصنة + القنابل الموقوتة من 4H)
-    يدمج وحشية "زحف الإعصار" مع "اليسر بعد العسر"، المسح الشامل للأنماط، 
-    ونماذج انضغاط السيولة وإبادة البائعين (Short Squeeze).
+    الرادار v11.0 (عين الصقر + القلعة المحصنة)
+    يدمج الدعوم والمقاومات المتعددة الفريمات، يتجاهل العملات الميتة، 
+    ويضرب بيد من حديد في مناطق انضغاط السيولة وإبادة البائعين.
     """
-    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار يمسح السوق بحثاً عن الانفجارات واستخبارات الأنماط...")
+    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار v11.0 يمسح السوق بذكاء الدعوم والمقاومات الحقيقية...")
     
     try:
         res = supabase.table("crypto_market_simulation").select("*").execute()
@@ -224,50 +224,79 @@ async def intelligence_scanner():
 
         for coin in coins:
             symbol = coin['symbol']
-            score = 0
-            reasons = []
-            
-            kill_switch = False # قيمة افتراضية لضمان عدم توقف الكود
             
             # ==========================================
-            # 🛠️ [ 1. استخراج ترسانة البيانات الأساسية ]
+            # ⛔ [ 0. فلتر إبادة الأشباح (تجاهل العملات الميتة) ]
             # ==========================================
+            vol_15m = float(coin.get('volume_15m') or 0)
+            vol_ma_15m = float(coin.get('volume_ma_15m') or 1)
+            bbw_15m = float(coin.get('bbw_15m') or 0)
             price = float(coin.get('current_price') or 0)
             
-            # --- [ بيانات فريم الساعة 1H ] ---
+            # إذا كان الفوليوم شبه معدوم، أو العملة متجمدة (لا يوجد سيولة)، تجاوزها فوراً
+            if vol_15m < 10000 or price == 0 or bbw_15m <= 0.005:
+                continue # تخطي العملة وعدم إضاعة الموارد عليها
+
+            score = 0
+            reasons = []
+            kill_switch = False
+            
+            # ==========================================
+            # 🧱 [ 1. استخراج ترسانة الدعوم والمقاومات الحقيقية ]
+            # ==========================================
+            # فريم 5 دقائق
+            sup_5m = float(coin.get('support_5m') or 0)
+            res_5m = float(coin.get('resistance_5m') or 0)
+            # فريم 15 دقيقة
+            sup_15m = float(coin.get('support_15m') or 0)
+            res_15m = float(coin.get('resistance_15m') or 0)
+            # فريم 1 ساعة
+            sup_1h = float(coin.get('support_1h') or 0)
+            res_1h = float(coin.get('resistance_1h') or 0)
+            # فريم 2 ساعة
+            sup_2h = float(coin.get('support_2h') or 0)
+            res_2h = float(coin.get('resistance_2h') or 0)
+            # فريم 4 ساعات
+            sup_4h = float(coin.get('support_4h') or 0)
+            res_4h = float(coin.get('resistance_4h') or 0)
+            # فريم يومي
+            sup_1d = float(coin.get('support_1d') or 0)
+            res_1d = float(coin.get('resistance_1d') or 0)
+
+            # دالة مساعدة لحساب اقتراب السعر من مستوى الدعم/المقاومة بنسبة مئوية (1.5%)
+            def is_near_level(current_p, level, threshold=0.015):
+                if level == 0: return False
+                return abs(current_p - level) / level <= threshold
+
+            # ==========================================
+            # 🛠️ [ 2. استخراج المؤشرات الفنية الأساسية ]
+            # ==========================================
             ema20_1h = float(coin.get('ema_20_1h') or 0)
             ema50_1h = float(coin.get('ema_50_1h') or 0)
             ema100_1h = float(coin.get('ema_100_1h') or 0)
             bb_upper_1h = float(coin.get('bb_upper_1h') or 0)
             bb_mid_1h = float(coin.get('bb_middle_1h') or 1)
                         
-            # ==========================================
-            # 🛠️ [ 2. استخراج بيانات 15m و 5m + (بيانات 4H و التمويل المدمجة) ]
-            # ==========================================
             upper = float(coin.get('bb_upper_15m') or 0) 
             lower = float(coin.get('bb_lower_15m') or 0) 
             middle = float(coin.get('bb_middle_15m') or 1) 
             
             kc_upper = float(coin.get('kc_upper_15m') or 0) 
-            kc_lower = float(coin.get('kc_lower_15m') or 0) # [مدمج من 4H]
+            kc_lower = float(coin.get('kc_lower_15m') or 0) 
             
             ema20 = float(coin.get('ema_20_15m') or 0) 
             ema50 = float(coin.get('ema_50_15m') or 0) 
             ema100 = float(coin.get('ema_100_15m') or 0) 
             rsi_15m = float(coin.get('rsi_15m') or 50) 
             
-            vol_15m = float(coin.get('volume_15m') or 0) 
-            vol_ma_15m = float(coin.get('volume_ma_15m') or 1) 
             obv_slope_15m = float(coin.get('obv_slope_15m') or 0) 
             oi_change = float(coin.get('open_interest_change_24h') or 0) 
             
-            # [ مدمج من 4H: بيانات العقود والفريم الأكبر ]
             funding_rate = float(coin.get('funding_rate') or 0)
             ema20_4h = float(coin.get('ema_20_4h') or 0)
             ema50_4h = float(coin.get('ema_50_4h') or 0)
             rsi_4h = float(coin.get('rsi_4h') or 50)
             
-            bbw_15m = float(coin.get('bbw_15m') or 0) 
             bbw_prev_15m = float(coin.get('bbw_prev_15m') or 0) 
             expansion_ratio_15m = (bbw_15m / bbw_prev_15m) if bbw_prev_15m > 0 else 1.0 
 
@@ -282,7 +311,7 @@ async def intelligence_scanner():
             orderbook_ratio = float(coin.get('orderbook_imbalance_ratio') or 0)
             whale_detected = coin.get('whale_absorption_detected') or False
 
-            # --- [ استخراج أنماط الشموع لجميع الفريمات ] ---
+            # --- [ استخراج أنماط الشموع ] ---
             patterns = {
                 '5m': coin.get('f5m_c1', 'Normal'),
                 '15m': coin.get('f15m_c1', 'Normal'),
@@ -292,7 +321,7 @@ async def intelligence_scanner():
                 '1d': coin.get('f1d_c1', 'Normal')
             }
 
-            # --- [ هندسة السياق ومناطق القيمة ] ---
+            # --- [ هندسة السياق ومناطق القيمة العامة ] ---
             is_uptrend = (ema20_1h > ema50_1h > ema100_1h)
             is_downtrend = (ema20_1h < ema50_1h < ema100_1h)
 
@@ -300,51 +329,57 @@ async def intelligence_scanner():
             low_24h = float(coin.get('low_24h') or (price * 0.95)) 
             fib_618 = high_24h - (0.618 * (high_24h - low_24h)) 
             
-            is_near_support = (price <= lower * 1.015) or (price <= ema50 * 1.015) or (abs(price - fib_618) / fib_618 <= 0.01)
-            is_near_resistance = (price >= upper * 0.985) or (price >= ema20 * 1.03)
+            # الاعتماد العام كخطة بديلة (Fallback)
+            is_near_support_general = (price <= lower * 1.015) or (price <= ema50 * 1.015) or (abs(price - fib_618) / fib_618 <= 0.01)
+            is_near_resistance_general = (price >= upper * 0.985) or (price >= ema20 * 1.03)
+            
             has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2)
-            is_sqz = bbw_15m < 0.065 # تعريف حالة الانضغاط
+            is_sqz = bbw_15m < 0.065
 
             # ==========================================
-            # 💣 [ 3. المحرك الاستخباراتي (القنابل الموقوتة المدمجة من 4H) ]
+            # 💣 [ 3. المحرك الاستخباراتي والسيولة ]
             # ==========================================
-            
-            # 1. انضغاط TTM Squeeze
             is_squeeze_on = (upper < kc_upper) and (lower > kc_lower)
             is_squeeze_firing = (not is_squeeze_on) and (expansion_ratio_15m > 1.05) and (obv_slope_15m > 0)
 
             if is_squeeze_firing and oi_change > 5:
                 score += 50
-                reasons.append(f"🌋 انفجار الانضغاط (Squeeze Fire): B يكسر K مع دخول سيولة قوية (OI: +{oi_change}%)")
+                reasons.append(f"🌋 انفجار الانضغاط : B يكسر K مع سيولة قوية (I: +{oi_change}%)")
             elif is_squeeze_on:
-                reasons.append("🤫 هدوء البحر: العملة في حالة انضغاط خانق داخل k ننتظر موجة قادمة.")
+                reasons.append("🤫 هدوء : العملة في حالة انضغاط خانق، ننتظر الموجة القادمة.")
 
-            # 2. Short Squeeze (إبادة البائعين)
             is_short_squeeze = (funding_rate < -0.01) and (price >= lower) and (rsi_15m <= 25)
             if is_short_squeeze and obv_slope_15m > 0:
                 score += 30
-                reasons.append(f"🩸 إبادة البائعين: التمويل سالب جداً ({funding_rate}%) والسعر يصنع قاعاً مع RSI ({rsi_15m:.1f})")
+                reasons.append(f"🩸 إبادة البائعين: التمويل سالب جداً ({funding_rate}%) والسعر يصنع قاعاً مع سيولة خفية.")
 
-            # 3. مصيدة السيولة (Liquidity Sweep)
             is_liquidity_sweep = (price > lower) and (vol_15m > vol_ma_15m * 2.5) and (rsi_15m < 25)
             if is_liquidity_sweep:
                 score += 30
-                reasons.append(f"🪤 مصيدة السيولة: الحيتان ضربوا الستوب لوز واشتروا الكميات بقوة (الفوليوم: {vol_15m:.1f})")
+                reasons.append(f"🪤 مصيدة السيولة: الحيتان ضربوا الستوب لوز واشتروا بقوة (الفوليوم: {vol_15m:.1f})")
 
-            # 4. تراكم الحطب (Open Interest Accumulation)
             if oi_change > 15 and bbw_15m < 0.05:
                 score += 30
                 reasons.append(f"🪵 تكديس الحطب: السعر ميت ولكن الاهتمام المفتوح يرتفع بجنون (+{oi_change}%)")
 
-            # 5. غطاء الفريم الأكبر 4H
             is_4h_bullish = (ema20_4h > ema50_4h) and (rsi_4h > 50)
             if is_4h_bullish and score > 0:
                 score += 80
                 reasons.append("🛡️ غطاء مالي (4H): الاتجاه العام صاعد ويدعم الموجة القادمة")
 
             # ==========================================
-            # 🕯️ [ 4. محرك الشموع اليابانية الصارم (قناص الأنماط والسياق) ]
+            # 🕯️ [ 4. محرك الشموع v11.0 (المدعوم بالدعوم والمقاومات الحقيقية) ]
             # ==========================================
+            # ربط كل فريم بالدعم والمقاومة الخاص به من قاعدة البيانات
+            tf_levels = {
+                '5m': {'sup': sup_5m, 'res': res_5m},
+                '15m': {'sup': sup_15m, 'res': res_15m},
+                '1h': {'sup': sup_1h, 'res': res_1h},
+                '2h': {'sup': sup_2h, 'res': res_2h},
+                '4h': {'sup': sup_4h, 'res': res_4h},
+                '1d': {'sup': sup_1d, 'res': res_1d}
+            }
+
             for tf, pattern in patterns.items():
                 if pattern in ["Normal", "Not enough data", "Neutral_Doji", "Spinning_Top", None]:
                     continue
@@ -353,71 +388,76 @@ async def intelligence_scanner():
                 is_bullish = "صاعد" in pattern
                 is_bearish = "هابط" in pattern
                 
-                # فريم 1D (أصبح يقبل جميع الأنماط بقوة 100)
+                # التحقق من ملامسة السعر للدعم الحقيقي الخاص بالفريم الحالي
+                tf_sup = tf_levels[tf]['sup']
+                tf_res = tf_levels[tf]['res']
+                
+                # السعر يعتبر عند دعم إذا لامس الدعم الحقيقي للفريم، أو الدعم العام
+                is_at_tf_support = is_near_level(price, tf_sup) or is_near_support_general
+                is_at_tf_resistance = is_near_level(price, tf_res) or is_near_resistance_general
+
+                # فريم 1D
                 if tf == '1d':
                     weight = 100
                     if has_volume_confirmation: 
-                        if is_bullish and (is_near_support or is_uptrend):
+                        if is_bullish and (is_at_tf_support or is_uptrend):
                             score += weight
-                            reasons.append(f"🏛️:ا [1D - استراتيجي] {clean_name}: سيولة مؤسساتية عند منطقة دعم/ترند (+{weight})")
-                        elif is_bearish and (is_near_resistance or is_downtrend):
+                            reasons.append(f"🏛️ا [1D - استراتيجي] {clean_name}: سيولة مؤسساتية عند دعم {tf_sup if tf_sup > 0 else 'مؤكد'} (+{weight})")
+                        elif is_bearish and (is_at_tf_resistance or is_downtrend):
                             score -= int(weight * 1.5)
-                            reasons.append(f"🔴:ا [1D - تحذير] {clean_name}: تصريف مؤسساتي عند مقاومة (-{int(weight * 1.5)})")
+                            reasons.append(f"🔴 ا [1D - تحذير] {clean_name}: تصريف مؤسساتي عند مقاومة (-{int(weight * 1.5)})")
 
                 # فريم 4H
                 elif tf == '4h' and any(x in pattern for x in ["نجمة", "ثلاثة", "الساندوتش", "مطرقة", "المشنوق", "الشهاب"]):
                     weight = 60
                     if has_volume_confirmation:
-                        if is_bullish and is_near_support:
+                        if is_bullish and is_at_tf_support:
                             score += weight
-                            reasons.append(f"🛡️:ا [4H - سوينج] {clean_name}: ارتداد قوي من منطقة دعم مؤكدة (+{weight})")
-                        elif is_bearish and is_near_resistance:
+                            reasons.append(f"🛡️ا [4H - سوينج] {clean_name}: ارتداد قوي من دعم {tf_sup if tf_sup > 0 else 'مؤكد'} (+{weight})")
+                        elif is_bearish and is_at_tf_resistance:
                             score -= int(weight * 1.5)
-                            reasons.append(f"🔴:ا [4H - فخ] {clean_name}: رفض سعري عنيف عند المقاومة (-{int(weight * 1.5)})")
+                            reasons.append(f"🔴 ا [4H - فخ] {clean_name}: رفض سعري عنيف عند المقاومة (-{int(weight * 1.5)})")
 
                 # فريم 2H
                 elif tf == '2h' and any(x in pattern for x in ["تاسوكي", "التقدم", "ابتلاع", "الراكل", "الحزام"]):
                     weight = 50
-                    if is_bullish and (is_uptrend or is_near_support) and vol_delta >= 0:
+                    if is_bullish and (is_uptrend or is_at_tf_support) and vol_delta >= 0:
                         score += weight
-                        reasons.append(f"🎯:ا [2H - زخم] {clean_name}: تأكيد قوة شرائية مع الاتجاه (+{weight})")
-                    elif is_bearish and (is_downtrend or is_near_resistance) and vol_delta <= 0:
+                        reasons.append(f"🎯 ا [2H - زخم] {clean_name}: تأكيد قوة شرائية مع الاتجاه (+{weight})")
+                    elif is_bearish and (is_downtrend or is_at_tf_resistance) and vol_delta <= 0:
                         score -= int(weight * 1.5)
-                        reasons.append(f"🔴:ا [2H - بيع] {clean_name}: سيطرة بيعية واضحة (-{int(weight * 1.5)})")
+                        reasons.append(f"🔴 ا [2H - بيع] {clean_name}: سيطرة بيعية واضحة (-{int(weight * 1.5)})")
 
                 # فريم 1H
                 elif tf == '1h' and any(x in pattern for x in ["هارامي", "الثاقب", "السحابة", "الملقط", "التلاقي", "الانفصال"]):
                     weight = 30
                     if has_volume_confirmation:
-                        if is_bullish and is_near_support:
+                        if is_bullish and is_at_tf_support:
                             score += weight
-                            reasons.append(f"⏱️:ا [1H - يومي] {clean_name}: ارتداد تكتيكي مدعوم بسيولة (+{weight})")
-                        elif is_bearish and is_near_resistance:
+                            reasons.append(f"⏱️ ا [1H - يومي] {clean_name}: ارتداد تكتيكي من دعم {tf_sup if tf_sup > 0 else 'مدعوم بسيولة'} (+{weight})")
+                        elif is_bearish and is_at_tf_resistance:
                             score -= int(weight * 1.5)
-                            reasons.append(f"🔴:ا [1H - يومي] {clean_name}: ضغط بيعي عند مقاومة (-{int(weight * 1.5)})")
+                            reasons.append(f"🔴 ا [1H - يومي] {clean_name}: ضغط بيعي عند مقاومة (-{int(weight * 1.5)})")
 
                 # فريم 15m
                 elif tf == '15m' and any(x in pattern for x in ["على_الرقبة", "في_الرقبة", "دفع", "نجمة_دوجي"]):
                     weight = 15
                     if is_bullish and rsi_15m <= 35 and is_uptrend:
                         score += weight
-                        reasons.append(f"⚡:ا [15m - مضاربة] {clean_name}: نهاية تصحيح (RSI={rsi_15m:.0f}) (+{weight})")
+                        reasons.append(f"⚡ ا [15m - مضاربة] {clean_name}: نهاية تصحيح (RSI={rsi_15m:.0f}) (+{weight})")
                     elif is_bearish and rsi_15m >= 65 and is_downtrend:
                         score -= int(weight * 1.2)
-                        reasons.append(f"🔴:ا [15m - مضاربة] {clean_name}: ذروة شراء في ترند هابط (-{int(weight * 1.2)})")
+                        reasons.append(f"🔴 ا [15m - مضاربة] {clean_name}: ذروة شراء في ترند هابط (-{int(weight * 1.2)})")
 
                 # فريم 5m
                 elif tf == '5m' and "النجوم_الثلاثة" in pattern:
                     if is_sqz:
                         weight = 10
                         score += weight if is_bullish else -weight
-                        reasons.append(f"🔍:ا [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار من منطقة ضيقة ({'+' if is_bullish else '-'}{weight})")
-                
-                # تم إزالة قسم else الخاص بتسجيل "تجاهل الضجيج" حتى لا يظهر في رسالة التيليجرام
-                
+                        reasons.append(f"🔍 ا [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار ({'+' if is_bullish else '-'}{weight})")
 
             # ==========================================
-            # 🛡️ [ 5. الغطاء الجوي: معزز الزخم 1H ]
+            # 🛡️ [ 5. الغطاء الجوي ومعززات الاتجاه ]
             # ==========================================
             is_1h_ready = (
                 (price > ema20_1h) and             
@@ -428,15 +468,12 @@ async def intelligence_scanner():
 
             if is_1h_ready:
                 score += 50
-                reasons.append("🛡️ غطاء جوي (1H): ترتيب هجومي مثالي يدعم الانفجار")
+                reasons.append("🛡️ ا غطاء جوي (1H): ترتيب هجومي مثالي يدعم الانفجار")
                 is_1h_confirmed = True
             else:
-                reasons.append("⚠️ تنبيه: الانفجار محلي (فريمات صغيرة) بدون غطاء جوي 1H")
+                reasons.append("⚠️ ا تنبيه: الانفجار محلي بدون غطاء جوي 1H")
                 is_1h_confirmed = False
                 
-            # ==========================================
-            # 🔥 [ 6. المحرك الهجومي: زحف الإعصار ]
-            # ==========================================
             is_crawling_up = (
                 (price >= ema20) and  
                 (price >= upper * 0.995) and 
@@ -447,82 +484,73 @@ async def intelligence_scanner():
 
             is_5m_spark = expansion_ratio_5m > 1.20 
             is_volume_spike = vol_ma_15m > 0 and vol_15m > (vol_ma_15m * 2) 
-            
-            # متغير افتراضي لتفادي خطأ is_yusr_detected (تم إضافته افتراضياً هنا إذا لم يكن موجوداً بالأصل)
             is_yusr_detected = mood == "YUSR_EXPLOSION"
-            intel_report = f"إشارة {mood} مرصودة بدقة عالية"
+            intel_report = f"إشارة {mood} مرصودة بدقة"
 
             if is_crawling_up:
                 score += 50 
                 intel_report = "🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية." if mood != "YUSR_EXPLOSION" else intel_report
-                reasons.append(f"🚀 زحف الإعصار: السعر يركب الخط العلوي بقوة هجومية مع توسع ({expansion_ratio_15m:.1%})") 
+                reasons.append(f"🚀 زحف الإعصار: قوة هجومية مع توسع ({expansion_ratio_15m:.1%})") 
                 mood = "NUCLEAR_CRAWL" if mood != "YUSR_EXPLOSION" else mood
 
             if is_5m_spark:
                 score += 50 
-                reasons.append(f"🔥 شرارة الانفجار: توسع عنيف جداً في فريم 5m ({expansion_ratio_5m:.1%})") 
+                reasons.append(f"🔥 شرارة الانفجار: توسع عنيف 5m ({expansion_ratio_5m:.1%})") 
 
             if is_volume_spike:
                 score += 50 
-                reasons.append(f"📊 فوليوم مضاعف: السيولة الحالية تتجاوز 200% من المتوسط") 
+                reasons.append(f"📊 فوليوم مضاعف: السيولة تتجاوز 200% من المتوسط") 
 
-            # ==========================================
-            # 🌋 [ 7. دمج استخبارات كيلتنر والعقود ]
-            # ==========================================
             if (upper > kc_upper) and expansion_ratio_15m > 1.05: 
                 score += 50 
-                reasons.append("🌋 كسر الانضغاط (k): السعر تحرر من ضغط  بقوة هائلة") 
+                reasons.append("🌋 كسر الانضغاط (k): تحرر بقوة هائلة") 
 
             if oi_change > 5 and (is_crawling_up or is_yusr_detected): 
                 score += 50 
-                reasons.append(f"🐳 وقود الحيتان: الاهتمام المفتوح يرتفع بالتزامن مع الصعود (+{oi_change}%)") 
+                reasons.append(f"🐳 وقود الحيتان: الاهتمام المفتوح يرتفع (+{oi_change}%)") 
 
             if adx_val > 25 and is_crawling_up:
                 score += 50
                 reasons.append(f"🌪️ قوة الاتجاه (A): مسار انفجاري مؤكد ({adx_val})")
 
             # ==========================================
-            # 🛡️ [ 8. فلاتر الحماية الصارمة ]
+            # 🛡️ [ 6. فلاتر الحماية الصارمة ]
             # ==========================================
-            
-            # [ مدمج من 4H: فلتر الانهيار الكلي ]
             if rsi_4h < 40 and ema20_4h < ema50_4h:
                 score -= 30
-                reasons.append("⚠️ الفريم الأكبر (4H) منهار، تم إبطال الهجوم الشرائي لمنع التعلق.")
+                reasons.append("⚠️ الفريم الأكبر (4H) منهار، تم إبطال الهجوم الشرائي.")
                 
             if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
                 score -= 80  
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
-                reasons.append("🚫 حماية مطلقة: تم رصد سيولة بيعية سالبة (زبد) خلف الصعود الوهمي.") 
+                reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.") 
 
             # ==========================================
-            # 🎯 [ 9. قرار الإطلاق النهائي وتحديث الاستخبارات ]
+            # 🎯 [ 7. قرار الإطلاق النهائي ]
             # ==========================================
-            
             sc_crawling = 1 if is_crawling_up else 0 
             sc_spark = 1 if is_5m_spark else 0 
             sc_volume = 1 if is_volume_spike else 0 
             sc_keltner = 1 if (upper > kc_upper and expansion_ratio_15m > 1.05) else 0 
             sc_whale = 1 if (oi_change > 5 and is_crawling_up) else 0 
 
-            # تعزيز سكور الشراء عند اكتمال المثلث الذهبي
             if is_crawling_up and is_5m_spark and is_volume_spike: 
                 score += 60  
 
-            # --- [ تحديد نوع الإشارة بناءً على السكور النهائي ] ---
             signal_type = "NONE"
             
+            # تحديث الاعتماد ليكون أكثر ذكاءً بناءً على الدعوم المجمعة
             if score >= 200:
-                if is_near_support or is_uptrend:
+                if is_near_support_general or is_uptrend or is_at_tf_support:
                     signal_type = "LONG"
                 else:
-                    reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (ليس عند دعم)")
+                    reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
 
             elif score <= -206:
-                if is_near_resistance or is_downtrend:
+                if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
                     signal_type = "SHORT"
                 else:
-                    reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي (ليس عند مقاومة)")
+                    reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي")
 
             if signal_type != "NONE":  
                 supabase.table("market_intelligence").upsert({ 
@@ -558,11 +586,10 @@ async def intelligence_scanner():
                 
     except Exception as e: 
         import logging 
-        logging.error(f"❌ خطأ داخلي في الرادار القناص v10.5: {e}") 
+        logging.error(f"❌ خطأ داخلي في الرادار القناص v11.0: {e}") 
 
-    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v10.5) بنجاح.")
-
-
+    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.0) بنجاح.")
+    
 
 # تحديث دالة التنبيه لتقبل السعر الحالي والاتجاه (v10.4)
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG"):
