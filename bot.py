@@ -3234,6 +3234,34 @@ def detect_divergence(prices, indicators):
         return "Normal"
         
 # ==========================================
+# 1. دالة استخراج الدعوم والمقاومات (المحدثة)
+# ==========================================
+def calculate_price_action_sr(highs, lows):
+    """
+    تستخرج أحدث دعم وأحدث مقاومة بناءً على السلوك السعري الحقيقي (القمم والقيعان).
+    تم التحديث لتتوافق مع قاعدة البيانات الجديدة (عمود واحد للدعم وعمود للمقاومة).
+    """
+    supports = []
+    resistances = []
+
+    # استخراج القيعان والقمم الحقيقية (شمعتين يمين وشمعتين يسار للفلترة الصارمة)
+    for i in range(2, len(highs) - 2):
+        # القاع الحقيقي
+        if lows[i] < lows[i-1] and lows[i] < lows[i-2] and lows[i] < lows[i+1] and lows[i] < lows[i+2]:
+            supports.append(lows[i])
+            
+        # القمة الحقيقية
+        if highs[i] > highs[i-1] and highs[i] > highs[i-2] and highs[i] > highs[i+1] and highs[i] > highs[i+2]:
+            resistances.append(highs[i])
+
+    # استخراج الأحدث (وهو الأهم والأقرب للسعر الحالي)
+    # نأخذ آخر عنصر في القائمة، وإذا لم يوجد نرجع None (ليحفظ كـ NULL في قاعدة البيانات)
+    latest_support = supports[-1] if supports else None
+    latest_resistance = resistances[-1] if resistances else None
+
+    return latest_support, latest_resistance
+
+# ==========================================
 # --- [ دوال التحليل و الجلب ] ---
 # ==========================================   
 async def fetch_klines(session, symbol, interval, limit=100):
@@ -3245,8 +3273,11 @@ async def fetch_klines(session, symbol, interval, limit=100):
     except: return None
 
 
+# ==========================================
+# 2. دالة جلب وتحديث بيانات السوق (المحدثة)
+# ==========================================
 async def update_crypto_market_data():
-    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة OBV الاستخباراتي)...")
+    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة OBV الاستخباراتي ودعوم/مقاومات الفريمات)...")
     
     async with aiohttp.ClientSession() as session:
         try:
@@ -3261,52 +3292,40 @@ async def update_crypto_market_data():
         # ==========================================
         # 🛡️ [ فلاتر تنظيف الرادار الاستخباراتية ]
         # ==========================================
-        # 1. قائمة العملات المستقرة المعروفة (محدثة)
         STABLE_COINS = {
             "USDCUSDT", "FDUSDUSDT", "TUSDUSDT", "BUSDUSDT", 
             "DAIUSDT", "EURUSDT", "AEURUSDT", "USDPUSDT", "USDDUSDT",
             "PYUSDUSDT", "EURIUSDT"
         }
 
-        # 2. الفلتر الشامل (طرد الميت، الموقوف، والمستقر):
         top_coins = []
         for c in ticker_data:
             if not isinstance(c, dict): continue
             
             symbol = c.get('symbol', '')
             if not symbol.endswith('USDT'): continue
-            if symbol in STABLE_COINS: continue # 🚫 استبعاد العملات المستقرة المعروفة
+            if symbol in STABLE_COINS: continue 
             
-            # استخراج البيانات الحيوية للعملة
             last_price = float(c.get('lastPrice', 0))
             quote_volume = float(c.get('quoteVolume', 0))
             high_price = float(c.get('highPrice', 0))
             low_price = float(c.get('lowPrice', 0))
-            trades_count = int(c.get('count', 0)) # 👈 السر هنا: عدد الصفقات الفعلية
+            trades_count = int(c.get('count', 0))
 
-            # --- [ شروط الصرامة الفنية ] ---
-            # أ. السعر يجب أن يكون منطقياً
             if last_price < 0.001: continue
             
-            # ب. صائد العملات المستقرة المجهولة: إذا كان السعر حول 1 دولار والتذبذب بين القمة والقاع أقل من 1.5%
             if 0.98 <= last_price <= 1.02 and low_price > 0:
                 price_volatility = (high_price - low_price) / low_price
                 if price_volatility < 0.015: 
-                    continue # 🚫 طرد فوري (عملة مستقرة مجهولة أو لا تتحرك)
+                    continue 
                     
-            # ج. فلتر العملات الموقوفة أو ما قبل الإطلاق (يجب أن يكون هناك أكثر من 1000 صفقة تمت في 24 ساعة)
             if trades_count < 1000: continue
-            
-            # د. فلتر السيولة: استبعاد العملات الميتة سيولياً (تم الرفع إلى 100 ألف دولار كحد أدنى للاستراتيجية)
             if quote_volume < 100000: continue
-            
-            # هـ. استبعاد العملات المتجمدة تماماً (القمة تساوي القاع)
             if high_price == low_price: continue
             
-            # إذا نجت العملة من كل الفلاتر السابقة، فهي حية وتستحق المراقبة
             top_coins.append(c)
         
-        # 3. ترتيب حسب أعلى سيولة واختيار أعلى 600 عملة (توسيع نطاق الرادار)
+        # ترتيب حسب السيولة
         top_coins = sorted(top_coins, key=lambda x: float(x.get('quoteVolume', 0)), reverse=True)[:600]
         
         timeframes = ['5m', '15m', '1h', '2h', '4h', '1d']
@@ -3318,7 +3337,6 @@ async def update_crypto_market_data():
                 price = float(coin.get('lastPrice', 0))
                 change_percent = float(coin.get('priceChangePercent', 0))
                 
-                # إعداد السجل الأساسي
                 record = {
                     "symbol": symbol,
                     "name": symbol.replace("USDT", ""),
@@ -3338,7 +3356,6 @@ async def update_crypto_market_data():
 
                 for i, tf in enumerate(timeframes):
                     if results[i] and isinstance(results[i], list):
-                        # --- [ 1. تجهيز البيانات للتحليل الاستخباراتي ] ---
                         df_tf = pd.DataFrame(results[i], columns=[
                             'timestamp', 'open', 'high', 'low', 'close', 'volume',
                             'close_time', 'quote_av', 'trades', 'tb_base_av', 'tb_quote_av', 'ignore'
@@ -3347,26 +3364,20 @@ async def update_crypto_market_data():
                         for col in ['open', 'high', 'low', 'close', 'volume']:
                             df_tf[col] = df_tf[col].astype(float)
 
-                        # --- [ 2. تشغيل رادار الأنماط (pdf_patterns) لآخر 5 شموع ] ---
                         patterns = []
                         for j in range(5):
-                            # اقتطاع البيانات بترتيب عكسي لقراءة تاريخ الشموع (j=0 الحالية، j=1 السابقة...)
                             sub_df = df_tf if j == 0 else df_tf.iloc[:-j]
-                            
                             pattern_name = detect_all_pdf_patterns(sub_df)
                             patterns.append(pattern_name if pattern_name else "Normal")
 
-                        # استخراج توقيت افتتاح الشمعة الحالية
                         last_candle_open_ts = datetime.fromtimestamp(int(results[i][-1][0]) / 1000).isoformat()
 
-                        # --- [ 3. استخراج البيانات الأساسية للمؤشرات ] ---
                         highs = df_tf['high'].tolist()
                         lows = df_tf['low'].tolist()
                         closes = df_tf['close'].tolist()
                         volumes = df_tf['volume'].tolist()
-                        taker_buy_vols = [float(k[9]) for k in results[i]] # سيولة الحيتان
+                        taker_buy_vols = [float(k[9]) for k in results[i]] 
                         
-                        # --- [ 4. الحسابات الفنية الاستخباراتية ] ---
                         upper, mid, lower = calculate_bollinger(closes)
                         bbw_value = (upper - lower) / mid if mid > 0 else 0
                         atr_val = calculate_atr(highs, lows, closes)
@@ -3374,13 +3385,14 @@ async def update_crypto_market_data():
                         obv_val = calculate_obv(closes, volumes)
                         obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
 
-                        # الأدوات المحرمة v10.2
-                        adx_val = calculate_adx(highs, lows, closes) # قوة الانفجار
-                        v_delta = calculate_volume_delta(taker_buy_vols, volumes) # كاشف الزبد
+                        adx_val = calculate_adx(highs, lows, closes) 
+                        v_delta = calculate_volume_delta(taker_buy_vols, volumes) 
                         rsi_val = calculate_rsi(closes)
-                        mood = get_market_mood(rsi_val) # سيكولوجية 78/22
+                        mood = get_market_mood(rsi_val) 
                         
-                        # --- [ 5. محرك الأهداف والمناطق - حصري لفريم 15m ] ---
+                        # ✨ استخراج الدعم والمقاومة للفريم الحالي ✨
+                        tf_support, tf_resistance = calculate_price_action_sr(highs, lows)
+
                         if tf == '15m':
                             record["entry_zone_start"] = round(price * 0.998, 6)
                             record["entry_zone_end"] = round(price * 1.002, 6)
@@ -3390,9 +3402,8 @@ async def update_crypto_market_data():
                             record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
                             record["market_mood"] = mood
 
-                        # --- [ 6. حقن البيانات الشامل في السجل ] ---
+                        # حقن البيانات الشامل في السجل
                         record.update({
-                            # أعمدة رادار الأنماط الخمسة
                             f"f{tf}_c1": patterns[0],
                             f"f{tf}_c2": patterns[1],
                             f"f{tf}_c3": patterns[2],
@@ -3400,7 +3411,6 @@ async def update_crypto_market_data():
                             f"f{tf}_c5": patterns[4],
                             f"last_f{tf}_ts": last_candle_open_ts,                            
 
-                            # تحديث السجل بدمج كل البيانات
                             f"ema_20_{tf}": calculate_ema(closes, 20),
                             f"ema_50_{tf}": calculate_ema(closes, 50),
                             f"ema_100_{tf}": calculate_ema(closes, 100),
@@ -3421,7 +3431,10 @@ async def update_crypto_market_data():
                             f"obv_prev_{tf}": obv_prev_val,
                             f"obv_slope_{tf}": obv_val - obv_prev_val,
                             
-                            # تحديثات خاصة بفريم الـ 15 دقيقة
+                            # ✨ إضافة الدعم والمقاومة للأعمدة الجديدة ✨
+                            f"support_{tf}": tf_support,
+                            f"resistance_{tf}": tf_resistance,
+                            
                             "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                             "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                         })
@@ -3437,7 +3450,7 @@ async def update_crypto_market_data():
                 await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
     
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
-
+    
 
 async def async_manual_upsert1(table_name, records):
     headers = {
