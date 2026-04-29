@@ -3259,7 +3259,22 @@ def detect_divergence(prices, indicators):
         return "Normal"
     except Exception:
         return "Normal"
-        
+
+def calculate_macd_values(closes, fast=12, slow=26, signal=9):
+    try:
+        df = pd.DataFrame(closes, columns=['close'])
+        # حساب الماكد
+        macd_df = ta.macd(df['close'], fast=fast, slow=slow, signal=signal)
+        if macd_df is not None:
+            return {
+                "macd": float(macd_df.iloc[-1][f"MACD_{fast}_{slow}_{signal}"]),
+                "signal": float(macd_df.iloc[-1][f"MACDs_{fast}_{slow}_{signal}"]),
+                "hist": float(macd_df.iloc[-1][f"MACDh_{fast}_{slow}_{signal}"])
+            }
+    except Exception as e:
+        logging.error(f"Error calculating MACD: {e}")
+    return {"macd": 0.0, "signal": 0.0, "hist": 0.0}
+    
 # ==========================================
 # 1. دالة استخراج الدعوم والمقاومات (المحدثة)
 # ==========================================
@@ -3419,6 +3434,8 @@ async def update_crypto_market_data():
                         
                         # ✨ استخراج الدعم والمقاومة للفريم الحالي ✨
                         tf_support, tf_resistance = calculate_price_action_sr(highs, lows)
+                        # ✨ حساب مؤشر الماكد الجديد ✨
+                        macd_data = calculate_macd_values(closes)
 
                         if tf == '15m':
                             record["entry_zone_start"] = round(price * 0.998, 6)
@@ -3436,7 +3453,11 @@ async def update_crypto_market_data():
                             f"f{tf}_c3": patterns[2],
                             f"f{tf}_c4": patterns[3],
                             f"f{tf}_c5": patterns[4],
-                            f"last_f{tf}_ts": last_candle_open_ts,                            
+                            f"last_f{tf}_ts": last_candle_open_ts,
+                            # ✨ حقن قيم الماكد في قاعدة البيانات ✨
+                            f"macd_{tf}": macd_data['macd'],
+                            f"macd_signal_{tf}": macd_data['signal'],
+                            f"macd_hist_{tf}": macd_data['hist'],                            
 
                             f"ema_20_{tf}": calculate_ema(closes, 20),
                             f"ema_50_{tf}": calculate_ema(closes, 50),
@@ -3477,8 +3498,8 @@ async def update_crypto_market_data():
                 await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
     
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
-    
 
+    
 async def async_manual_upsert1(table_name, records):
     headers = {
         "apikey": SUPABASE_KEY,
