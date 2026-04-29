@@ -3262,19 +3262,31 @@ def detect_divergence(prices, indicators):
 
 def calculate_macd_values(closes, fast=12, slow=26, signal=9):
     try:
-        df = pd.DataFrame(closes, columns=['close'])
-        # حساب الماكد
-        macd_df = ta.macd(df['close'], fast=fast, slow=slow, signal=signal)
-        if macd_df is not None:
-            return {
-                "macd": float(macd_df.iloc[-1][f"MACD_{fast}_{slow}_{signal}"]),
-                "signal": float(macd_df.iloc[-1][f"MACDs_{fast}_{slow}_{signal}"]),
-                "hist": float(macd_df.iloc[-1][f"MACDh_{fast}_{slow}_{signal}"])
-            }
+        # تحويل القائمة إلى Series من بانداز
+        s = pd.Series(closes)
+        
+        # 1. حساب المتوسطات الأسية
+        ema_fast = s.ewm(span=fast, adjust=False).mean()
+        ema_slow = s.ewm(span=slow, adjust=False).mean()
+        
+        # 2. حساب خط الماكد الرئيسي
+        macd_line = ema_fast - ema_slow
+        
+        # 3. حساب خط الإشارة (Signal Line)
+        signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+        
+        # 4. حساب الهستغرام
+        histogram = macd_line - signal_line
+        
+        return {
+            "macd": float(macd_line.iloc[-1]),
+            "signal": float(signal_line.iloc[-1]),
+            "hist": float(histogram.iloc[-1])
+        }
     except Exception as e:
-        logging.error(f"Error calculating MACD: {e}")
-    return {"macd": 0.0, "signal": 0.0, "hist": 0.0}
-    
+        print(f"❌ خطأ في الحساب اليدوي للماكد: {e}")
+        return {"macd": 0.0, "signal": 0.0, "hist": 0.0}
+        
 # ==========================================
 # 1. دالة استخراج الدعوم والمقاومات (المحدثة)
 # ==========================================
