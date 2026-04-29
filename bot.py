@@ -615,7 +615,7 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         f"\n📐 <b>المستويات الفنية:</b>\n"
         f"👈 النسبة الذهبية (0.618): <code>{fib_618:,.4f}</code>\n"
         f"━━━━━━━━━━━━━━━━━━\n"
-        f"<i>⚠️ هذه البيانات استخباراتية ومرسلة لك يا أثير فقط.</i>"
+        f"<i>⚠️ هذه البيانات مرسلة لك فقط.</i>"
     )
 
     # أزرار التحكم الديناميكية
@@ -674,7 +674,7 @@ def build_coin_template(coin):
     # تجميع القالب النهائي
     template = (
         f"🚨 **إشعار مهم: فرصة ذهبية!** 🚨\n\n"
-        f"🪙 **العملة:** #{symbol}\n"
+        f"🪙 **العملة:** {symbol}\n"
         f"💵 **السعر لحظة الرصد:** {price}\n"
         f"🔥 **درجة الانفجار:** {total_score}/100 🟢\n"
         f"━━━━━━━━━━━━━━━━━━\n"
@@ -1803,33 +1803,65 @@ async def process_coin_view(callback_query: types.CallbackQuery):
         print(f"Error: {e}")
         await callback_query.answer("❌ حدث خطأ في معالجة البيانات.")
         
+
 # --- [ 3. هاندلر توصية VIP (قالب العنود / الدخول الهجومي) ] ---
-# --- [ 3. هاندلر توصية VIP (قالب الدخول الهجومي الذكي v7.0) ] ---
+def evaluate_reversal_risk(current_price, support_1d, resistance_1d, direction):
+    """
+    تقوم هذه الدالة بحساب مدى قرب السعر من الحوائط الإسمنتية للفريم اليومي.
+    إذا كان السعر قريباً جداً (أقل من 1.5%) من مقاومة يومية، فصفقة الشراء تعتبر انتحاراً.
+    """
+    try:
+        if direction == "LONG":
+            # الخطر في الشراء هو الاصطدام بمقاومة يومية عنيفة
+            distance_to_res = (resistance_1d - current_price) / current_price
+            is_critical = distance_to_res < 0.015  # خطر إذا كانت المسافة أقل من 1.5%
+            risk_score = 99 if is_critical else max(10, 100 - (distance_to_res * 1000))
+            return min(risk_score, 99), is_critical
+            
+        elif direction == "SHORT":
+            # الخطر في البيع هو الاصطدام بدعم يومي صلب
+            distance_to_sup = (current_price - support_1d) / current_price
+            is_critical = distance_to_sup < 0.015  # خطر إذا كانت المسافة أقل من 1.5%
+            risk_score = 99 if is_critical else max(10, 100 - (distance_to_sup * 1000))
+            return min(risk_score, 99), is_critical
+    except ZeroDivisionError:
+        return 50, False
+
+# 🚀 [ غرفة العمليات الـ VIP ]
 @dp.callback_query_handler(Text(startswith='vip_signal:'), state="*")
 async def process_vip_signal(callback_query: types.CallbackQuery):
+    # 🛠️ [ دالة تنسيق الأرقام مدمجة هنا لتفادي أخطاء النطاق NameError ]
+    def f_num(val): 
+        if val is None: return "0.00"
+        return f"{val:.5f}".rstrip('0').rstrip('.') if val < 1 else f"{val:.4f}"
+
     try:
         data_parts = callback_query.data.split(':')
         owner_id = int(data_parts[1])
         symbol = data_parts[2]
 
         if callback_query.from_user.id != owner_id:
-            return await callback_query.answer("⚠️ لا تملك صلاحية الوصول لغرفة العمليات!", show_alert=True)
+            return await callback_query.answer("⚠️ مستوى أمني غير كافٍ! لا تملك صلاحية الوصول لغرفة العمليات.", show_alert=True)
 
+        # سحب البيانات الاستخباراتية من قاعدة البيانات
         res = supabase.table("crypto_market_simulation").select("*").eq("symbol", symbol).execute()
-        if not res.data: return
+        if not res.data: 
+            return await callback_query.answer("❌ لا توجد بيانات كافية لهذه العملة حالياً.", show_alert=True)
         
         c = res.data[0]
         price = float(c['current_price'])
         high_24 = float(c.get('high_24h', price * 1.05))
         low_24 = float(c.get('low_24h', price * 0.95))
+        price_range = high_24 - low_24
         
-        # 🕵️‍♂️ [ الأسلحة الاستخباراتية ]
+        # 🕵️‍♂️ [ المؤشرات اللحظية - فريم 15 دقيقة ] (للبحث عن الزناد / Trigger)
         ema20_15m = float(c.get('ema_20_15m', price))
         ema50_15m = float(c.get('ema_50_15m', price))
-        bb_upper = float(c.get('bb_upper_15m', price * 1.02))
-        bb_lower = float(c.get('bb_lower_15m', price * 0.98))
         rsi_15m = float(c.get('rsi_15m', 50))
         obv_slope_15m = float(c.get('obv_slope_15m', 0))
+        macd_15m = float(c.get('macd_15m', 0))
+        macd_sig_15m = float(c.get('macd_signal_15m', 0))
+        macd_hist_15m = float(c.get('macd_hist_15m', 0))
         
         bbw_now = float(c.get('bbw_15m', 0.05))
         bbw_prev = float(c.get('bbw_prev_15m', 0.05))
@@ -1837,108 +1869,143 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
 
         vol_now = float(c.get('volume_15m', 1))
         vol_ma = float(c.get('volume_ma_15m', 1))
+
+        # 🏰 [ التحصينات الكبرى: دعوم ومقاومات الفريمات المتعددة ]
+        support_15m = float(c.get('support_15m', price * 0.98))
+        res_15m = float(c.get('resistance_15m', price * 1.02))
         
-        # 📐 [ فيزياء السوق: حساب المسافة الذهبية (Fibonacci Projections) ]
-        price_range = high_24 - low_24
+        support_1h = float(c.get('support_1h', price * 0.96))
+        res_1h = float(c.get('resistance_1h', price * 1.04))
         
-        # ⏱️ [ استخبارات الزمن والمدة ]
-        # متى تبدأ الحركة؟
-        if expansion_ratio > 1.10:
-            start_time = "فوري (بدأ الانفجار الآن 🚀)"
+        support_4h = float(c.get('support_4h', price * 0.92))
+        res_4h = float(c.get('resistance_4h', price * 1.08))
+        
+        support_1d = float(c.get('support_1d', price * 0.85))
+        res_1d = float(c.get('resistance_1d', price * 1.15))
+
+        # ⏱️ [ استخبارات الزمن والسيولة ]
+        if expansion_ratio > 1.10 and abs(macd_hist_15m) > 0:
+            start_time = "فوري (بدأت الموجة الآن 🚀)"
         elif bbw_now < 0.025:
             start_time = "خلال 1 - 3 ساعات (اختناق نهائي ⏳)"
         else:
             start_time = "تجميع لحظي (السيولة تتشكل 🌊)"
 
-        # كم ستستمر الحركة؟ (تعتمد على الفوليوم)
-        if vol_now > (vol_ma * 2):
-            duration_est = "موجة عنيفة وسريعة (1 - 2 ساعات)"
-        else:
-            duration_est = "موجة زحف مستقرة (4 - 8 ساعات)"
+        # 🧠 [ منطق التأكيد الفني ]
+        macd_bullish = macd_15m > macd_sig_15m and macd_hist_15m > 0
+        macd_bearish = macd_15m < macd_sig_15m and macd_hist_15m < 0
+        
+        is_bullish = obv_slope_15m > 0 and rsi_15m < 78 and price >= ema50_15m and macd_bullish
+        # إضافة شرط البيع الصريح
+        is_bearish = obv_slope_15m < 0 and rsi_15m > 22 and price <= ema50_15m and macd_bearish
 
-        # 🧠 [ منطق الدخول الهجومي ]
-        # الشراء: سيولة إيجابية + RSI تحت 78 (إعداداتك) + السعر يحترم EMA50
-        is_bullish = obv_slope_15m > 0 and rsi_15m < 78 and price >= ema50_15m * 0.99
-        is_fakeout = obv_slope_15m < 0 and rsi_15m > 22 and price < ema50_15m
-
-        if is_bullish or (not is_fakeout and rsi_15m > 50):
-            # 🟢 صفقة شراء (LONG)
+        # 🎯 [ غرفة اتخاذ القرار ]
+        if is_bullish or (obv_slope_15m > 0 and macd_bullish and rsi_15m > 50):
+            trade_direction = "LONG"
             direction_text = "شراء (LONG)"
             emoji_trend = "🚀"
-            emoji_target = "👉"
-            action_text = "اضغط أدناه وافتح صفقة شراء (Long) 📈"
             
-            # الدخول الهجومي: بين السعر الحالي وأول دعم (EMA 20)
+            # ⚠️ تقييم مخاطر الاصطدام بمقاومة يومية
+            risk_score, is_critical_risk = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
+            
+            if is_critical_risk:
+                # إلغاء التوصية إذا كان الخطر مميتاً (السعر يلامس M Y)
+                cancel_text = f"🚨 <b>تحذير  صارم:</b> {symbol}\n\n"
+                cancel_text += f"تم إلغاء التوصية الإيجابية اللحظية. السعر يتداول على مسافة خطيرة جداً من <b>M Y صلبة</b> ({f_num(res_1d)}).\n"
+                cancel_text += f"نسبة خطر الانعكاس: {risk_score:.0f}%\n"
+                cancel_text += "القرار: البقاء خارج السوق ومراقبة الكسر الفعلي."
+                
+                back_kb = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 رجوع", callback_data=f"coin_view:{owner_id}:{symbol}:15m"))
+                return await callback_query.message.edit_text(cancel_text, reply_markup=back_kb, parse_mode="HTML")
+
+            tech_status = "اختراق سيولة مؤكد مع تقاطع M آمن."
+            
+            # الدخول: أقرب نقطة بين السعر الحالي ودعم 15 دقيقة / EMA20
             entry_1 = price
-            entry_2 = ema20_15m
+            entry_2 = max(support_15m, ema20_15m)
             if entry_1 < entry_2: entry_1, entry_2 = entry_2, entry_1
             
-            # خط الدفاع (DCA) وحائط الصد (SL)
             dca = ema50_15m
-            sl = dca * 0.985 # وقف خسارة قاسي لضمان نسبة عائد عالية
             
-            # الأهداف الفلكية (مدمجة مع امتداد فيبوناتشي 1.272 و 1.618)
-            tp1 = max(bb_upper, price + (price_range * 0.236))
-            tp2 = price + (price_range * 0.382)
-            tp3 = price + (price_range * 0.618)
+            # الوقف: يجب أن يكون تحت دعم الـ 15 دقيقة، ولكن إذا كان دعم الساعة قريباً، ننزل تحته لضمان الأمان
+            strong_support = min(support_15m, support_1h) if abs(support_15m - support_1h) / price < 0.02 else support_15m
+            sl = min(strong_support, ema50_15m) * 0.985 
             
-        else:
-            # 🔴 صفقة بيع (SHORT)
+            # الأهداف: مبنية على فريمات أكبر (وليس مجرد أرقام عشوائية)
+            tp1 = min(res_15m, price + (price_range * 0.236))
+            tp2 = min(res_1h, price + (price_range * 0.382))  # يصطدم بمقاومة الساعة
+            tp3 = min(res_4h, price + (price_range * 0.618))  # يصطدم بمقاومة الـ 4 ساعات
+            
+        elif is_bearish or (obv_slope_15m < 0 and macd_bearish and rsi_15m < 50):
+            trade_direction = "SHORT"
             direction_text = "بيع (SHORT)"
             emoji_trend = "📉"
-            emoji_target = "👉"
-            action_text = "اضغط أدناه وافتح صفقة بيع (Short) 📉"
             
-            # دخول هجومي على المقاومة
+            # ⚠️ تقييم مخاطر الاصطدام بدعم يومي
+            risk_score, is_critical_risk = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
+            
+            if is_critical_risk:
+                cancel_text = f"🚨 <b>تحذير  صارم:</b> #{symbol}\n\n"
+                cancel_text += f"تم إلغاء توصية البيع. السعر يلامس <b>جدار Y</b> ({f_num(support_1d)}) وهناك احتمال ارتداد حوت عنيف.\n"
+                cancel_text += f"نسبة خطر الانعكاس: {risk_score:.0f}%\n"
+                cancel_text += "القرار: يمنع البيع (Short) هنا مطلقاً."
+                
+                back_kb = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 رجوع", callback_data=f"coin_view:{owner_id}:{symbol}:15m"))
+                return await callback_query.message.edit_text(cancel_text, reply_markup=back_kb, parse_mode="HTML")
+
+            tech_status = "كسر دعوم لحظية مع تفريغ سيولة سلبي."
+            
+            # الدخول
             entry_1 = price
-            entry_2 = ema20_15m
+            entry_2 = min(res_15m, ema20_15m)
             if entry_1 > entry_2: entry_1, entry_2 = entry_2, entry_1 
             
             dca = ema50_15m
-            sl = dca * 1.015 
             
-            # أهداف الهبوط السحيق
-            tp1 = min(bb_lower, price - (price_range * 0.236))
-            tp2 = price - (price_range * 0.382)
-            tp3 = price - (price_range * 0.618)
+            # الوقف: أعلى مقاومة الساعة أو الـ 15 دقيقة (أيهما أقرب وأقوى)
+            strong_res = max(res_15m, res_1h) if abs(res_15m - res_1h) / price < 0.02 else res_15m
+            sl = max(strong_res, ema50_15m) * 1.015 
+            
+            # الأهداف: دعم 15 دقيقة، دعم الساعة، دعم 4 ساعات
+            tp1 = max(support_15m, price - (price_range * 0.236))
+            tp2 = max(support_1h, price - (price_range * 0.382))
+            tp3 = max(support_4h, price - (price_range * 0.618))
 
-        def f_num(val): return f"{val:.5f}".rstrip('0').rstrip('.') if val < 1 else f"{val:.4f}"
-
-        # 📝 [ قالب الإرسال الاستخباراتي ]
-        signal_text = f"🔥 فرصة انفجار سعري: #{symbol} {emoji_trend}\n\n"
-        signal_text += f"الوضع الفني حالياً:\n"
-        signal_text += f"العملة تتفاعل بقوة، وتم رصد سيولة بحجم {vol_now:,.0f} تدعم الاتجاه.\n\n"
+        else:
+            # 🛡️ الحماية من المناطق العرضية
+            return await callback_query.answer("⚠️ حالة تذبذب: لا توجد إشارة واحدة قوية (Long/Short) حالياً. يفضل الانتظار.", show_alert=True)
+                    
+        # 📝 [ قالب الإرسال الاستخباراتي النهائي ]
+        signal_text = f"🔥 <b>فرصة قنص مؤكدة (MTF):</b> {symbol} {emoji_trend}\n\n"
+        signal_text += f"📊 <b>الوضع الفني:</b>\n"
+        signal_text += f"• {tech_status}\n"
+        signal_text += f"• السيولة الحالية: {vol_now:,.0f}\n"
+        signal_text += f"• نسبة المخاطرة: <b>{risk_score:.0f}%</b> {'🟢' if risk_score < 40 else '🟡'}\n\n"
         
-        signal_text += f"📐 خطة الدخول:\n"
-        signal_text += f"{direction_text}: #{symbol}\n"
-        signal_text += f"🎯 منطقة الدخول الذهبية: <code>{f_num(entry_2)}</code> - <code>{f_num(entry_1)}</code>\n"
-        signal_text += f"🛡️ تأمين الصفقة (DCA): <code>{f_num(dca)}</code>\n"
+        signal_text += f"📐 <b>خطة العمل (التنفيذ الفوري):</b>\n"
+        signal_text += f"القرار: <b>{direction_text}</b>\n"
+        signal_text += f"🎯 نطاق الدخول: <code>{f_num(entry_2)}</code> - <code>{f_num(entry_1)}</code>\n"
+        signal_text += f"🛡️ تعزيز (DCA): <code>{f_num(dca)}</code>\n"
         signal_text += f"🚫 وقف الخسارة (SL): <code>{f_num(sl)}</code>\n\n"
         
-        signal_text += f"💰 محطات جني الأرباح (الأهداف):\n"
-        signal_text += f"{emoji_target} الهدف الأول: <code>{f_num(tp1)}</code> ⚡\n"
-        signal_text += f"{emoji_target} الهدف الثاني: <code>{f_num(tp2)}</code> 🚀\n"
-        signal_text += f"{emoji_target} الهدف الثالث: <code>{f_num(tp3)}</code> 🚀🚀\n\n"
+        signal_text += f"💰 <b>محطات جني الأرباح (الأهداف):</b>\n"
+        signal_text += f"👉 هدف 1 (مستوى 15m): <code>{f_num(tp1)}</code> ⚡\n"
+        signal_text += f"👉 هدف 2 (مستوى 1H): <code>{f_num(tp2)}</code> 🚀\n"
+        signal_text += f"👉 هدف 3 (مستوى 4H): <code>{f_num(tp3)}</code> 🚀\n\n"
         
-        # --- قسم الاستخبارات الزمنية ---
-        signal_text += f"⏱️ <b>توقيت الزمن والزخم:</b>\n"
-        signal_text += f"• توقيت الانفجار: <b>{start_time}</b>\n"
-        signal_text += f"• المدة المتوقعة: <b>{duration_est}</b>\n"
-        signal_text += f"• معدل فتح القناة: <b>{(expansion_ratio*100):.1f}%</b>\n"
-        signal_text += f"• إشارة RSI: <b>{rsi_15m:.0f}</b>\n\n"
-        
-        signal_text += f"{action_text}\n"
+        signal_text += f"⏱️ <b>توقيت التحرك المتوقع:</b>\n{start_time}\n"
 
         back_kb = InlineKeyboardMarkup().add(
             InlineKeyboardButton("🔙 رجوع للشارت", callback_data=f"coin_view:{owner_id}:{symbol}:15m")
         )
 
         await callback_query.message.edit_text(signal_text, reply_markup=back_kb, parse_mode="HTML")
-        await callback_query.answer("💎 تم توليد إحداثيات الإعصار بدقة متناهية!")
+        await callback_query.answer("💎 تم قفل الرادار المتعدد الفريمات بنجاح!")
 
     except Exception as e:
         print(f"VIP Error: {e}")
-        await callback_query.answer("❌ تعذر توليد التوصية.", show_alert=True)
+        await callback_query.answer("❌ تعذر توليد التوصية. تحقق من سلامة البيانات.", show_alert=True)
+        
 # ==========================================
 # 7. معالجات دورة الصفقة (المطورة لدعم الفواصل والأمان)
 # ==========================================
