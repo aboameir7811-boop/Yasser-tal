@@ -1824,34 +1824,32 @@ async def process_coin_view(callback_query: types.CallbackQuery):
         
 
 # --- [ 3. هاندلر توصية VIP (قالب العنود / الدخول الهجومي) ] ---
+from aiogram import types
+from aiogram.dispatcher.filters import Text
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import math
+
+# 🛠️ [ أداة تحليل المخاطر المحسنة - جدار الحماية ]
 def evaluate_reversal_risk(current_price, support_1d, resistance_1d, direction):
-    """
-    تقوم هذه الدالة بحساب مدى قرب السعر من الحوائط الإسمنتية للفريم اليومي.
-    إذا كان السعر قريباً جداً (أقل من 1.5%) من مقاومة يومية، فصفقة الشراء تعتبر انتحاراً.
-    """
     try:
         if direction == "LONG":
-            # الخطر في الشراء هو الاصطدام بمقاومة يومية عنيفة
             distance_to_res = (resistance_1d - current_price) / current_price
-            is_critical = distance_to_res < 0.015  # خطر إذا كانت المسافة أقل من 1.5%
+            is_critical = distance_to_res < 0.02  # جدار خرساني قريب
             risk_score = 99 if is_critical else max(10, 100 - (distance_to_res * 1000))
             return min(risk_score, 99), is_critical
-            
         elif direction == "SHORT":
-            # الخطر في البيع هو الاصطدام بدعم يومي صلب
             distance_to_sup = (current_price - support_1d) / current_price
-            is_critical = distance_to_sup < 0.015  # خطر إذا كانت المسافة أقل من 1.5%
+            is_critical = distance_to_sup < 0.02 
             risk_score = 99 if is_critical else max(10, 100 - (distance_to_sup * 1000))
             return min(risk_score, 99), is_critical
     except ZeroDivisionError:
         return 50, False
 
-# 🚀 [ غرفة العمليات الـ VIP ]
+# 🚀 [ غرفة العمليات الـ VIP - خوارزمية كشف النوايا والانفجار ]
 @dp.callback_query_handler(Text(startswith='vip_signal:'), state="*")
 async def process_vip_signal(callback_query: types.CallbackQuery):
-    # 🛠️ [ دالة تنسيق الأرقام مدمجة هنا لتفادي أخطاء النطاق NameError ]
     def f_num(val): 
-        if val is None: return "0.00"
+        if val is None or val == 0: return "0.00"
         return f"{val:.5f}".rstrip('0').rstrip('.') if val < 1 else f"{val:.4f}"
 
     try:
@@ -1860,170 +1858,139 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
         symbol = data_parts[2]
 
         if callback_query.from_user.id != owner_id:
-            return await callback_query.answer("⚠️ مستوى أمني غير كافٍ! لا تملك صلاحية الوصول لغرفة العمليات.", show_alert=True)
+            return await callback_query.answer("⚠️ مستوى أمني غير كافٍ!", show_alert=True)
 
-        # سحب البيانات الاستخباراتية من قاعدة البيانات
         res = supabase.table("crypto_market_simulation").select("*").eq("symbol", symbol).execute()
         if not res.data: 
-            return await callback_query.answer("❌ لا توجد بيانات كافية لهذه العملة حالياً.", show_alert=True)
+            return await callback_query.answer("❌ لا توجد بيانات كافية.", show_alert=True)
         
         c = res.data[0]
         price = float(c['current_price'])
-        high_24 = float(c.get('high_24h', price * 1.05))
-        low_24 = float(c.get('low_24h', price * 0.95))
-        price_range = high_24 - low_24
         
-        # 🕵️‍♂️ [ المؤشرات اللحظية - فريم 15 دقيقة ] (للبحث عن الزناد / Trigger)
+        # 1️⃣ [ استخبارات السيولة وصراع الحيتان ]
+        obv_slope_15m = float(c.get('obv_slope_15m', 0))
+        obv_slope_1h = float(c.get('obv_slope_1h', 0))
+        orderbook_imb = float(c.get('orderbook_imbalance_ratio', 1.0))
+        whale_absorption = c.get('whale_absorption_detected', False)
+        
+        # 2️⃣ [ استخبارات الانضغاط (Volatility Squeeze) ]
+        # استراتيجية (BB inside KC): عندما تدخل حدود البولنجر داخل قنوات كيلتنر، فهذا يعني أن السعر مضغوط كالنار تحت الرماد.
+        bb_up_15m = float(c.get('bb_upper_15m', price * 1.01))
+        bb_low_15m = float(c.get('bb_lower_15m', price * 0.99))
+        kc_up_15m = float(c.get('kc_upper_15m', price * 1.02))
+        kc_low_15m = float(c.get('kc_lower_15m', price * 0.98))
+        bbw_15m = float(c.get('bbw_15m', 0.05))
+        bbw_prev_15m = float(c.get('bbw_prev_15m', 0.05))
+        
+        is_squeezed = (bb_up_15m < kc_up_15m) and (bb_low_15m > kc_low_15m)
+        is_expanding = bbw_15m > bbw_prev_15m # بدأ الانفجار
+        
+        # 3️⃣ [ الفلاتر الكلاسيكية الصارمة ]
         ema20_15m = float(c.get('ema_20_15m', price))
         ema50_15m = float(c.get('ema_50_15m', price))
         rsi_15m = float(c.get('rsi_15m', 50))
-        obv_slope_15m = float(c.get('obv_slope_15m', 0))
         macd_15m = float(c.get('macd_15m', 0))
         macd_sig_15m = float(c.get('macd_signal_15m', 0))
-        macd_hist_15m = float(c.get('macd_hist_15m', 0))
-        
-        bbw_now = float(c.get('bbw_15m', 0.05))
-        bbw_prev = float(c.get('bbw_prev_15m', 0.05))
-        expansion_ratio = (bbw_now / bbw_prev) if bbw_prev > 0 else 1.0
+        atr_15m = float(c.get('atr_15m', price * 0.01))
 
-        vol_now = float(c.get('volume_15m', 1))
-        vol_ma = float(c.get('volume_ma_15m', 1))
-
-        # 🏰 [ التحصينات الكبرى: دعوم ومقاومات الفريمات المتعددة ]
-        support_15m = float(c.get('support_15m', price * 0.98))
-        res_15m = float(c.get('resistance_15m', price * 1.02))
-        
-        support_1h = float(c.get('support_1h', price * 0.96))
-        res_1h = float(c.get('resistance_1h', price * 1.04))
-        
-        support_4h = float(c.get('support_4h', price * 0.92))
-        res_4h = float(c.get('resistance_4h', price * 1.08))
-        
+        # 4️⃣ [ التحصينات الكبرى ]
+        support_1h = float(c.get('support_1h', price * 0.98))
+        res_1h = float(c.get('resistance_1h', price * 1.02))
         support_1d = float(c.get('support_1d', price * 0.85))
         res_1d = float(c.get('resistance_1d', price * 1.15))
 
-        # ⏱️ [ استخبارات الزمن والسيولة ]
-        if expansion_ratio > 1.10 and abs(macd_hist_15m) > 0:
-            start_time = "فوري (بدأت الموجة الآن 🚀)"
-        elif bbw_now < 0.025:
-            start_time = "خلال 1 - 3 ساعات (اختناق نهائي ⏳)"
-        else:
-            start_time = "تجميع لحظي (السيولة تتشكل 🌊)"
-
-        # 🧠 [ منطق التأكيد الفني ]
-        macd_bullish = macd_15m > macd_sig_15m and macd_hist_15m > 0
-        macd_bearish = macd_15m < macd_sig_15m and macd_hist_15m < 0
+        # 🧠 [ محرك القرار المتقدم ]
         
-        is_bullish = obv_slope_15m > 0 and rsi_15m < 78 and price >= ema50_15m and macd_bullish
-        # إضافة شرط البيع الصريح
-        is_bearish = obv_slope_15m < 0 and rsi_15m > 22 and price <= ema50_15m and macd_bearish
+        # شروط الشراء المدمجة: انضغاط أو بداية انفجار + سيولة تراكمية + حيتان تمتص البيع + RSI ضمن النطاق الآمن
+        smart_money_long = obv_slope_15m > 0 and obv_slope_1h > 0 and orderbook_imb > 1.2
+        tech_long = macd_15m > macd_sig_15m and (22 < rsi_15m < 78) and price > ema50_15m
+        
+        is_bullish = smart_money_long and tech_long and (is_squeezed or is_expanding)
 
-        # 🎯 [ غرفة اتخاذ القرار ]
-        if is_bullish or (obv_slope_15m > 0 and macd_bullish and rsi_15m > 50):
+        # شروط البيع المدمجة: تفريغ سيولة + ضغط في دفتر الأوامر + انضغاط
+        smart_money_short = obv_slope_15m < 0 and obv_slope_1h < 0 and orderbook_imb < 0.8
+        tech_short = macd_15m < macd_sig_15m and (22 < rsi_15m < 78) and price < ema50_15m
+        
+        is_bearish = smart_money_short and tech_short and (is_squeezed or is_expanding)
+
+        if is_bullish:
             trade_direction = "LONG"
             direction_text = "شراء (LONG)"
             emoji_trend = "🚀"
             
-            # ⚠️ تقييم مخاطر الاصطدام بمقاومة يومية
+            status_parts = []
+            if whale_absorption: status_parts.append("ابتلاع حيتان شرائي 🐋")
+            if is_squeezed: status_parts.append("انضغاط سعري حاد 🗜️")
+            elif is_expanding: status_parts.append("بداية انفجار B 💥")
+            status_parts.append("تدفق سيولة  إيجابي 🌊")
+            tech_status = " | ".join(status_parts)
+            
             risk_score, is_critical_risk = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
-            
             if is_critical_risk:
-                # إلغاء التوصية إذا كان الخطر مميتاً (السعر يلامس M Y)
-                cancel_text = f"🚨 <b>تحذير  صارم:</b> {symbol}\n\n"
-                cancel_text += f"تم إلغاء التوصية الإيجابية اللحظية. السعر يتداول على مسافة خطيرة جداً من <b>M Y صلبة</b> ({f_num(res_1d)}).\n"
-                cancel_text += f"نسبة خطر الانعكاس: {risk_score:.0f}%\n"
-                cancel_text += "القرار: البقاء خارج السوق ومراقبة الكسر الفعلي."
-                
-                back_kb = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 رجوع", callback_data=f"coin_view:{owner_id}:{symbol}:15m"))
-                return await callback_query.message.edit_text(cancel_text, reply_markup=back_kb, parse_mode="HTML")
+                return await callback_query.answer("⚠️ الصفقة ملغاة: السعر قريب جداً من مقاومة يومية صلبة.", show_alert=True)
 
-            tech_status = "اختراق سيولة مؤكد مع تقاطع M آمن."
-            
-            # الدخول: أقرب نقطة بين السعر الحالي ودعم 15 دقيقة / EMA20
+            # 🎯 الدخول والأهداف بناءً على التحليل الدقيق
             entry_1 = price
-            entry_2 = max(support_15m, ema20_15m)
-            if entry_1 < entry_2: entry_1, entry_2 = entry_2, entry_1
-            
+            entry_2 = ema20_15m if ema20_15m < price else price * 0.995
             dca = ema50_15m
+            sl = ema50_15m - (atr_15m * 1.5)
             
-            # الوقف: يجب أن يكون تحت دعم الـ 15 دقيقة، ولكن إذا كان دعم الساعة قريباً، ننزل تحته لضمان الأمان
-            strong_support = min(support_15m, support_1h) if abs(support_15m - support_1h) / price < 0.02 else support_15m
-            sl = min(strong_support, ema50_15m) * 0.985 
-            
-            # الأهداف: مبنية على فريمات أكبر (وليس مجرد أرقام عشوائية)
-            tp1 = min(res_15m, price + (price_range * 0.236))
-            tp2 = min(res_1h, price + (price_range * 0.382))  # يصطدم بمقاومة الساعة
-            tp3 = min(res_4h, price + (price_range * 0.618))  # يصطدم بمقاومة الـ 4 ساعات
-            
-        elif is_bearish or (obv_slope_15m < 0 and macd_bearish and rsi_15m < 50):
+            tp1 = res_1h if (res_1h - price) > (atr_15m * 1.5) else price + (atr_15m * 2.0)
+            tp2 = tp1 + (atr_15m * 2.0)
+            tp3 = min(res_1d, tp2 + (atr_15m * 3.0))
+
+        elif is_bearish:
             trade_direction = "SHORT"
             direction_text = "بيع (SHORT)"
             emoji_trend = "📉"
             
-            # ⚠️ تقييم مخاطر الاصطدام بدعم يومي
+            status_parts = []
+            if whale_absorption: status_parts.append("تصريف حيتان بيعي 🐋")
+            if is_squeezed: status_parts.append("انضغاط سعري حاد 🗜️")
+            elif is_expanding: status_parts.append("انهيار قاع B 💥")
+            status_parts.append("انسحاب سيولة سلبي 🩸")
+            tech_status = " | ".join(status_parts)
+            
             risk_score, is_critical_risk = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
-            
             if is_critical_risk:
-                cancel_text = f"🚨 <b>تحذير  صارم:</b> #{symbol}\n\n"
-                cancel_text += f"تم إلغاء توصية البيع. السعر يلامس <b>جدار Y</b> ({f_num(support_1d)}) وهناك احتمال ارتداد حوت عنيف.\n"
-                cancel_text += f"نسبة خطر الانعكاس: {risk_score:.0f}%\n"
-                cancel_text += "القرار: يمنع البيع (Short) هنا مطلقاً."
-                
-                back_kb = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 رجوع", callback_data=f"coin_view:{owner_id}:{symbol}:15m"))
-                return await callback_query.message.edit_text(cancel_text, reply_markup=back_kb, parse_mode="HTML")
+                return await callback_query.answer("⚠️ الصفقة ملغاة: السعر قريب جداً من دعم يومي صلب.", show_alert=True)
 
-            tech_status = "كسر دعوم لحظية مع تفريغ سيولة سلبي."
-            
-            # الدخول
             entry_1 = price
-            entry_2 = min(res_15m, ema20_15m)
-            if entry_1 > entry_2: entry_1, entry_2 = entry_2, entry_1 
-            
+            entry_2 = ema20_15m if ema20_15m > price else price * 1.005
             dca = ema50_15m
+            sl = ema50_15m + (atr_15m * 1.5)
             
-            # الوقف: أعلى مقاومة الساعة أو الـ 15 دقيقة (أيهما أقرب وأقوى)
-            strong_res = max(res_15m, res_1h) if abs(res_15m - res_1h) / price < 0.02 else res_15m
-            sl = max(strong_res, ema50_15m) * 1.015 
-            
-            # الأهداف: دعم 15 دقيقة، دعم الساعة، دعم 4 ساعات
-            tp1 = max(support_15m, price - (price_range * 0.236))
-            tp2 = max(support_1h, price - (price_range * 0.382))
-            tp3 = max(support_4h, price - (price_range * 0.618))
+            tp1 = support_1h if (price - support_1h) > (atr_15m * 1.5) else price - (atr_15m * 2.0)
+            tp2 = tp1 - (atr_15m * 2.0)
+            tp3 = max(support_1d, tp2 - (atr_15m * 3.0))
 
         else:
-            # 🛡️ الحماية من المناطق العرضية
-            return await callback_query.answer("⚠️ حالة تذبذب: لا توجد إشارة واحدة قوية (Long/Short) حالياً. يفضل الانتظار.", show_alert=True)
-                    
-        # 📝 [ قالب الإرسال الاستخباراتي النهائي ]
-        signal_text = f"🔥 <b>فرصة قنص مؤكدة (MTF):</b> {symbol} {emoji_trend}\n\n"
-        signal_text += f"📊 <b>الوضع الفني:</b>\n"
-        signal_text += f"• {tech_status}\n"
-        signal_text += f"• السيولة الحالية: {vol_now:,.0f}\n"
-        signal_text += f"• نسبة المخاطرة: <b>{risk_score:.0f}%</b> {'🟢' if risk_score < 40 else '🟡'}\n\n"
+            return await callback_query.answer("🛡️ الرادار مغلق: لا يوجد اختلال في دفتر الأوامر أو تراكم سيولة يؤكد اتجاه الاختراق القادم.", show_alert=True)
+
+        # 📝 [ القالب ]
+        signal_text = f"🔥 <b>كشف السيولة :</b> #{symbol} {emoji_trend}\n\n"
+        signal_text += f"📊 <b>الوضع الميداني:</b>\n"
+        signal_text += f"• <b>التأكيد:</b> {tech_status}\n"
+        signal_text += f"• <b>ضغط دفتر الأوامر:</b> {orderbook_imb:.2f}x\n"
+        signal_text += f"• نسبة الخطر: <b>{risk_score:.0f}%</b> {'🟢' if risk_score < 40 else '🟡'}\n\n"
         
-        signal_text += f"📐 <b>خطة العمل (التنفيذ الفوري):</b>\n"
+        signal_text += f"📐 <b>خطة القنص المؤكدة:</b>\n"
         signal_text += f"القرار: <b>{direction_text}</b>\n"
-        signal_text += f"🎯 نطاق الدخول: <code>{f_num(entry_2)}</code> - <code>{f_num(entry_1)}</code>\n"
-        signal_text += f"🛡️ تعزيز (DCA): <code>{f_num(dca)}</code>\n"
-        signal_text += f"🚫 وقف الخسارة (SL): <code>{f_num(sl)}</code>\n\n"
+        signal_text += f"🎯 منطقة الدخول: <code>{f_num(entry_2)}</code> - <code>{f_num(entry_1)}</code>\n"
+        signal_text += f"🛡️ نقطة التعديل (DCA): <code>{f_num(dca)}</code>\n"
+        signal_text += f"🚫 وقف الخسارة الصارم (SL): <code>{f_num(sl)}</code>\n\n"
         
-        signal_text += f"💰 <b>محطات جني الأرباح (الأهداف):</b>\n"
-        signal_text += f"👉 هدف 1 (مستوى 15m): <code>{f_num(tp1)}</code> ⚡\n"
-        signal_text += f"👉 هدف 2 (مستوى 1H): <code>{f_num(tp2)}</code> 🚀\n"
-        signal_text += f"👉 هدف 3 (مستوى 4H): <code>{f_num(tp3)}</code> 🚀\n\n"
-        
-        signal_text += f"⏱️ <b>توقيت التحرك المتوقع:</b>\n{start_time}\n"
+        signal_text += f"💰 <b>محطات جني الأرباح:</b>\n"
+        signal_text += f"1️⃣ الهدف الأول: <code>{f_num(tp1)}</code> ⚡\n"
+        signal_text += f"2️⃣ الهدف الثاني: <code>{f_num(tp2)}</code> 🚀\n"
+        signal_text += f"3️⃣ الهدف الثالث: <code>{f_num(tp3)}</code> 🚀\n"
 
-        back_kb = InlineKeyboardMarkup().add(
-            InlineKeyboardButton("🔙 رجوع للشارت", callback_data=f"coin_view:{owner_id}:{symbol}:15m")
-        )
-
+        back_kb = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 رجوع", callback_data=f"coin_view:{owner_id}:{symbol}:15m"))
         await callback_query.message.edit_text(signal_text, reply_markup=back_kb, parse_mode="HTML")
-        await callback_query.answer("💎 تم قفل الرادار المتعدد الفريمات بنجاح!")
 
     except Exception as e:
         print(f"VIP Error: {e}")
-        await callback_query.answer("❌ تعذر توليد التوصية. تحقق من سلامة البيانات.", show_alert=True)
+        await callback_query.answer("❌ تعذر التوليد. تحقق من قيم الأعمدة المتقدمة في القاعدة.", show_alert=True)
         
 # ==========================================
 # 7. معالجات دورة الصفقة (المطورة لدعم الفواصل والأمان)
