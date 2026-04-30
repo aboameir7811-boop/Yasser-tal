@@ -207,13 +207,16 @@ async def trade_reaper():
         await asyncio.sleep(8) # وقت مثالي لضمان تحديث سريع وحماية من الحظر
 
 
+
+from datetime import datetime
+
 async def intelligence_scanner():
     """
-    الرادار v11.0 (عين الصقر + القلعة المحصنة)
-    يدمج الدعوم والمقاومات المتعددة الفريمات، يتجاهل العملات الميتة، 
-    ويضرب بيد من حديد في مناطق انضغاط السيولة وإبادة البائعين.
+    الرادار v11.1 (عين الصقر + القلعة المحصنة + فلتر الماكد)
+    يدمج الدعوم والمقاومات المتعددة الفريمات، يتجاهل العملات الميتة والمزعجة، 
+    ويضرب بيد من حديد في مناطق انضغاط السيولة وإبادة البائعين بتأكيد فني صارم.
     """
-    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار v11.0 يمسح السوق بذكاء الدعوم والمقاومات الحقيقية...")
+    print(f"🚀 {datetime.now().strftime('%H:%M:%S')} | الرادار v11.1 يمسح السوق بذكاء الدعوم والمقاومات وتأكيد الماكد...")
     
     try:
         res = supabase.table("crypto_market_simulation").select("*").execute()
@@ -222,8 +225,15 @@ async def intelligence_scanner():
         if not coins: 
             return []
 
+        # 🚫 قائمة العملات المزعجة المحظورة
+        ignored_coins = {"EOSUSDT", "GALUSDT", "HNTUSDT", "PLAUSDT"}
+
         for coin in coins:
             symbol = coin['symbol']
+            
+            # تجاوز العملات المزعجة فوراً
+            if symbol in ignored_coins:
+                continue
             
             # ==========================================
             # ⛔ [ 0. فلتر إبادة الأشباح (تجاهل العملات الميتة) ]
@@ -244,26 +254,19 @@ async def intelligence_scanner():
             # ==========================================
             # 🧱 [ 1. استخراج ترسانة الدعوم والمقاومات الحقيقية ]
             # ==========================================
-            # فريم 5 دقائق
             sup_5m = float(coin.get('support_5m') or 0)
             res_5m = float(coin.get('resistance_5m') or 0)
-            # فريم 15 دقيقة
             sup_15m = float(coin.get('support_15m') or 0)
             res_15m = float(coin.get('resistance_15m') or 0)
-            # فريم 1 ساعة
             sup_1h = float(coin.get('support_1h') or 0)
             res_1h = float(coin.get('resistance_1h') or 0)
-            # فريم 2 ساعة
             sup_2h = float(coin.get('support_2h') or 0)
             res_2h = float(coin.get('resistance_2h') or 0)
-            # فريم 4 ساعات
             sup_4h = float(coin.get('support_4h') or 0)
             res_4h = float(coin.get('resistance_4h') or 0)
-            # فريم يومي
             sup_1d = float(coin.get('support_1d') or 0)
             res_1d = float(coin.get('resistance_1d') or 0)
 
-            # دالة مساعدة لحساب اقتراب السعر من مستوى الدعم/المقاومة بنسبة مئوية (1.5%)
             def is_near_level(current_p, level, threshold=0.015):
                 if level == 0: return False
                 return abs(current_p - level) / level <= threshold
@@ -288,6 +291,11 @@ async def intelligence_scanner():
             ema50 = float(coin.get('ema_50_15m') or 0) 
             ema100 = float(coin.get('ema_100_15m') or 0) 
             rsi_15m = float(coin.get('rsi_15m') or 50) 
+            
+            # استخراج قيم الماكد (MACD)
+            macd_15m = float(coin.get('macd_15m') or 0)
+            macd_signal_15m = float(coin.get('macd_signal_15m') or 0)
+            macd_hist_15m = float(coin.get('macd_hist_15m') or 0)
             
             obv_slope_15m = float(coin.get('obv_slope_15m') or 0) 
             oi_change = float(coin.get('open_interest_change_24h') or 0) 
@@ -329,7 +337,6 @@ async def intelligence_scanner():
             low_24h = float(coin.get('low_24h') or (price * 0.95)) 
             fib_618 = high_24h - (0.618 * (high_24h - low_24h)) 
             
-            # الاعتماد العام كخطة بديلة (Fallback)
             is_near_support_general = (price <= lower * 1.015) or (price <= ema50 * 1.015) or (abs(price - fib_618) / fib_618 <= 0.01)
             is_near_resistance_general = (price >= upper * 0.985) or (price >= ema20 * 1.03)
             
@@ -368,9 +375,21 @@ async def intelligence_scanner():
                 reasons.append("🛡️ غطاء مالي (4H): الاتجاه العام صاعد ويدعم الموجة القادمة")
 
             # ==========================================
-            # 🕯️ [ 4. محرك الشموع v11.0 (المدعوم بالدعوم والمقاومات الحقيقية) ]
+            # 📊 [ 4. التأكيد الفني الصارم (MACD) ]
             # ==========================================
-            # ربط كل فريم بالدعم والمقاومة الخاص به من قاعدة البيانات
+            is_macd_bullish = (macd_15m > macd_signal_15m) and (macd_hist_15m > 0)
+            is_macd_bearish = (macd_15m < macd_signal_15m) and (macd_hist_15m < 0)
+
+            if is_macd_bullish and has_volume_confirmation:
+                score += 40
+                reasons.append("📈 تأكيد الماكد (MACD): تقاطع إيجابي وزخم صاعد مدعوم بالسيولة (+40)")
+            elif is_macd_bearish:
+                score -= 50  # عقوبة قوية للاتجاه السلبي الواضح
+                reasons.append("📉 رفض الماكد (MACD): تقاطع سلبي يضغط على السعر (-50)")
+
+            # ==========================================
+            # 🕯️ [ 5. محرك الشموع v11.1 (المدعوم بالدعوم والمقاومات) ]
+            # ==========================================
             tf_levels = {
                 '5m': {'sup': sup_5m, 'res': res_5m},
                 '15m': {'sup': sup_15m, 'res': res_15m},
@@ -388,11 +407,9 @@ async def intelligence_scanner():
                 is_bullish = "صاعد" in pattern
                 is_bearish = "هابط" in pattern
                 
-                # التحقق من ملامسة السعر للدعم الحقيقي الخاص بالفريم الحالي
                 tf_sup = tf_levels[tf]['sup']
                 tf_res = tf_levels[tf]['res']
                 
-                # السعر يعتبر عند دعم إذا لامس الدعم الحقيقي للفريم، أو الدعم العام
                 is_at_tf_support = is_near_level(price, tf_sup) or is_near_support_general
                 is_at_tf_resistance = is_near_level(price, tf_res) or is_near_resistance_general
 
@@ -457,7 +474,7 @@ async def intelligence_scanner():
                         reasons.append(f"🔍 ا [5m - انضغاط] {clean_name}: إشارة حيرة تسبق الانفجار ({'+' if is_bullish else '-'}{weight})")
 
             # ==========================================
-            # 🛡️ [ 5. الغطاء الجوي ومعززات الاتجاه ]
+            # 🛡️ [ 6. الغطاء الجوي ومعززات الاتجاه ]
             # ==========================================
             is_1h_ready = (
                 (price > ema20_1h) and             
@@ -514,7 +531,7 @@ async def intelligence_scanner():
                 reasons.append(f"🌪️ قوة الاتجاه (A): مسار انفجاري مؤكد ({adx_val})")
 
             # ==========================================
-            # 🛡️ [ 6. فلاتر الحماية الصارمة ]
+            # 🛡️ [ 7. فلاتر الحماية الصارمة ]
             # ==========================================
             if rsi_4h < 40 and ema20_4h < ema50_4h:
                 score -= 30
@@ -526,7 +543,7 @@ async def intelligence_scanner():
                 reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.") 
 
             # ==========================================
-            # 🎯 [ 7. قرار الإطلاق النهائي ]
+            # 🎯 [ 8. قرار الإطلاق النهائي ]
             # ==========================================
             sc_crawling = 1 if is_crawling_up else 0 
             sc_spark = 1 if is_5m_spark else 0 
@@ -539,7 +556,6 @@ async def intelligence_scanner():
 
             signal_type = "NONE"
             
-            # تحديث الاعتماد ليكون أكثر ذكاءً بناءً على الدعوم المجمعة
             if score >= 200:
                 if is_near_support_general or is_uptrend or is_at_tf_support:
                     signal_type = "LONG"
@@ -586,10 +602,10 @@ async def intelligence_scanner():
                 
     except Exception as e: 
         import logging 
-        logging.error(f"❌ خطأ داخلي في الرادار القناص v11.0: {e}") 
+        logging.error(f"❌ خطأ داخلي في الرادار القناص v11.1: {e}") 
 
-    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.0) بنجاح.")
-    
+    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.1) بنجاح.")
+
 
 # تحديث دالة التنبيه لتقبل السعر الحالي والاتجاه (v10.4)
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG"):
