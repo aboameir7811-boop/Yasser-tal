@@ -3368,6 +3368,34 @@ def calculate_price_action_sr(highs, lows):
 
     return latest_support, latest_resistance
 
+
+def get_imbalance_ratio(depth_data):
+    """
+    تحويل بيانات دفتر الأوامر الخام إلى نسبة اختلال السيولة.
+    depth_data: هي النتيجة القادمة من exchange.fetch_order_book
+    """
+    try:
+        # تحويل القوائم إلى مصفوفات Numpy لمعالجة سريعة جداً
+        # نأخذ أول 20 مستوى (أهم مستويات السيولة القريبة من السعر)
+        bids = np.array(depth_data['bids'][:20]) 
+        asks = np.array(depth_data['asks'][:20])
+        
+        # جمع كميات الشراء (العمود الثاني في المصفوفة)
+        total_bids_volume = np.sum(bids[:, 1])
+        
+        # جمع كميات البيع (العمود الثاني في المصفوفة)
+        total_asks_volume = np.sum(asks[:, 1])
+        
+        # حساب النسبة النهائية
+        if total_asks_volume > 0:
+            ratio = total_bids_volume / total_asks_volume
+        else:
+            ratio = 1.0 # قيمة افتراضية في حال تعطل البيانات
+            
+        return float(ratio)
+    except Exception as e:
+        return 1.0
+        
 # ==========================================
 # --- [ دوال التحليل و الجلب ] ---
 # ==========================================   
@@ -3380,9 +3408,6 @@ async def fetch_klines(session, symbol, interval, limit=100):
     except: return None
 
 
-# ==========================================
-# 2. دالة جلب وتحديث بيانات السوق (المحدثة)
-# ==========================================
 async def update_crypto_market_data():
     print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة OBV الاستخباراتي ودعوم/مقاومات الفريمات)...")
     
@@ -3444,10 +3469,29 @@ async def update_crypto_market_data():
                 price = float(coin.get('lastPrice', 0))
                 change_percent = float(coin.get('priceChangePercent', 0))
                 
+                # ==========================================
+                # ✨ [ إضافة: جلب بيانات عمق السوق لحساب الاختلال ] ✨
+                # ==========================================
+                orderbook_url = f"https://data-api.binance.vision/api/v3/depth?symbol={symbol}&limit=20"
+                imbalance_ratio = 1.0 # القيمة الافتراضية
+                
+                try:
+                    async with session.get(orderbook_url, timeout=5) as ob_res:
+                        if ob_res.status == 200:
+                            depth = await ob_res.json()
+                            bids_vol = sum([float(bid[1]) for bid in depth.get('bids', [])])
+                            asks_vol = sum([float(ask[1]) for ask in depth.get('asks', [])])
+                            if asks_vol > 0:
+                                imbalance_ratio = bids_vol / asks_vol
+                except Exception as e:
+                    logging.warning(f"⚠️ فشل جلب عمق السوق لـ {symbol}: {e}")
+                # ==========================================
+
                 record = {
                     "symbol": symbol,
                     "name": symbol.replace("USDT", ""),
                     "current_price": price,
+                    "orderbook_imbalance_ratio": round(imbalance_ratio, 4), # ✨ تم الحقن هنا ✨
                     "open_price_24h": float(coin.get('openPrice', 0)),
                     "high_24h": float(coin.get('highPrice', 0)),
                     "low_24h": float(coin.get('lowPrice', 0)),
@@ -3564,7 +3608,7 @@ async def update_crypto_market_data():
     
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
 
-    
+
 async def async_manual_upsert1(table_name, records):
     headers = {
         "apikey": SUPABASE_KEY,
