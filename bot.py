@@ -1900,18 +1900,19 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
         res_1d = float(c.get('resistance_1d', price * 1.15))
 
         # 🧠 [ محرك القرار المتقدم ]
+        # 🟢 شروط الشراء المدمجة: تخفيف القيود لتنفس الاستراتيجية
+        # يكفي أن يكون الـ OBV إيجابي على فريم 15 دقيقة مع سيولة جيدة في الدفتر (1.05 بدلاً من 1.2)
+        smart_money_long = (obv_slope_15m > 0) and (orderbook_imb > 1.05)
+        tech_long = (macd_15m > macd_sig_15m) and (22 < rsi_15m < 78) and (price > ema50_15m)
         
-        # شروط الشراء المدمجة: انضغاط أو بداية انفجار + سيولة تراكمية + حيتان تمتص البيع + RSI ضمن النطاق الآمن
-        smart_money_long = obv_slope_15m > 0 and obv_slope_1h > 0 and orderbook_imb > 1.2
-        tech_long = macd_15m > macd_sig_15m and (22 < rsi_15m < 78) and price > ema50_15m
-        
-        is_bullish = smart_money_long and tech_long and (is_squeezed or is_expanding)
+        # استخدام (or) لإعطاء فرصة لدخول الصفقات التي بها تدفق سيولة قوي حتى لو لم يكتمل الانضغاط بالكامل
+        is_bullish = smart_money_long and tech_long and (is_squeezed or is_expanding or whale_absorption)
 
-        # شروط البيع المدمجة: تفريغ سيولة + ضغط في دفتر الأوامر + انضغاط
-        smart_money_short = obv_slope_15m < 0 and obv_slope_1h < 0 and orderbook_imb < 0.8
-        tech_short = macd_15m < macd_sig_15m and (22 < rsi_15m < 78) and price < ema50_15m
+        # 🔴 شروط البيع المدمجة
+        smart_money_short = (obv_slope_15m < 0) and (orderbook_imb < 0.95)
+        tech_short = (macd_15m < macd_sig_15m) and (22 < rsi_15m < 78) and (price < ema50_15m)
         
-        is_bearish = smart_money_short and tech_short and (is_squeezed or is_expanding)
+        is_bearish = smart_money_short and tech_short and (is_squeezed or is_expanding or whale_absorption)
 
         if is_bullish:
             trade_direction = "LONG"
@@ -1920,15 +1921,16 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
             
             status_parts = []
             if whale_absorption: status_parts.append("ابتلاع حيتان شرائي 🐋")
-            if is_squeezed: status_parts.append("انضغاط سعري حاد 🗜️")
-            elif is_expanding: status_parts.append("بداية انفجار B 💥")
-            status_parts.append("تدفق سيولة  إيجابي 🌊")
+            if is_squeezed: status_parts.append("انضغاط سعري 🗜️")
+            elif is_expanding: status_parts.append("انفجار سيولة 💥")
+            status_parts.append("تدفق إيجابي 🌊")
             tech_status = " | ".join(status_parts)
             
+            # تقليل حساسية الرفض بسبب المقاومة: نلغيها فقط إذا كان الزخم (OBV) ضعيفاً
             risk_score, is_critical_risk = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
-            if is_critical_risk:
-                return await callback_query.answer("⚠️ الصفقة ملغاة: السعر قريب جداً من مقاومة يومية صلبة.", show_alert=True)
-
+            if is_critical_risk and obv_slope_1h <= 0: 
+                return await callback_query.answer("⚠️ الصفقة ملغاة: السعر قريب جداً من مقاومة يومية وزخم الاختراق ضعيف.", show_alert=True)
+            # ... (باقي كود الدخول والأهداف كما هو) ...
             # 🎯 الدخول والأهداف بناءً على التحليل الدقيق
             entry_1 = price
             entry_2 = ema20_15m if ema20_15m < price else price * 0.995
