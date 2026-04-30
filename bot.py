@@ -224,10 +224,13 @@ async def intelligence_scanner():
     
         if not coins: 
             return []
-
-        # 🚫 قائمة العملات المزعجة المحظورة
-        ignored_coins = {"EOSUSDT", "GALUSDT", "HNTUSDT", "PLAUSDT"}
-
+        
+        # 🚫 قائمة العملات المزعجة المحظورة (تم التحديث)
+        ignored_coins = {
+            "EOSUSDT", "GALUSDT", "HNTUSDT", "PLAUSDT", 
+            "VOXELUSDT", "DFUSDT", "KLAYUSDT", "BTCDOWNUSDT"
+        }
+        
         for coin in coins:
             symbol = coin['symbol']
             
