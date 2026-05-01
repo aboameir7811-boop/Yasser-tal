@@ -3399,21 +3399,146 @@ def get_imbalance_ratio(depth_data):
         return float(ratio)
     except Exception as e:
         return 1.0
-        
+
+
+def find_swing_points(df, window=5):
+    """استخراج القمم والقيعان (الذيول)"""
+    highs = df['high'].values
+    lows = df['low'].values
+    swing_highs = []
+    swing_lows = []
+    
+    for i in range(window, len(df) - window):
+        if highs[i] == max(highs[i - window : i + window + 1]):
+            swing_highs.append((i, highs[i]))
+        if lows[i] == min(lows[i - window : i + window + 1]):
+            swing_lows.append((i, lows[i]))
+            
+    return swing_highs, swing_lows
+
+def calculate_trendline_angle(x1, y1, x2, y2, avg_price):
+    """حساب تقريبي للزاوية بناء على نسبة التغير مقابل الزمن"""
+    dx = x2 - x1
+    if dx == 0: return 90
+    dy = ((y2 - y1) / avg_price) * 100  
+    angle_rad = math.atan(dy / dx)
+    return abs(math.degrees(angle_rad))
+
+def validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
+    """
+    تطبيق القاعدة رقم 6: مسموح يقطع الذيل، لكن ممنوع يقطع جسم الشمعة
+    """
+    slope = (y2 - y1) / (x2 - x1)
+    intercept = y1 - (slope * x1)
+    
+    for i in range(x1 + 1, len(df)):
+        trend_price = (slope * i) + intercept 
+        
+        body_bottom = min(df['open'].iloc[i], df['close'].iloc[i])
+        body_top = max(df['open'].iloc[i], df['close'].iloc[i])
+        
+        if trend_type == "UP":
+            if body_bottom < trend_price:
+                return False 
+                
+        elif trend_type == "DOWN":
+            if body_top > trend_price:
+                return False 
+                
+    return True
+
+# -- تمت إضافة min_distance لتحديد أقل مسافة مسموحة بين الارتكازين --
+def generate_trend_data(df, min_distance=10):
+    swings_high, swings_low = find_swing_points(df, window=5)
+    avg_price = df['close'].mean()
+    
+    # نسبة تسامح للملامسة (0.1% من متوسط السعر - يمكنك تعديلها)
+    tolerance = avg_price * 0.001 
+    
+    best_trend = {
+        "direction": "SIDEWAY", "angle": 0.0, "touches": 0, 
+        "current_line_price": 0.0, "is_valid": 2 
+    }
+    
+    # 1. البحث عن أقوى ترند صاعد (UP)
+    if len(swings_low) >= 2:
+        for i in range(len(swings_low)-1, 0, -1): 
+            for j in range(i-1, -1, -1):
+                x2, y2 = swings_low[i]
+                x1, y1 = swings_low[j]
+                
+                # ---- الشرط الجديد: التأكد من وجود تباعد كافي بين القاعين ----
+                if (x2 - x1) < min_distance:
+                    continue
+                
+                if y2 > y1: # شرط القيعان الصاعدة
+                    angle = calculate_trendline_angle(x1, y1, x2, y2, avg_price)
+                    
+                    if 15 <= angle <= 70: 
+                        if validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
+                            slope = (y2 - y1) / (x2 - x1)
+                            intercept = y1 - (slope * x1)
+                            
+                            touches = 0
+                            for px, py in swings_low:
+                                expected_y = (slope * px) + intercept
+                                if abs(py - expected_y) <= tolerance:
+                                    touches += 1
+                                    
+                            if touches > best_trend["touches"]:
+                                current_line_price = (slope * (len(df) - 1)) + intercept
+                                best_trend.update({
+                                    "direction": "UP", "angle": round(angle, 2), "touches": touches, 
+                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
+                                })
+
+    # 2. البحث عن أقوى ترند هابط (DOWN)
+    if len(swings_high) >= 2:
+        for i in range(len(swings_high)-1, 0, -1):
+            for j in range(i-1, -1, -1):
+                x2, y2 = swings_high[i]
+                x1, y1 = swings_high[j]
+                
+                # ---- الشرط الجديد: التأكد من وجود تباعد كافي بين القمتين ----
+                if (x2 - x1) < min_distance:
+                    continue
+                
+                if y2 < y1: # شرط القمم الهابطة
+                    angle = calculate_trendline_angle(x1, y1, x2, y2, avg_price)
+                    
+                    if 15 <= angle <= 70:
+                        if validate_strict_trendline(df, x1, y1, x2, y2, trend_type="DOWN"):
+                            slope = (y2 - y1) / (x2 - x1)
+                            intercept = y1 - (slope * x1)
+                            
+                            touches = 0
+                            for px, py in swings_high:
+                                expected_y = (slope * px) + intercept
+                                if abs(py - expected_y) <= tolerance:
+                                    touches += 1
+                            
+                            if touches > best_trend["touches"]:
+                                current_line_price = (slope * (len(df) - 1)) + intercept
+                                best_trend.update({
+                                    "direction": "DOWN", "angle": round(angle, 2), "touches": touches, 
+                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
+                                })
+
+    return best_trend
+
 # ==========================================
-# --- [ دوال التحليل و الجلب ] ---
+# --- [ دوال التحليل و الجلب الأصلية ] ---
 # ==========================================   
-async def fetch_klines(session, symbol, interval, limit=100):
+async def fetch_klines(session, symbol, interval, limit=200):
     url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
     try:
-        # تم تعديل التايم أوت إلى 10 ثواني لضمان عدم فشل الاتصال
         async with session.get(url, timeout=10) as res:
             if res.status == 200: return await res.json()
     except: return None
 
 
 async def update_crypto_market_data():
-    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة OBV الاستخباراتي ودعوم/مقاومات الفريمات)...")
+    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة OBV الاستخباراتي، دعوم/مقاومات، والترند الصارم)...")
     
     async with aiohttp.ClientSession() as session:
         try:
@@ -3425,9 +3550,6 @@ async def update_crypto_market_data():
             logging.error(f"❌ فشل الاتصال بـ API: {e}")
             return
 
-        # ==========================================
-        # 🛡️ [ فلاتر تنظيف الرادار الاستخباراتية ]
-        # ==========================================
         STABLE_COINS = {
             "USDCUSDT", "FDUSDUSDT", "TUSDUSDT", "BUSDUSDT", 
             "DAIUSDT", "EURUSDT", "AEURUSDT", "USDPUSDT", "USDDUSDT",
@@ -3461,10 +3583,10 @@ async def update_crypto_market_data():
             
             top_coins.append(c)
         
-        # ترتيب حسب السيولة
         top_coins = sorted(top_coins, key=lambda x: float(x.get('quoteVolume', 0)), reverse=True)[:600]
         
-        timeframes = ['5m', '15m', '1h', '2h', '4h', '1d']
+        # ✨ تم إضافة הפريمات الأسبوعية والشهرية هنا للتحليل الدقيق ✨
+        timeframes = ['5m', '15m', '1h', '2h', '4h', '1d', '1w', '1M']
         final_records = []
 
         for coin in top_coins:
@@ -3473,11 +3595,9 @@ async def update_crypto_market_data():
                 price = float(coin.get('lastPrice', 0))
                 change_percent = float(coin.get('priceChangePercent', 0))
                 
-                # ==========================================
-                # ✨ [ إضافة: جلب بيانات عمق السوق لحساب الاختلال ] ✨
-                # ==========================================
+                # جلب عمق السوق
                 orderbook_url = f"https://data-api.binance.vision/api/v3/depth?symbol={symbol}&limit=20"
-                imbalance_ratio = 1.0 # القيمة الافتراضية
+                imbalance_ratio = 1.0 
                 
                 try:
                     async with session.get(orderbook_url, timeout=5) as ob_res:
@@ -3489,13 +3609,12 @@ async def update_crypto_market_data():
                                 imbalance_ratio = bids_vol / asks_vol
                 except Exception as e:
                     logging.warning(f"⚠️ فشل جلب عمق السوق لـ {symbol}: {e}")
-                # ==========================================
 
                 record = {
                     "symbol": symbol,
                     "name": symbol.replace("USDT", ""),
                     "current_price": price,
-                    "orderbook_imbalance_ratio": round(imbalance_ratio, 4), # ✨ تم الحقن هنا ✨
+                    "orderbook_imbalance_ratio": round(imbalance_ratio, 4),
                     "open_price_24h": float(coin.get('openPrice', 0)),
                     "high_24h": float(coin.get('highPrice', 0)),
                     "low_24h": float(coin.get('lowPrice', 0)),
@@ -3518,6 +3637,9 @@ async def update_crypto_market_data():
                         
                         for col in ['open', 'high', 'low', 'close', 'volume']:
                             df_tf[col] = df_tf[col].astype(float)
+
+                        # ✨ حساب الترند الشامل للفريم الحالي ✨
+                        trend_info = generate_trend_data(df_tf)
 
                         patterns = []
                         for j in range(5):
@@ -3545,9 +3667,7 @@ async def update_crypto_market_data():
                         rsi_val = calculate_rsi(closes)
                         mood = get_market_mood(rsi_val) 
                         
-                        # ✨ استخراج الدعم والمقاومة للفريم الحالي ✨
                         tf_support, tf_resistance = calculate_price_action_sr(highs, lows)
-                        # ✨ حساب مؤشر الماكد الجديد ✨
                         macd_data = calculate_macd_values(closes)
 
                         if tf == '15m':
@@ -3559,7 +3679,7 @@ async def update_crypto_market_data():
                             record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
                             record["market_mood"] = mood
 
-                        # حقن البيانات الشامل في السجل
+                        # ✨ حقن بيانات الفريم شاملة الترند والمؤشرات ✨
                         record.update({
                             f"f{tf}_c1": patterns[0],
                             f"f{tf}_c2": patterns[1],
@@ -3567,11 +3687,20 @@ async def update_crypto_market_data():
                             f"f{tf}_c4": patterns[3],
                             f"f{tf}_c5": patterns[4],
                             f"last_f{tf}_ts": last_candle_open_ts,
-                            # ✨ حقن قيم الماكد في قاعدة البيانات ✨
+                            
+                            # بيانات الماكد
                             f"macd_{tf}": macd_data['macd'],
                             f"macd_signal_{tf}": macd_data['signal'],
                             f"macd_hist_{tf}": macd_data['hist'],                            
+                            
+                            # بيانات الترند الجديدة
+                            f"{tf}_trend_direction": trend_info["direction"],
+                            f"{tf}_trend_slope_angle": trend_info["angle"],
+                            f"{tf}_trend_touches": trend_info["touches"],
+                            f"{tf}_trend_current_price": trend_info["current_line_price"],
+                            f"{tf}_is_valid_trend": trend_info["is_valid"],
 
+                            # باقي المؤشرات
                             f"ema_20_{tf}": calculate_ema(closes, 20),
                             f"ema_50_{tf}": calculate_ema(closes, 50),
                             f"ema_100_{tf}": calculate_ema(closes, 100),
@@ -3587,12 +3716,11 @@ async def update_crypto_market_data():
                             f"kc_middle_{tf}": kc_mid,
                             f"kc_lower_{tf}": kc_low,
                             f"volume_{tf}": float(volumes[-1]),
-                            f"volume_ma_{tf}": sum(volumes[-20:]) / 20,
+                            f"volume_ma_{tf}": sum(volumes[-20:]) / 20 if len(volumes) >= 20 else sum(volumes)/len(volumes),
                             f"obv_{tf}": obv_val,
                             f"obv_prev_{tf}": obv_prev_val,
                             f"obv_slope_{tf}": obv_val - obv_prev_val,
                             
-                            # ✨ إضافة الدعم والمقاومة للأعمدة الجديدة ✨
                             f"support_{tf}": tf_support,
                             f"resistance_{tf}": tf_resistance,
                             
@@ -3606,11 +3734,11 @@ async def update_crypto_market_data():
                 continue
 
         if final_records:
-            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الجندي المجهول' كاملة...")
+            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الجندي المجهول' والترند كاملة...")
             for i in range(0, len(final_records), 10):
                 await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
     
-    print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
+    print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")        
 
 
 async def async_manual_upsert1(table_name, records):
