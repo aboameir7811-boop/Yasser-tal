@@ -1824,26 +1824,19 @@ async def process_coin_view(callback_query: types.CallbackQuery):
         
 
 # --- [ 3. هاندلر توصية VIP (قالب العنود / الدخول الهجومي) ] ---
-from aiogram import types
-from aiogram.dispatcher.filters import Text
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import math
-
 # 🛠️ [ أداة تحليل المخاطر المحسنة - جدار الحماية ]
 def evaluate_reversal_risk(current_price, support_1d, resistance_1d, direction):
     try:
         if direction == "LONG":
             distance_to_res = (resistance_1d - current_price) / current_price
-            is_critical = distance_to_res < 0.02  # جدار خرساني قريب
-            risk_score = 99 if is_critical else max(10, 100 - (distance_to_res * 1000))
-            return min(risk_score, 99), is_critical
+            risk_score = 99 if distance_to_res < 0.01 else max(10, 100 - (distance_to_res * 1000))
+            return min(risk_score, 99)
         elif direction == "SHORT":
             distance_to_sup = (current_price - support_1d) / current_price
-            is_critical = distance_to_sup < 0.02 
-            risk_score = 99 if is_critical else max(10, 100 - (distance_to_sup * 1000))
-            return min(risk_score, 99), is_critical
+            risk_score = 99 if distance_to_sup < 0.01 else max(10, 100 - (distance_to_sup * 1000))
+            return min(risk_score, 99)
     except ZeroDivisionError:
-        return 50, False
+        return 50
 
 # 🚀 [ غرفة العمليات الـ VIP - خوارزمية كشف النوايا والانفجار ]
 @dp.callback_query_handler(Text(startswith='vip_signal:'), state="*")
@@ -1867,14 +1860,11 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
         c = res.data[0]
         price = float(c['current_price'])
         
-        # 1️⃣ [ استخبارات السيولة وصراع الحيتان ]
+        # --- 1️⃣ سحب البيانات الأساسية ---
         obv_slope_15m = float(c.get('obv_slope_15m', 0))
-        obv_slope_1h = float(c.get('obv_slope_1h', 0))
         orderbook_imb = float(c.get('orderbook_imbalance_ratio', 1.0))
         whale_absorption = c.get('whale_absorption_detected', False)
         
-        # 2️⃣ [ استخبارات الانضغاط (Volatility Squeeze) ]
-        # استراتيجية (BB inside KC): عندما تدخل حدود البولنجر داخل قنوات كيلتنر، فهذا يعني أن السعر مضغوط كالنار تحت الرماد.
         bb_up_15m = float(c.get('bb_upper_15m', price * 1.01))
         bb_low_15m = float(c.get('bb_lower_15m', price * 0.99))
         kc_up_15m = float(c.get('kc_upper_15m', price * 1.02))
@@ -1883,9 +1873,8 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
         bbw_prev_15m = float(c.get('bbw_prev_15m', 0.05))
         
         is_squeezed = (bb_up_15m < kc_up_15m) and (bb_low_15m > kc_low_15m)
-        is_expanding = bbw_15m > bbw_prev_15m # بدأ الانفجار
+        is_expanding = bbw_15m > bbw_prev_15m
         
-        # 3️⃣ [ الفلاتر الكلاسيكية الصارمة ]
         ema20_15m = float(c.get('ema_20_15m', price))
         ema50_15m = float(c.get('ema_50_15m', price))
         rsi_15m = float(c.get('rsi_15m', 50))
@@ -1893,107 +1882,120 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
         macd_sig_15m = float(c.get('macd_signal_15m', 0))
         atr_15m = float(c.get('atr_15m', price * 0.01))
 
-        # 4️⃣ [ التحصينات الكبرى ]
         support_1h = float(c.get('support_1h', price * 0.98))
         res_1h = float(c.get('resistance_1h', price * 1.02))
         support_1d = float(c.get('support_1d', price * 0.85))
         res_1d = float(c.get('resistance_1d', price * 1.15))
 
-        # 🧠 [ محرك القرار المتقدم ]
-        # 🟢 شروط الشراء المدمجة: تخفيف القيود لتنفس الاستراتيجية
-        # يكفي أن يكون الـ OBV إيجابي على فريم 15 دقيقة مع سيولة جيدة في الدفتر (1.05 بدلاً من 1.2)
-        smart_money_long = (obv_slope_15m > 0) and (orderbook_imb > 1.05)
-        tech_long = (macd_15m > macd_sig_15m) and (22 < rsi_15m < 78) and (price > ema50_15m)
+        # --- 🧠 2️⃣ محرك القرار المتقدم (نظام النقاط - لن يرفض أي صفقة) ---
+        bull_score = 0
+        bear_score = 0
         
-        # استخدام (or) لإعطاء فرصة لدخول الصفقات التي بها تدفق سيولة قوي حتى لو لم يكتمل الانضغاط بالكامل
-        is_bullish = smart_money_long and tech_long and (is_squeezed or is_expanding or whale_absorption)
-
-        # 🔴 شروط البيع المدمجة
-        smart_money_short = (obv_slope_15m < 0) and (orderbook_imb < 0.95)
-        tech_short = (macd_15m < macd_sig_15m) and (22 < rsi_15m < 78) and (price < ema50_15m)
+        # تقييم السيولة والحيتان (Weight: 30)
+        if orderbook_imb > 1.05: bull_score += 15
+        elif orderbook_imb < 0.95: bear_score += 15
         
-        is_bearish = smart_money_short and tech_short and (is_squeezed or is_expanding or whale_absorption)
+        if obv_slope_15m > 0: bull_score += 15
+        elif obv_slope_15m < 0: bear_score += 15
+        
+        # تقييم المؤشرات الفنية (Weight: 50)
+        if price > ema50_15m: bull_score += 20
+        else: bear_score += 20
+            
+        if macd_15m > macd_sig_15m: bull_score += 15
+        else: bear_score += 15
+            
+        if rsi_15m > 55: bull_score += 15
+        elif rsi_15m < 45: bear_score += 15
 
-        if is_bullish:
+        # تقييم الحيتان (Weight: 20)
+        if whale_absorption and orderbook_imb > 1: bull_score += 20
+        elif whale_absorption and orderbook_imb < 1: bear_score += 20
+
+        # --- 📊 3️⃣ تحديد الاتجاه النهائي بناءً على المنتصر ---
+        total_score = bull_score + bear_score
+        if total_score == 0: total_score = 1 # لمنع القسمة على صفر
+        
+        if bull_score >= bear_score:
             trade_direction = "LONG"
-            direction_text = "شراء (LONG)"
+            direction_text = "شراء (LONG) 🟢"
             emoji_trend = "🚀"
-            
-            status_parts = []
-            if whale_absorption: status_parts.append("ابتلاع حيتان شرائي 🐋")
-            if is_squeezed: status_parts.append("انضغاط سعري 🗜️")
-            elif is_expanding: status_parts.append("انفجار سيولة 💥")
-            status_parts.append("تدفق إيجابي 🌊")
-            tech_status = " | ".join(status_parts)
-            
-            # تقليل حساسية الرفض بسبب المقاومة: نلغيها فقط إذا كان الزخم (OBV) ضعيفاً
-            risk_score, is_critical_risk = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
-            if is_critical_risk and obv_slope_1h <= 0: 
-                return await callback_query.answer("⚠️ الصفقة ملغاة: السعر قريب جداً من مقاومة يومية وزخم الاختراق ضعيف.", show_alert=True)
-            # ... (باقي كود الدخول والأهداف كما هو) ...
-            # 🎯 الدخول والأهداف بناءً على التحليل الدقيق
+            confidence_rate = (bull_score / 100) * 100
+        else:
+            trade_direction = "SHORT"
+            direction_text = "بيع (SHORT) 🔴"
+            emoji_trend = "📉"
+            confidence_rate = (bear_score / 100) * 100
+
+        # حساب المخاطرة
+        risk_percentage = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
+        
+        # --- ⏳ 4️⃣ تحديد التوقيت الزمني للحركة ---
+        if is_expanding:
+            time_estimate = "الآن (بدأ تدفق السيولة 🌊)"
+            move_when = "السعر يتحرك في هذه اللحظة"
+        elif is_squeezed:
+            time_estimate = "خلال 15 - 45 دقيقة ⏳"
+            move_when = "بعد كسر الانضغاط السعري (Squeeze Breakout)"
+        else:
+            time_estimate = "خلال 1 - 4 ساعات 🕰️"
+            move_when = "حركة اعتيادية متدرجة"
+
+        # --- 🎯 5️⃣ تحديد الأهداف ونقاط الدخول بناءً على الاتجاه ---
+        if trade_direction == "LONG":
             entry_1 = price
             entry_2 = ema20_15m if ema20_15m < price else price * 0.995
             dca = ema50_15m
             sl = ema50_15m - (atr_15m * 1.5)
             
-            tp1 = res_1h if (res_1h - price) > (atr_15m * 1.5) else price + (atr_15m * 2.0)
+            tp1 = res_1h if (res_1h - price) > (atr_15m * 1.2) else price + (atr_15m * 1.5)
             tp2 = tp1 + (atr_15m * 2.0)
             tp3 = min(res_1d, tp2 + (atr_15m * 3.0))
-
-        elif is_bearish:
-            trade_direction = "SHORT"
-            direction_text = "بيع (SHORT)"
-            emoji_trend = "📉"
-            
-            status_parts = []
-            if whale_absorption: status_parts.append("تصريف حيتان بيعي 🐋")
-            if is_squeezed: status_parts.append("انضغاط سعري حاد 🗜️")
-            elif is_expanding: status_parts.append("انهيار قاع B 💥")
-            status_parts.append("انسحاب سيولة سلبي 🩸")
-            tech_status = " | ".join(status_parts)
-            
-            risk_score, is_critical_risk = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
-            if is_critical_risk:
-                return await callback_query.answer("⚠️ الصفقة ملغاة: السعر قريب جداً من دعم يومي صلب.", show_alert=True)
-
+        else:
             entry_1 = price
             entry_2 = ema20_15m if ema20_15m > price else price * 1.005
             dca = ema50_15m
             sl = ema50_15m + (atr_15m * 1.5)
             
-            tp1 = support_1h if (price - support_1h) > (atr_15m * 1.5) else price - (atr_15m * 2.0)
+            tp1 = support_1h if (price - support_1h) > (atr_15m * 1.2) else price - (atr_15m * 1.5)
             tp2 = tp1 - (atr_15m * 2.0)
             tp3 = max(support_1d, tp2 - (atr_15m * 3.0))
 
-        else:
-            return await callback_query.answer("🛡️ الرادار مغلق: لا يوجد اختلال في دفتر الأوامر أو تراكم سيولة يؤكد اتجاه الاختراق القادم.", show_alert=True)
+        # تقييم النجوم
+        stars = "⭐" * int(confidence_rate / 20) if confidence_rate >= 20 else "⭐"
 
-        # 📝 [ القالب ]
-        signal_text = f"🔥 <b>كشف السيولة :</b> #{symbol} {emoji_trend}\n\n"
-        signal_text += f"📊 <b>الوضع الميداني:</b>\n"
-        signal_text += f"• <b>التأكيد:</b> {tech_status}\n"
-        signal_text += f"• <b>ضغط دفتر الأوامر:</b> {orderbook_imb:.2f}x\n"
-        signal_text += f"• نسبة الخطر: <b>{risk_score:.0f}%</b> {'🟢' if risk_score < 40 else '🟡'}\n\n"
+        # --- 📝 6️⃣ القالب النهائي (VIP) ---
+        signal_text = f"🔥 <b> القنص المتقدم :</b> #{symbol} {emoji_trend}\n"
+        signal_text += f"ــــــــــــــــــــــــــــــــــــــــــــــــــ\n\n"
         
-        signal_text += f"📐 <b>خطة القنص المؤكدة:</b>\n"
-        signal_text += f"القرار: <b>{direction_text}</b>\n"
-        signal_text += f"🎯 منطقة الدخول: <code>{f_num(entry_2)}</code> - <code>{f_num(entry_1)}</code>\n"
-        signal_text += f"🛡️ نقطة التعديل (DCA): <code>{f_num(dca)}</code>\n"
-        signal_text += f"🚫 وقف الخسارة الصارم (SL): <code>{f_num(sl)}</code>\n\n"
+        signal_text += f"📊 <b>الوضع الفني :</b>\n"
+        signal_text += f"• القرار: <b>{direction_text}</b>\n"
+        signal_text += f"• جودة الصفقة: {stars} ({confidence_rate:.0f}%)\n"
+        signal_text += f"• نسبة المخاطرة: <b>{risk_percentage:.0f}%</b> {'🟢' if risk_percentage < 40 else '🟡' if risk_percentage < 70 else '🔴'}\n"
+        signal_text += f"• ضغط السيولة (Orderbook): <b>{orderbook_imb:.2f}x</b>\n\n"
+
+        signal_text += f"⏳ <b>التوقيت الزمني للحركة:</b>\n"
+        signal_text += f"• متى سيتحرك؟: <b>{move_when}</b>\n"
+        signal_text += f"• المدة المتوقعة: <b>{time_estimate}</b>\n\n"
+        
+        signal_text += f"📐 <b>خطة التداول الموصى بها:</b>\n"
+        signal_text += f"🎯 مناطق الدخول: <code>{f_num(entry_2)}</code> - <code>{f_num(entry_1)}</code>\n"
+        signal_text += f"🛡️ نقطة التبريد (DCA): <code>{f_num(dca)}</code>\n"
+        signal_text += f"🚫 وقف الخسارة (SL): <code>{f_num(sl)}</code>\n\n"
         
         signal_text += f"💰 <b>محطات جني الأرباح:</b>\n"
         signal_text += f"1️⃣ الهدف الأول: <code>{f_num(tp1)}</code> ⚡\n"
         signal_text += f"2️⃣ الهدف الثاني: <code>{f_num(tp2)}</code> 🚀\n"
-        signal_text += f"3️⃣ الهدف الثالث: <code>{f_num(tp3)}</code> 🚀\n"
+        signal_text += f"3️⃣ الهدف الثالث: <code>{f_num(tp3)}</code> 🐋\n"
 
         back_kb = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 رجوع", callback_data=f"coin_view:{owner_id}:{symbol}:15m"))
         await callback_query.message.edit_text(signal_text, reply_markup=back_kb, parse_mode="HTML")
 
     except Exception as e:
         print(f"VIP Error: {e}")
-        await callback_query.answer("❌ تعذر التوليد. تحقق من قيم الأعمدة المتقدمة في القاعدة.", show_alert=True)
+        await callback_query.answer("❌ تعذر التوليد. حدث خطأ أثناء تحليل البيانات.", show_alert=True)
         
+                
 # ==========================================
 # 7. معالجات دورة الصفقة (المطورة لدعم الفواصل والأمان)
 # ==========================================
