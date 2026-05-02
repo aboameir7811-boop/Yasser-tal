@@ -3713,6 +3713,10 @@ async def update_crypto_market_data():
                         trend_info = generate_trend_data(df_tf)
                         adx_val = calculate_adx(highs, lows, closes)
 
+                        # 1. حساب القناة السعرية (Price Channel)
+                        swings_high, swings_low = calculate_price_action_sr(highs, lows, return_swings=True) 
+                        channel_info = calculate_price_channel(df_tf, trend_info, swings_high, swings_low)
+                        
                         if tf in ['1w', '1M']:
                             # ✨ حقن بيانات الفريم الأسبوعي والشهري (الترند و ADX فقط) ✨
                             record.update({
@@ -3721,6 +3725,9 @@ async def update_crypto_market_data():
                                 f"{tf}_trend_touches": trend_info["touches"],
                                 f"{tf}_trend_current_price": trend_info["current_line_price"],
                                 f"{tf}_is_valid_trend": trend_info["is_valid"],
+                                f"{tf}_channel_upper": channel_info["channel_upper"],
+                                f"{tf}_channel_lower": channel_info["channel_lower"],
+                                f"{tf}_channel_status": channel_info["channel_status"],
                                 f"adx_{tf}": adx_val
                             })
                         else:
@@ -3802,7 +3809,10 @@ async def update_crypto_market_data():
                                 
                                 f"support_{tf}": tf_support,
                                 f"resistance_{tf}": tf_resistance,
-                                
+                                # --- بيانات القنوات السعرية المكتشفة ---
+                                f"{tf}_channel_upper": channel_info["channel_upper"],
+                                f"{tf}_channel_lower": channel_info["channel_lower"],
+                                f"{tf}_channel_status": channel_info["channel_status"],
                                 "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                                 "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                             })
