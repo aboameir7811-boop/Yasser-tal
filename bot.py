@@ -3638,94 +3638,104 @@ async def update_crypto_market_data():
                             df_tf[col] = df_tf[col].astype(float)
 
                         # ✨ حساب الترند الشامل للفريم الحالي ✨
+                        # ✨ حساب الترند الشامل و ADX (مطلوب لجميع الفريمات) ✨
                         trend_info = generate_trend_data(df_tf)
+                        adx_val = calculate_adx(highs, lows, closes)
 
-                        patterns = []
-                        for j in range(5):
-                            sub_df = df_tf if j == 0 else df_tf.iloc[:-j]
-                            pattern_name = detect_all_pdf_patterns(sub_df)
-                            patterns.append(pattern_name if pattern_name else "Normal")
+                        if tf in ['1w', '1M']:
+                            # ✨ حقن بيانات الفريم الأسبوعي والشهري (الترند و ADX فقط) ✨
+                            record.update({
+                                f"{tf}_trend_direction": trend_info["direction"],
+                                f"{tf}_trend_slope_angle": trend_info["angle"],
+                                f"{tf}_trend_touches": trend_info["touches"],
+                                f"{tf}_trend_current_price": trend_info["current_line_price"],
+                                f"{tf}_is_valid_trend": trend_info["is_valid"],
+                                f"adx_{tf}": adx_val
+                            })
+                        else:
+                            # ✨ حساب وبناء باقي المؤشرات للفريمات اليومية وما دونها ✨
+                            patterns = []
+                            for j in range(5):
+                                sub_df = df_tf if j == 0 else df_tf.iloc[:-j]
+                                pattern_name = detect_all_pdf_patterns(sub_df)
+                                patterns.append(pattern_name if pattern_name else "Normal")
 
-                        last_candle_open_ts = datetime.fromtimestamp(int(results[i][-1][0]) / 1000).isoformat()
-
-                        highs = df_tf['high'].tolist()
-                        lows = df_tf['low'].tolist()
-                        closes = df_tf['close'].tolist()
-                        volumes = df_tf['volume'].tolist()
-                        taker_buy_vols = [float(k[9]) for k in results[i]] 
-                        
-                        upper, mid, lower = calculate_bollinger(closes)
-                        bbw_value = (upper - lower) / mid if mid > 0 else 0
-                        atr_val = calculate_atr(highs, lows, closes)
-                        kc_up, kc_mid, kc_low = calculate_keltner_channels(highs, lows, closes)
-                        obv_val = calculate_obv(closes, volumes)
-                        obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
-
-                        adx_val = calculate_adx(highs, lows, closes) 
-                        v_delta = calculate_volume_delta(taker_buy_vols, volumes) 
-                        rsi_val = calculate_rsi(closes)
-                        mood = get_market_mood(rsi_val) 
-                        
-                        tf_support, tf_resistance = calculate_price_action_sr(highs, lows)
-                        macd_data = calculate_macd_values(closes)
-
-                        if tf == '15m':
-                            record["entry_zone_start"] = round(price * 0.998, 6)
-                            record["entry_zone_end"] = round(price * 1.002, 6)
-                            record["dca_protection_price"] = round(price - (atr_val * 1.5), 6)
-                            record["target_1"] = round(price + (atr_val * 1.2), 6)
-                            record["target_2"] = round(price + (atr_val * 2.5), 6)
-                            record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
-                            record["market_mood"] = mood
-
-                        # ✨ حقن بيانات الفريم شاملة الترند والمؤشرات ✨
-                        record.update({
-                            f"f{tf}_c1": patterns[0],
-                            f"f{tf}_c2": patterns[1],
-                            f"f{tf}_c3": patterns[2],
-                            f"f{tf}_c4": patterns[3],
-                            f"f{tf}_c5": patterns[4],
-                            f"last_f{tf}_ts": last_candle_open_ts,
+                            last_candle_open_ts = datetime.fromtimestamp(int(results[i][-1][0]) / 1000).isoformat()
+                            taker_buy_vols = [float(k[9]) for k in results[i]] 
                             
-                            # بيانات الماكد
-                            f"macd_{tf}": macd_data['macd'],
-                            f"macd_signal_{tf}": macd_data['signal'],
-                            f"macd_hist_{tf}": macd_data['hist'],                            
-                            
-                            # بيانات الترند الجديدة
-                            f"{tf}_trend_direction": trend_info["direction"],
-                            f"{tf}_trend_slope_angle": trend_info["angle"],
-                            f"{tf}_trend_touches": trend_info["touches"],
-                            f"{tf}_trend_current_price": trend_info["current_line_price"],
-                            f"{tf}_is_valid_trend": trend_info["is_valid"],
+                            upper, mid, lower = calculate_bollinger(closes)
+                            bbw_value = (upper - lower) / mid if mid > 0 else 0
+                            atr_val = calculate_atr(highs, lows, closes)
+                            kc_up, kc_mid, kc_low = calculate_keltner_channels(highs, lows, closes)
+                            obv_val = calculate_obv(closes, volumes)
+                            obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
 
-                            # باقي المؤشرات
-                            f"ema_20_{tf}": calculate_ema(closes, 20),
-                            f"ema_50_{tf}": calculate_ema(closes, 50),
-                            f"ema_100_{tf}": calculate_ema(closes, 100),
-                            f"rsi_{tf}": rsi_val,
-                            f"bb_upper_{tf}": upper, 
-                            f"bb_middle_{tf}": mid, 
-                            f"bb_lower_{tf}": lower,
-                            f"bbw_{tf}": bbw_value,
-                            f"atr_{tf}": atr_val,
-                            f"adx_{tf}": adx_val,
-                            f"volume_delta_{tf}": v_delta,
-                            f"kc_upper_{tf}": kc_up,
-                            f"kc_middle_{tf}": kc_mid,
-                            f"kc_lower_{tf}": kc_low,
-                            f"volume_{tf}": float(volumes[-1]),
-                            f"volume_ma_{tf}": sum(volumes[-20:]) / 20 if len(volumes) >= 20 else sum(volumes)/len(volumes),
-                            f"obv_{tf}": obv_val,
-                            f"obv_prev_{tf}": obv_prev_val,
-                            f"obv_slope_{tf}": obv_val - obv_prev_val,
+                            v_delta = calculate_volume_delta(taker_buy_vols, volumes) 
+                            rsi_val = calculate_rsi(closes)
+                            mood = get_market_mood(rsi_val) 
                             
-                            f"support_{tf}": tf_support,
-                            f"resistance_{tf}": tf_resistance,
-                            
-                            "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
-                            "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
-                        })
+                            tf_support, tf_resistance = calculate_price_action_sr(highs, lows)
+                            macd_data = calculate_macd_values(closes)
+
+                            # إعدادات خاصة بفريم 15 دقيقة
+                            if tf == '15m':
+                                record["entry_zone_start"] = round(price * 0.998, 6)
+                                record["entry_zone_end"] = round(price * 1.002, 6)
+                                record["dca_protection_price"] = round(price - (atr_val * 1.5), 6)
+                                record["target_1"] = round(price + (atr_val * 1.2), 6)
+                                record["target_2"] = round(price + (atr_val * 2.5), 6)
+                                record["stop_loss_atr"] = round(price - (atr_val * 2.2), 6)
+                                record["market_mood"] = mood
+
+                            # حقن بيانات الفريمات الصغيرة الشاملة
+                            record.update({
+                                f"f{tf}_c1": patterns[0],
+                                f"f{tf}_c2": patterns[1],
+                                f"f{tf}_c3": patterns[2],
+                                f"f{tf}_c4": patterns[3],
+                                f"f{tf}_c5": patterns[4],
+                                f"last_f{tf}_ts": last_candle_open_ts,
+                                
+                                # بيانات الماكد
+                                f"macd_{tf}": macd_data['macd'],
+                                f"macd_signal_{tf}": macd_data['signal'],
+                                f"macd_hist_{tf}": macd_data['hist'],                            
+                                
+                                # بيانات الترند و ADX
+                                f"{tf}_trend_direction": trend_info["direction"],
+                                f"{tf}_trend_slope_angle": trend_info["angle"],
+                                f"{tf}_trend_touches": trend_info["touches"],
+                                f"{tf}_trend_current_price": trend_info["current_line_price"],
+                                f"{tf}_is_valid_trend": trend_info["is_valid"],
+                                f"adx_{tf}": adx_val,
+
+                                # باقي المؤشرات
+                                f"ema_20_{tf}": calculate_ema(closes, 20),
+                                f"ema_50_{tf}": calculate_ema(closes, 50),
+                                f"ema_100_{tf}": calculate_ema(closes, 100),
+                                f"rsi_{tf}": rsi_val,
+                                f"bb_upper_{tf}": upper, 
+                                f"bb_middle_{tf}": mid, 
+                                f"bb_lower_{tf}": lower,
+                                f"bbw_{tf}": bbw_value,
+                                f"atr_{tf}": atr_val,
+                                f"volume_delta_{tf}": v_delta,
+                                f"kc_upper_{tf}": kc_up,
+                                f"kc_middle_{tf}": kc_mid,
+                                f"kc_lower_{tf}": kc_low,
+                                f"volume_{tf}": float(volumes[-1]),
+                                f"volume_ma_{tf}": sum(volumes[-20:]) / 20 if len(volumes) >= 20 else sum(volumes)/len(volumes),
+                                f"obv_{tf}": obv_val,
+                                f"obv_prev_{tf}": obv_prev_val,
+                                f"obv_slope_{tf}": obv_val - obv_prev_val,
+                                
+                                f"support_{tf}": tf_support,
+                                f"resistance_{tf}": tf_resistance,
+                                
+                                "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
+                                "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
+                            })
+                                                    
 
                 final_records.append(record)
             except Exception as e: 
