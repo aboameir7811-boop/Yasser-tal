@@ -3528,7 +3528,7 @@ def generate_trend_data(df, min_distance=10):
 # ==========================================
 # --- [ دوال التحليل و الجلب الأصلية ] ---
 # ==========================================   
-async def fetch_klines(session, symbol, interval, limit=200):
+async def fetch_klines(session, symbol, interval, limit=100):
     url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
     try:
         async with session.get(url, timeout=10) as res:
