@@ -3457,7 +3457,7 @@ def generate_trend_data(df, min_distance=10):
     best_trend = {
         "direction": "SIDEWAY", "angle": 0.0, "touches": 0, 
         "current_line_price": 0.0, "is_valid": 2,
-        "slope": slope # تم إضافة الميل هنا 
+        "slope": 0.0 # تم إضافة الميل هنا 
     }
     
     # 1. البحث عن أقوى ترند صاعد (UP)
@@ -3489,7 +3489,8 @@ def generate_trend_data(df, min_distance=10):
                                 current_line_price = (slope * (len(df) - 1)) + intercept
                                 best_trend.update({
                                     "direction": "UP", "angle": round(angle, 2), "touches": touches, 
-                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
+                                    "current_line_price": round(current_line_price, 4), "is_valid": 1,
+                                    "slope": 0.0
                                 })
 
     # 2. البحث عن أقوى ترند هابط (DOWN)
@@ -3522,7 +3523,7 @@ def generate_trend_data(df, min_distance=10):
                                 best_trend.update({
                                     "direction": "DOWN", "angle": round(angle, 2), "touches": touches, 
                                     "current_line_price": round(current_line_price, 4), "is_valid": 1,
-                                    "slope": slope # تم إضافة الميل هنا
+                                    "slope": 0.0 # تم إضافة الميل هنا
                                 })
 
     return best_trend
