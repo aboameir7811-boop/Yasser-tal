@@ -3456,7 +3456,8 @@ def generate_trend_data(df, min_distance=10):
     
     best_trend = {
         "direction": "SIDEWAY", "angle": 0.0, "touches": 0, 
-        "current_line_price": 0.0, "is_valid": 2 
+        "current_line_price": 0.0, "is_valid": 2,
+        "slope": slope # تم إضافة الميل هنا 
     }
     
     # 1. البحث عن أقوى ترند صاعد (UP)
@@ -3520,10 +3521,74 @@ def generate_trend_data(df, min_distance=10):
                                 current_line_price = (slope * (len(df) - 1)) + intercept
                                 best_trend.update({
                                     "direction": "DOWN", "angle": round(angle, 2), "touches": touches, 
-                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
+                                    "current_line_price": round(current_line_price, 4), "is_valid": 1,
+                                    "slope": slope # تم إضافة الميل هنا
                                 })
 
     return best_trend
+    
+        
+def calculate_price_channel(df, best_trend, swings_high, swings_low):
+    """
+    تقوم هذه الدالة ببناء القناة السعرية بناءً على الترند المكتشف.
+    السر البرمجي: نستخدم نفس الميل (Slope) ونبحث عن أقصى/أدنى نقطة تقاطع (Intercept) في الجهة المقابلة.
+    """
+    channel_data = {
+        "channel_upper": 0.0,
+        "channel_lower": 0.0,
+        "channel_status": "NONE"
+    }
+    
+    if best_trend["is_valid"] != 1 or "slope" not in best_trend:
+        return channel_data
+        
+    slope = best_trend["slope"]
+    current_index = len(df) - 1
+    current_close = df['close'].iloc[-1]
+    
+    # 1. إذا كان الترند صاعد (القناة الصاعدة)
+    # الترند الأساسي مرسوم على القيعان (swings_low)، لذا نبحث عن الخط الموازي على القمم (swings_high)
+    if best_trend["direction"] == "UP":
+        # الخط السفلي هو خط الترند نفسه
+        channel_data["channel_lower"] = best_trend["current_line_price"]
+        
+        # إيجاد الخط العلوي الموازي (أعلى تقاطع يمر بالقمم)
+        max_intercept = -float('inf')
+        for px, py in swings_high:
+            # y = mx + b => b = y - mx
+            intercept = py - (slope * px)
+            if intercept > max_intercept:
+                max_intercept = intercept
+                
+        # حساب السعر الحالي للخط العلوي
+        channel_data["channel_upper"] = round((slope * current_index) + max_intercept, 4)
+
+    # 2. إذا كان الترند هابط (القناة الهابطة)
+    # الترند الأساسي مرسوم على القمم (swings_high)، لذا نبحث عن الخط الموازي على القيعان (swings_low)
+    elif best_trend["direction"] == "DOWN":
+        # الخط العلوي هو خط الترند نفسه
+        channel_data["channel_upper"] = best_trend["current_line_price"]
+        
+        # إيجاد الخط السفلي الموازي (أدنى تقاطع يمر بالقيعان)
+        min_intercept = float('inf')
+        for px, py in swings_low:
+            intercept = py - (slope * px)
+            if intercept < min_intercept:
+                min_intercept = intercept
+                
+        # حساب السعر الحالي للخط السفلي
+        channel_data["channel_lower"] = round((slope * current_index) + min_intercept, 4)
+        
+    # 3. تحديد حالة السعر (هل كسر القناة أم ما زال داخلها؟)
+    if channel_data["channel_upper"] > 0 and channel_data["channel_lower"] > 0:
+        if current_close > channel_data["channel_upper"]:
+            channel_data["channel_status"] = "BREAKOUT_UP" # كسر للأعلى (فرصة شراء لو كان الاتجاه العام صاعد)
+        elif current_close < channel_data["channel_lower"]:
+            channel_data["channel_status"] = "BREAKOUT_DOWN" # كسر للأسفل (فرصة بيع لو كان الاتجاه العام هابط)
+        else:
+            channel_data["channel_status"] = "INSIDE" # السعر يتذبذب داخل القناة
+            
+    return channel_data
     
 # ==========================================
 # --- [ دوال التحليل و الجلب الأصلية ] ---
