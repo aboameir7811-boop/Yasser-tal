@@ -3347,28 +3347,33 @@ def calculate_macd_values(closes, fast=12, slow=26, signal=9):
 # ==========================================
 # 1. دالة استخراج الدعوم والمقاومات (المحدثة)
 # ==========================================
-def calculate_price_action_sr(highs, lows):
+def calculate_price_action_sr(highs, lows, return_swings=False):
     """
-    تستخرج أحدث دعم وأحدث مقاومة بناءً على السلوك السعري الحقيقي (القمم والقيعان).
-    تم التحديث لتتوافق مع قاعدة البيانات الجديدة (عمود واحد للدعم وعمود للمقاومة).
+    تستخرج أحدث دعم وأحدث مقاومة، مع إمكانية إرجاع كافة القمم والقيعان (Swings)
+    لدعم حساب القنوات السعرية في مشروع Trade Reaper.
     """
-    supports = []
-    resistances = []
+    supports = []     # ستخزن الآن: (الفهرس، السعر)
+    resistances = []  # ستخزن الآن: (الفهرس، السعر)
 
     # استخراج القيعان والقمم الحقيقية (شمعتين يمين وشمعتين يسار للفلترة الصارمة)
     for i in range(2, len(highs) - 2):
         # القاع الحقيقي
         if lows[i] < lows[i-1] and lows[i] < lows[i-2] and lows[i] < lows[i+1] and lows[i] < lows[i+2]:
-            supports.append(lows[i])
+            supports.append((i, lows[i])) # حفظ الفهرس والسعر كزوج (tuple)
             
         # القمة الحقيقية
         if highs[i] > highs[i-1] and highs[i] > highs[i-2] and highs[i] > highs[i+1] and highs[i] > highs[i+2]:
-            resistances.append(highs[i])
+            resistances.append((i, highs[i])) # حفظ الفهرس والسعر كزوج (tuple)
 
-    # استخراج الأحدث (وهو الأهم والأقرب للسعر الحالي)
-    # نأخذ آخر عنصر في القائمة، وإذا لم يوجد نرجع None (ليحفظ كـ NULL في قاعدة البيانات)
-    latest_support = supports[-1] if supports else None
-    latest_resistance = resistances[-1] if resistances else None
+    # --- الجزء المضاف لحل مشكلة القنوات السعرية ---
+    if return_swings:
+        # نعيد القوائم كاملة (الفهرس والسعر) لكي تستطيع دالة القنوات رسم التوازي
+        return resistances, supports 
+
+    # استخراج الأحدث (للمحافظة على عمل الكود القديم وتحديث قاعدة البيانات)
+    # نأخذ القيمة السعرية فقط [1] من آخر عنصر سجلناه
+    latest_support = supports[-1][1] if supports else None
+    latest_resistance = resistances[-1][1] if resistances else None
 
     return latest_support, latest_resistance
 
