@@ -3400,131 +3400,135 @@ def get_imbalance_ratio(depth_data):
     except Exception as e:
         return 1.0
 
+
+                
+import math
+
 def find_swing_points(df, window=5):
-    """استخراج القمم والقيعان (الذيول)"""
-    highs = df['high'].values
-    lows = df['low'].values
-    swing_highs = []
-    swing_lows = []
-    
-    for i in range(window, len(df) - window):
-        if highs[i] == max(highs[i - window : i + window + 1]):
-            swing_highs.append((i, highs[i]))
-        if lows[i] == min(lows[i - window : i + window + 1]):
-            swing_lows.append((i, lows[i]))
-            
-    return swing_highs, swing_lows
+    """استخراج القمم والقيعان (الذيول)"""
+    highs = df['high'].values
+    lows = df['low'].values
+    swing_highs = []
+    swing_lows = []
+    
+    for i in range(window, len(df) - window):
+        if highs[i] == max(highs[i - window : i + window + 1]):
+            swing_highs.append((i, highs[i]))
+        if lows[i] == min(lows[i - window : i + window + 1]):
+            swing_lows.append((i, lows[i]))
+            
+    return swing_highs, swing_lows
 
 def calculate_trendline_angle(x1, y1, x2, y2, avg_price):
-    """حساب تقريبي للزاوية بناء على نسبة التغير مقابل الزمن"""
-    dx = x2 - x1
-    if dx == 0: return 90
-    dy = ((y2 - y1) / avg_price) * 100  
-    angle_rad = math.atan(dy / dx)
-    return abs(math.degrees(angle_rad))
+    """حساب تقريبي للزاوية بناء على نسبة التغير مقابل الزمن"""
+    dx = x2 - x1
+    if dx == 0: return 90
+    dy = ((y2 - y1) / avg_price) * 100  
+    angle_rad = math.atan(dy / dx)
+    return abs(math.degrees(angle_rad))
 
 def validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
-    """
-    تطبيق القاعدة رقم 6: مسموح يقطع الذيل، لكن ممنوع يقطع جسم الشمعة
-    """
-    slope = (y2 - y1) / (x2 - x1)
-    intercept = y1 - (slope * x1)
-    
-    for i in range(x1 + 1, len(df)):
-        trend_price = (slope * i) + intercept 
-        
-        body_bottom = min(df['open'].iloc[i], df['close'].iloc[i])
-        body_top = max(df['open'].iloc[i], df['close'].iloc[i])
-        
-        if trend_type == "UP":
-            if body_bottom < trend_price:
-                return False 
-                
-        elif trend_type == "DOWN":
-            if body_top > trend_price:
-                return False 
-                
-    return True
+    """
+    تطبيق القاعدة رقم 6: مسموح يقطع الذيل، لكن ممنوع يقطع جسم الشمعة
+    """
+    slope = (y2 - y1) / (x2 - x1)
+    intercept = y1 - (slope * x1)
+    
+    for i in range(x1 + 1, len(df)):
+        trend_price = (slope * i) + intercept 
+        
+        body_bottom = min(df['open'].iloc[i], df['close'].iloc[i])
+        body_top = max(df['open'].iloc[i], df['close'].iloc[i])
+        
+        if trend_type == "UP":
+            if body_bottom < trend_price:
+                return False 
+                
+        elif trend_type == "DOWN":
+            if body_top > trend_price:
+                return False 
+                
+    return True
 
 # -- تمت إضافة min_distance لتحديد أقل مسافة مسموحة بين الارتكازين --
 def generate_trend_data(df, min_distance=10):
-    swings_high, swings_low = find_swing_points(df, window=5)
-    avg_price = df['close'].mean()
-    
-    # نسبة تسامح للملامسة (0.1% من متوسط السعر - يمكنك تعديلها)
-    tolerance = avg_price * 0.001 
-    
-    best_trend = {
-        "direction": "SIDEWAY", "angle": 0.0, "touches": 0, 
-        "current_line_price": 0.0, "is_valid": 2 
-    }
-    
-    # 1. البحث عن أقوى ترند صاعد (UP)
-    if len(swings_low) >= 2:
-        for i in range(len(swings_low)-1, 0, -1): 
-            for j in range(i-1, -1, -1):
-                x2, y2 = swings_low[i]
-                x1, y1 = swings_low[j]
-                
-                # ---- الشرط الجديد: التأكد من وجود تباعد كافي بين القاعين ----
-                if (x2 - x1) < min_distance:
-                    continue
-                
-                if y2 > y1: # شرط القيعان الصاعدة
-                    angle = calculate_trendline_angle(x1, y1, x2, y2, avg_price)
-                    
-                    if 15 <= angle <= 70: 
-                        if validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
-                            slope = (y2 - y1) / (x2 - x1)
-                            intercept = y1 - (slope * x1)
-                            
-                            touches = 0
-                            for px, py in swings_low:
-                                expected_y = (slope * px) + intercept
-                                if abs(py - expected_y) <= tolerance:
-                                    touches += 1
-                                    
-                            if touches > best_trend["touches"]:
-                                current_line_price = (slope * (len(df) - 1)) + intercept
-                                best_trend.update({
-                                    "direction": "UP", "angle": round(angle, 2), "touches": touches, 
-                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
-                                })
+    swings_high, swings_low = find_swing_points(df, window=5)
+    avg_price = df['close'].mean()
+    
+    # نسبة تسامح للملامسة (0.1% من متوسط السعر - يمكنك تعديلها)
+    tolerance = avg_price * 0.001 
+    
+    best_trend = {
+        "direction": "SIDEWAY", "angle": 0.0, "touches": 0, 
+        "current_line_price": 0.0, "is_valid": 2 
+    }
+    
+    # 1. البحث عن أقوى ترند صاعد (UP)
+    if len(swings_low) >= 2:
+        for i in range(len(swings_low)-1, 0, -1): 
+            for j in range(i-1, -1, -1):
+                x2, y2 = swings_low[i]
+                x1, y1 = swings_low[j]
+                
+                # ---- الشرط الجديد: التأكد من وجود تباعد كافي بين القاعين ----
+                if (x2 - x1) < min_distance:
+                    continue
+                
+                if y2 > y1: # شرط القيعان الصاعدة
+                    angle = calculate_trendline_angle(x1, y1, x2, y2, avg_price)
+                    
+                    if 15 <= angle <= 70: 
+                        if validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
+                            slope = (y2 - y1) / (x2 - x1)
+                            intercept = y1 - (slope * x1)
+                            
+                            touches = 0
+                            for px, py in swings_low:
+                                expected_y = (slope * px) + intercept
+                                if abs(py - expected_y) <= tolerance:
+                                    touches += 1
+                                    
+                            if touches > best_trend["touches"]:
+                                current_line_price = (slope * (len(df) - 1)) + intercept
+                                best_trend.update({
+                                    "direction": "UP", "angle": round(angle, 2), "touches": touches, 
+                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
+                                })
 
-    # 2. البحث عن أقوى ترند هابط (DOWN)
-    if len(swings_high) >= 2:
-        for i in range(len(swings_high)-1, 0, -1):
-            for j in range(i-1, -1, -1):
-                x2, y2 = swings_high[i]
-                x1, y1 = swings_high[j]
-                
-                # ---- الشرط الجديد: التأكد من وجود تباعد كافي بين القمتين ----
-                if (x2 - x1) < min_distance:
-                    continue
-                
-                if y2 < y1: # شرط القمم الهابطة
-                    angle = calculate_trendline_angle(x1, y1, x2, y2, avg_price)
-                    
-                    if 15 <= angle <= 70:
-                        if validate_strict_trendline(df, x1, y1, x2, y2, trend_type="DOWN"):
-                            slope = (y2 - y1) / (x2 - x1)
-                            intercept = y1 - (slope * x1)
-                            
-                            touches = 0
-                            for px, py in swings_high:
-                                expected_y = (slope * px) + intercept
-                                if abs(py - expected_y) <= tolerance:
-                                    touches += 1
-                            
-                            if touches > best_trend["touches"]:
-                                current_line_price = (slope * (len(df) - 1)) + intercept
-                                best_trend.update({
-                                    "direction": "DOWN", "angle": round(angle, 2), "touches": touches, 
-                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
-                                })
+    # 2. البحث عن أقوى ترند هابط (DOWN)
+    if len(swings_high) >= 2:
+        for i in range(len(swings_high)-1, 0, -1):
+            for j in range(i-1, -1, -1):
+                x2, y2 = swings_high[i]
+                x1, y1 = swings_high[j]
+                
+                # ---- الشرط الجديد: التأكد من وجود تباعد كافي بين القمتين ----
+                if (x2 - x1) < min_distance:
+                    continue
+                
+                if y2 < y1: # شرط القمم الهابطة
+                    angle = calculate_trendline_angle(x1, y1, x2, y2, avg_price)
+                    
+                    if 15 <= angle <= 70:
+                        if validate_strict_trendline(df, x1, y1, x2, y2, trend_type="DOWN"):
+                            slope = (y2 - y1) / (x2 - x1)
+                            intercept = y1 - (slope * x1)
+                            
+                            touches = 0
+                            for px, py in swings_high:
+                                expected_y = (slope * px) + intercept
+                                if abs(py - expected_y) <= tolerance:
+                                    touches += 1
+                            
+                            if touches > best_trend["touches"]:
+                                current_line_price = (slope * (len(df) - 1)) + intercept
+                                best_trend.update({
+                                    "direction": "DOWN", "angle": round(angle, 2), "touches": touches, 
+                                    "current_line_price": round(current_line_price, 4), "is_valid": 1
+                                })
 
-    return best_trend
- 
+    return best_trend
+    
 # ==========================================
 # --- [ دوال التحليل و الجلب الأصلية ] ---
 # ==========================================   
