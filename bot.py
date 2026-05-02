@@ -3400,7 +3400,6 @@ def get_imbalance_ratio(depth_data):
     except Exception as e:
         return 1.0
 
-
 def find_swing_points(df, window=5):
     """استخراج القمم والقيعان (الذيول)"""
     highs = df['high'].values
@@ -3525,7 +3524,7 @@ def generate_trend_data(df, min_distance=10):
                                 })
 
     return best_trend
-
+ 
 # ==========================================
 # --- [ دوال التحليل و الجلب الأصلية ] ---
 # ==========================================   
