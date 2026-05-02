@@ -3638,6 +3638,12 @@ async def update_crypto_market_data():
                             df_tf[col] = df_tf[col].astype(float)
 
                         # ✨ حساب الترند الشامل للفريم الحالي ✨
+                        # ✨ استخراج القوائم أولاً لأننا نحتاجها في حساب ADX والمؤشرات الأخرى ✨
+                        highs = df_tf['high'].tolist()
+                        lows = df_tf['low'].tolist()
+                        closes = df_tf['close'].tolist()
+                        volumes = df_tf['volume'].tolist()
+
                         # ✨ حساب الترند الشامل و ADX (مطلوب لجميع الفريمات) ✨
                         trend_info = generate_trend_data(df_tf)
                         adx_val = calculate_adx(highs, lows, closes)
@@ -3735,7 +3741,7 @@ async def update_crypto_market_data():
                                 "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                                 "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                             })
-                                                    
+
 
                 final_records.append(record)
             except Exception as e: 
