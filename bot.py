@@ -3399,7 +3399,8 @@ def get_imbalance_ratio(depth_data):
         return float(ratio)
     except Exception as e:
         return 1.0
-               
+
+
 def find_swing_points(df, window=5):
     highs = df['high'].values
     lows = df['low'].values
