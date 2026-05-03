@@ -13,9 +13,11 @@ import httpx
 import aiohttp
 import arabic_reshaper
 import math
-import pandas as pd
-import numpy as np
 import traceback
+import numpy as np
+import pandas as pd
+from scipy.signal import find_peaks
+from typing import Dict, Union
 from aiogram import types
 from datetime import datetime, timedelta # 💡 تمت الإضافة هنا
 from aiogram.dispatcher.filters import Text 
@@ -3632,19 +3634,206 @@ def calculate_price_channel(df, best_trend, swings_high, swings_low):
     return channel_data
     
 
-# ==========================================
-# --- [ دوال التحليل و الجلب الأصلية ] ---
-# ==========================================   
-async def fetch_klines(session, symbol, interval, limit=100):
-    url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    try:
-        async with session.get(url, timeout=10) as res:
-            if res.status == 200: return await res.json()
-    except: return None
+
+def calculate_continuation_logic(
+    pattern_name: str, 
+    prior_trend: str, 
+    breakout_point: float, 
+    pattern_high: float, 
+    pattern_low: float
+) -> Dict[str, Union[str, float]]:
+    """حساب أهداف النماذج الاستمرارية"""
+    if not pattern_name or pattern_name == "Normal":
+        return {"name": "NONE", "class": "NONE", "breakout": 0.0, "target": 0.0, "sl": 0.0}
+
+    height = pattern_high - pattern_low
+    
+    if prior_trend == "Bullish":
+        target = breakout_point + height
+        sl = breakout_point - (height * 0.5)
+    else: # Bearish
+        target = breakout_point - height
+        sl = breakout_point + (height * 0.5)
+
+    return {
+        "name": pattern_name,
+        "class": "Continuation",
+        "breakout": round(breakout_point, 5),
+        "target": round(target, 5),
+        "sl": round(sl, 5)
+    }
+
+def calculate_reversal_logic(
+    pattern_name: str, 
+    pattern_direction: str, 
+    neckline: float, 
+    extreme_point: float
+) -> Dict[str, Union[str, float]]:
+    """حساب أهداف النماذج الانعكاسية"""
+    if not pattern_name or pattern_name == "Normal":
+        return {"name": "NONE", "class": "NONE", "breakout": 0.0, "target": 0.0, "sl": 0.0}
+
+    height = abs(extreme_point - neckline)
+    
+    if pattern_direction == "Bullish_Reversal":
+        target = neckline + height
+        sl = neckline - (height * 0.3)
+    else: # Bearish_Reversal
+        target = neckline - height
+        sl = neckline + (height * 0.3)
+
+    return {
+        "name": pattern_name,
+        "class": "Reversal",
+        "breakout": round(neckline, 5),
+        "target": round(target, 5),
+        "sl": round(sl, 5)
+    }
+
+def detect_patterns_and_calculate(
+    df_tf: pd.DataFrame, 
+    symbol: str, 
+    tf: str, 
+    min_bars: int = 20,
+    trend_threshold: float = 0.03,
+    tolerance: float = 0.01,
+    strict_breakout: bool = False
+) -> Dict[str, Union[str, float]]:
+    """اكتشاف الأنماط وحساب أهدافها رياضياً باستخدام الميل الحقيقي"""
+    default_pattern = {"name": "NONE", "class": "NONE", "breakout": 0.0, "target": 0.0, "sl": 0.0}
+
+    if df_tf is None or len(df_tf) < min_bars:
+        return default_pattern
+
+    highs = df_tf['high'].values
+    lows = df_tf['low'].values
+    closes = df_tf['close'].values
+    
+    current_price = closes[-2] if strict_breakout else closes[-1]
+    
+    # تحديد القمم والقيعان مع فهارسها (Indices)
+    peaks, _ = find_peaks(highs, distance=5)
+    troughs, _ = find_peaks(-lows, distance=5)
+    
+    # --- [1. منطق الأعلام والرايات] ---
+    lookback = 15 
+    price_change = ((current_price - closes[-lookback]) / closes[-lookback]) if closes[-lookback] != 0 else 0.0
+
+    recent_high = highs[-10:].max() if len(highs) >= 10 else highs.max()
+    recent_low = lows[-10:].min() if len(lows) >= 10 else lows.min()
+    consolidation_height = recent_high - recent_low
+
+    # أ. علم صاعد (Bullish Flag)
+    if price_change > trend_threshold and current_price > (recent_high - (consolidation_height * 0.2)):
+        pole_height = recent_high - lows[-lookback:].min()
+        if current_price > recent_high:
+            return calculate_continuation_logic("Bullish Flag", "Bullish", recent_high, recent_high, recent_high - pole_height)
+
+    # ب. علم هابط (Bearish Flag)
+    elif price_change < -trend_threshold and current_price < (recent_low + (consolidation_height * 0.2)):
+        pole_height = highs[-lookback:].max() - recent_low
+        if current_price < recent_low:
+            return calculate_continuation_logic("Bearish Flag", "Bearish", recent_low, recent_low + pole_height, recent_low)
+
+    # --- [2. منطق المثلثات والأوتاد والرايات المتقدمة] ---
+    if len(peaks) >= 2 and len(troughs) >= 2:
+        # حساب الميل الحقيقي (True Slope) (dy/dx)
+        dx_highs = peaks[-1] - peaks[-2]
+        dy_highs = highs[peaks[-1]] - highs[peaks[-2]]
+        slope_highs = dy_highs / dx_highs if dx_highs != 0 else 0
+        
+        dx_lows = troughs[-1] - troughs[-2]
+        dy_lows = lows[troughs[-1]] - lows[troughs[-2]]
+        slope_lows = dy_lows / dx_lows if dx_lows != 0 else 0
+
+        last_peak = highs[peaks[-1]]
+        last_trough = lows[troughs[-1]]
+        
+        pattern_high_max = highs[peaks[-2:]].max()
+        pattern_low_min = lows[troughs[-2:]].min()
+
+        # الرايات (Pennants) - مثلث متماثل صغير مع ترند قوي يسبقه
+        if abs(price_change) > trend_threshold and dx_highs < 10 and dx_lows < 10:
+            if slope_highs < 0 and slope_lows > 0:
+                pole_h = abs(current_price - closes[-lookback])
+                if price_change > 0 and current_price > last_peak:
+                    return calculate_continuation_logic("Bullish Pennant", "Bullish", current_price, current_price + pole_h, current_price)
+                elif price_change < 0 and current_price < last_trough:
+                    return calculate_continuation_logic("Bearish Pennant", "Bearish", current_price, current_price, current_price - pole_h)
+
+        # أ. المثلث المتماثل
+        if slope_highs < 0 and slope_lows > 0:
+            if current_price > last_peak:
+                return calculate_continuation_logic("Symmetrical Triangle", "Bullish", current_price, pattern_high_max, pattern_low_min)
+            elif current_price < last_trough:
+                return calculate_continuation_logic("Symmetrical Triangle", "Bearish", current_price, pattern_high_max, pattern_low_min)
+
+        # ب. المثلث الصاعد
+        elif abs(dy_highs) / last_peak < tolerance and slope_lows > 0:
+            if current_price > last_peak:
+                return calculate_continuation_logic("Ascending Triangle", "Bullish", current_price, pattern_high_max, pattern_low_min)
+
+        # ج. المثلث الهابط
+        elif slope_highs < 0 and abs(dy_lows) / last_trough < tolerance:
+            if current_price < last_trough:
+                return calculate_continuation_logic("Descending Triangle", "Bearish", current_price, pattern_high_max, pattern_low_min)
+
+        # د. الوتد الهابط (Falling Wedge) - قمم وقيعان هابطة، والقمم تهبط بشكل أسرع
+        elif slope_highs < 0 and slope_lows < 0 and abs(slope_highs) > abs(slope_lows):
+            if current_price > last_peak:
+                return calculate_continuation_logic("Falling Wedge", "Bullish", current_price, pattern_high_max, pattern_low_min)
+
+        # هـ. الوتد الصاعد (Rising Wedge) - قمم وقيعان صاعدة، والقيعان تصعد بشكل أسرع
+        elif slope_highs > 0 and slope_lows > 0 and slope_lows > slope_highs:
+            if current_price < last_trough:
+                return calculate_continuation_logic("Rising Wedge", "Bearish", current_price, pattern_high_max, pattern_low_min)
+
+    # --- [3. منطق النماذج الانعكاسية] ---
+    
+    # الرأس والكتفين العادي والمقلوب
+    if len(peaks) >= 3:
+        p1, p2, p3 = highs[peaks[-3]], highs[peaks[-2]], highs[peaks[-1]]
+        if p2 > p1 and p2 > p3: # الرأس أعلى من الكتفين
+            valley_slice = lows[peaks[-3]:peaks[-1]]
+            if valley_slice.size > 0:
+                neckline = valley_slice.min()
+                if current_price < neckline:
+                    return calculate_reversal_logic("Head and Shoulders", "Bearish_Reversal", neckline, p2)
+
+    if len(troughs) >= 3:
+        t1, t2, t3 = lows[troughs[-3]], lows[troughs[-2]], lows[troughs[-1]]
+        if t2 < t1 and t2 < t3: # الرأس المقلوب أدنى من الكتفين
+            peak_slice = highs[troughs[-3]:troughs[-1]]
+            if peak_slice.size > 0:
+                neckline = peak_slice.max()
+                if current_price > neckline:
+                    return calculate_reversal_logic("Inverted Head and Shoulders", "Bullish_Reversal", neckline, t2)
+
+    # القمم والقيعان المزدوجة
+    if len(peaks) >= 2:
+        p1, p2 = highs[peaks[-2]], highs[peaks[-1]]
+        if p2 > 0 and abs(p2 - p1) / p2 < tolerance:
+            valley_slice = lows[peaks[-2]:peaks[-1]]
+            if valley_slice.size > 0:
+                neckline = valley_slice.min()
+                if current_price < neckline:
+                    return calculate_reversal_logic("Double Top", "Bearish_Reversal", neckline, max(p1, p2))
+
+    if len(troughs) >= 2:
+        t1, t2 = lows[troughs[-2]], lows[troughs[-1]]
+        if t2 > 0 and abs(t2 - t1) / t2 < tolerance:
+            peak_slice = highs[troughs[-2]:troughs[-1]]
+            if peak_slice.size > 0:
+                neckline = peak_slice.max()
+                if current_price > neckline:
+                    return calculate_reversal_logic("Double Bottom", "Bullish_Reversal", neckline, min(t1, t2))
+
+    return default_pattern
+    
 
 
 async def update_crypto_market_data():
-    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة فلترة العملات المتوقفة والقنوات السعرية)...")
+    print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة فلترة العملات والأنماط الفنية)...")
     
     async with aiohttp.ClientSession() as session:
         # ✨ [الحل الجذري]: جلب حالة العملات الحية أولاً لتصفية الميتة والمتوقفة ✨
@@ -3654,7 +3843,6 @@ async def update_crypto_market_data():
                 if ex_res.status == 200:
                     ex_data = await ex_res.json()
                     for s in ex_data.get('symbols', []):
-                        # شرط أساسي: العملة تكون USDT وتكون حالتها TRADING (نشطة الآن)
                         if s['status'] == 'TRADING' and s['quoteAsset'] == 'USDT':
                             valid_symbols.add(s['symbol'])
         except Exception as e:
@@ -3682,11 +3870,9 @@ async def update_crypto_market_data():
             
             symbol = c.get('symbol', '')
             
-            # فلترة قوية جداً:
-            if symbol not in valid_symbols: continue # يجب أن تكون نشطة حالياً (TRADING)
+            if symbol not in valid_symbols: continue
             if not symbol.endswith('USDT'): continue
             if symbol in STABLE_COINS: continue 
-            # استبعاد توكنات الرافعة المالية (تشوه التحليل الفني)
             if symbol.endswith('UPUSDT') or symbol.endswith('DOWNUSDT'): continue 
             
             last_price = float(c.get('lastPrice', 0))
@@ -3695,7 +3881,7 @@ async def update_crypto_market_data():
             low_price = float(c.get('lowPrice', 0))
             trades_count = int(c.get('count', 0))
 
-            if last_price < 0.001: continue
+            if last_price < 0.0001: continue
             
             if 0.98 <= last_price <= 1.02 and low_price > 0:
                 price_volatility = (high_price - low_price) / low_price
@@ -3770,9 +3956,21 @@ async def update_crypto_market_data():
                         trend_info = generate_trend_data(df_tf)
                         adx_val = calculate_adx(highs, lows, closes)
 
-                        # حساب القناة السعرية (بالإصدار الجديد المطور)
+                        # حساب القناة السعرية
                         swings_high, swings_low = calculate_price_action_sr(highs, lows, return_swings=True) 
                         channel_info = calculate_price_channel(df_tf, trend_info, swings_high, swings_low)
+                        
+                        # 🌟 [ الإضافة الجديدة: اكتشاف الأنماط الهندسية والانعكاسية ] 🌟
+                        pattern_data = detect_patterns_and_calculate(df_tf, symbol, tf)
+
+                        # 🌟 [ حقن بيانات النماذج في الـ Record لجميع الفريمات ] 🌟
+                        record.update({
+                            f"{tf}_pattern_name": pattern_data["name"],
+                            f"{tf}_pattern_class": pattern_data["class"],
+                            f"{tf}_pattern_breakout": float(pattern_data["breakout"]),
+                            f"{tf}_pattern_target": float(pattern_data["target"]),
+                            f"{tf}_pattern_sl": float(pattern_data["sl"])
+                        })
                         
                         if tf in ['1w', '1M']:
                             record.update({
@@ -3781,7 +3979,6 @@ async def update_crypto_market_data():
                                 f"{tf}_trend_touches": trend_info["touches"],
                                 f"{tf}_trend_current_price": trend_info["current_line_price"],
                                 f"{tf}_is_valid_trend": trend_info["is_valid"],
-                                # بيانات القناة الجديدة
                                 f"{tf}_channel_upper": channel_info["channel_upper"],
                                 f"{tf}_channel_lower": channel_info["channel_lower"],
                                 f"{tf}_channel_direction": channel_info["channel_direction"],
@@ -3863,7 +4060,6 @@ async def update_crypto_market_data():
                                 f"support_{tf}": tf_support,
                                 f"resistance_{tf}": tf_resistance,
                                 
-                                # --- بيانات القنوات السعرية المحدثة ---
                                 f"{tf}_channel_upper": channel_info["channel_upper"],
                                 f"{tf}_channel_lower": channel_info["channel_lower"],
                                 f"{tf}_channel_direction": channel_info["channel_direction"],
@@ -3880,12 +4076,12 @@ async def update_crypto_market_data():
                 continue
 
         if final_records:
-            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الجندي المجهول' والترند والقنوات السعرية كاملة...")
+            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات 'الجندي المجهول'، الترند، القنوات السعرية، والأنماط الهندسية...")
             for i in range(0, len(final_records), 10):
                 await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
     
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
-    
+
     
 async def async_manual_upsert1(table_name, records):
     headers = {
@@ -3985,7 +4181,7 @@ async def run_forensic_autopsy(symbol, change_percent):
     """
     try:
         # 🛡️ فلتر الأمان: التأكد من أن العملة ضمن نطاق التحقيق المطلوب
-        if change_percent >= 40:
+        if change_percent >= 30:
             event_type = "PUMP"
         elif change_percent <= -20:
             event_type = "DUMP"
