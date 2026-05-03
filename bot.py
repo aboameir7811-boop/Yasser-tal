@@ -3831,6 +3831,12 @@ def detect_patterns_and_calculate(
     return default_pattern
     
 
+async def fetch_klines(session, symbol, interval, limit=200):
+    url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+    try:
+        async with session.get(url, timeout=10) as res:
+            if res.status == 200: return await res.json()
+    except: return None
 
 async def update_crypto_market_data():
     print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة فلترة العملات والأنماط الفنية)...")
