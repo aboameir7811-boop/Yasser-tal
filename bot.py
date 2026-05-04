@@ -548,6 +548,75 @@ async def intelligence_scanner():
                 reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.") 
 
             # ==========================================
+            # 📐 [ 8. دمج القنوات السعرية، الترند، والنماذج الكلاسيكية ]
+            # ==========================================
+            # استخراج بيانات الترند والقنوات وعدد اللمسات من الداتا بيز
+            trend_1h = coin.get('1h_trend_direction') or 'SIDEWAY'
+            trend_touches_1h = int(coin.get('1h_trend_touches') or 0)
+            
+            channel_1h_status = coin.get('1h_channel_status') or 'NONE'
+            channel_touches_1h = int(coin.get('1h_channel_touches') or 0)
+            
+            pattern_15m = coin.get('15m_pattern_name') or 'NONE'
+            pattern_class_15m = coin.get('15m_pattern_class') or 'NONE'
+
+            # --- [ فلتر الأمان للفريمات الكبيرة 4H & 1D ] ---
+            trend_4h = coin.get('4h_trend_direction') or 'SIDEWAY'
+            is_huge_resistance = price >= float(c.get('resistance_1d', price * 1.5))
+            is_huge_support = price <= float(c.get('support_1d', price * 0.5))
+            
+            # --- أ. قوة الترند العام (Trend Alignment) ---
+            # الثقة تزداد إذا كان الترند مدعوماً بـ 3 لمسات فأكثر وتوافق مع فريم 4H
+            trend_multiplier = 1.2 if trend_touches_1h >= 3 else 1.0
+            if trend_4h == trend_1h: trend_multiplier += 0.2 # توافق الفريمات الكبيرة
+            
+            if trend_1h == "UP" and is_uptrend:
+                if not is_huge_resistance: # لا نشتري عند مقاومة يومية
+                    score += (40 * trend_multiplier)
+                    reasons.append(f"📈 توافق الترند (1H/4H): زحف إيجابي بـ {trend_touches_1h} لمسات (+{int(40 * trend_multiplier)})")
+            elif trend_1h == "DOWN" and is_downtrend:
+                if not is_huge_support: # لا نبيع عند دعم يومي
+                    score -= (40 * trend_multiplier)
+                    reasons.append(f"📉 ضغط الترند (1H/4H): مسار هابط بـ {trend_touches_1h} لمسات (-{int(40 * trend_multiplier)})")
+
+            # --- ب. استراتيجية "انفجار السيولة" و"قنص الارتدادات" من القنوات ---
+            # كسر القنوات بعد 3 لمسات فأكثر يعتبر إشارة دخول قوية جداً
+            channel_power = 1.3 if channel_touches_1h >= 3 else 1.0
+
+            if channel_1h_status == "BREAKOUT_UP":
+                score += (70 * channel_power)
+                reasons.append(f"🚀 كسر القناة (1H): انفجار سيولة بعد {channel_touches_1h} لمسات (+{int(70 * channel_power)})")
+            
+            elif channel_1h_status == "RETEST_UP" and (is_near_support_general or is_at_tf_support):
+                score += (80 * channel_power)
+                reasons.append(f"🛡️ قنص الارتدادات (1H): إعادة اختبار قناة قوية ({channel_touches_1h} لمسات) (+{int(80 * channel_power)})")
+            
+            elif channel_1h_status == "BREAKOUT_DOWN":
+                score -= (70 * channel_power)
+                reasons.append(f"🩸 انهيار القناة (1H): كسر قاع قناة مجهدة بـ {channel_touches_1h} لمسات (-{int(70 * channel_power)})")
+            
+            elif channel_1h_status == "RETEST_DOWN" and is_near_resistance_general:
+                score -= (80 * channel_power)
+                reasons.append(f"⚠️ اختبار الانهيار (1H): رفض من قاع مكسور بعد {channel_touches_1h} لمسات (-{int(80 * channel_power)})")
+
+            # --- ج. النماذج الاستمرارية والانعكاسية (Pattern Recognition) ---
+            if pattern_class_15m in ["Continuation", "Reversal"] and pattern_15m != "NONE":
+                bullish_patterns = ["Bullish Flag", "Bullish Pennant", "Symmetrical Triangle", "Ascending Triangle", "Falling Wedge", "Double Bottom", "Inverted Head and Shoulders"]
+                bearish_patterns = ["Bearish Flag", "Bearish Pennant", "Descending Triangle", "Rising Wedge", "Double Top", "Head and Shoulders"]
+
+                if pattern_15m in bullish_patterns:
+                    # نعتمد النموذج الإيجابي إذا كان مؤشر RSI (نسخة قلعة أثر 78/22) تحت التشبع
+                    if rsi_15m < 78: 
+                        score += 50
+                        reasons.append(f"📐 تأكيد كلاسيكي: نموذج ({pattern_15m}) يدعم الانطلاق (+50)")
+                
+                elif pattern_15m in bearish_patterns:
+                    # نعتمد النموذج السلبي إذا لم نصل لمنطقة قنص الارتداد (فوق 22)
+                    if rsi_15m > 22:
+                        score -= 50
+                        reasons.append(f"⚠️ تحذير كلاسيكي: نموذج ({pattern_15m}) ينذر بانعكاس أو هبوط (-50)")
+                        
+            # ==========================================
             # 🎯 [ 8. قرار الإطلاق النهائي ]
             # ==========================================
             sc_crawling = 1 if is_crawling_up else 0 
@@ -561,13 +630,13 @@ async def intelligence_scanner():
 
             signal_type = "NONE"
             
-            if score >= 200:
+            if score >= 300:
                 if is_near_support_general or is_uptrend or is_at_tf_support:
                     signal_type = "LONG"
                 else:
                     reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
 
-            elif score <= -206:
+            elif score <= -306:
                 if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
                     signal_type = "SHORT"
                 else:
@@ -1826,6 +1895,7 @@ async def process_coin_view(callback_query: types.CallbackQuery):
         
 
 # --- [ 3. هاندلر توصية VIP (قالب العنود / الدخول الهجومي) ] ---
+# --- [ 3. هاندلر توصية VIP (قالب العنود / الدخول الهجومي) ] ---
 # 🛠️ [ أداة تحليل المخاطر المحسنة - جدار الحماية ]
 def evaluate_reversal_risk(current_price, support_1d, resistance_1d, direction):
     try:
@@ -1889,51 +1959,75 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
         support_1d = float(c.get('support_1d', price * 0.85))
         res_1d = float(c.get('resistance_1d', price * 1.15))
 
-        # --- 🧠 2️⃣ محرك القرار المتقدم (نظام النقاط - لن يرفض أي صفقة) ---
+        # --- 📐 سحب بيانات البرايس أكشن والترند ---
+        trend_1h = c.get('1h_trend_direction', 'SIDEWAY')
+        channel_1h_status = c.get('1h_channel_status', 'NONE')
+        pattern_15m = c.get('15m_pattern_name', 'NONE')
+        pattern_class = c.get('15m_pattern_class', 'NONE')
+
+        # --- 🧠 2️⃣ محرك القرار المتقدم (نظام النقاط الشامل) ---
         bull_score = 0
         bear_score = 0
         
-        # تقييم السيولة والحيتان (Weight: 30)
+        # أ. تقييم السيولة والحيتان (Weight: 30)
         if orderbook_imb > 1.05: bull_score += 15
         elif orderbook_imb < 0.95: bear_score += 15
         
         if obv_slope_15m > 0: bull_score += 15
         elif obv_slope_15m < 0: bear_score += 15
         
-        # تقييم المؤشرات الفنية (Weight: 50)
-        if price > ema50_15m: bull_score += 20
-        else: bear_score += 20
+        # ب. تقييم المؤشرات الفنية (Weight: 30)
+        if price > ema50_15m: bull_score += 10
+        else: bear_score += 10
             
-        if macd_15m > macd_sig_15m: bull_score += 15
-        else: bear_score += 15
+        if macd_15m > macd_sig_15m: bull_score += 10
+        else: bear_score += 10
             
-        if rsi_15m > 55: bull_score += 15
-        elif rsi_15m < 45: bear_score += 15
+        if rsi_15m > 55 and rsi_15m < 78: bull_score += 10
+        elif rsi_15m < 45 and rsi_15m > 22: bear_score += 10
 
-        # تقييم الحيتان (Weight: 20)
-        if whale_absorption and orderbook_imb > 1: bull_score += 20
-        elif whale_absorption and orderbook_imb < 1: bear_score += 20
+        # ج. تقييم الحيتان (Weight: 10)
+        if whale_absorption and orderbook_imb > 1: bull_score += 10
+        elif whale_absorption and orderbook_imb < 1: bear_score += 10
+
+        # د. تقييم البرايس أكشن والترند والنماذج (Weight: 30)
+        if trend_1h == "UP": bull_score += 10
+        elif trend_1h == "DOWN": bear_score += 10
+
+        if channel_1h_status in ["BREAKOUT_UP", "RETEST_UP"]: bull_score += 10
+        elif channel_1h_status in ["BREAKOUT_DOWN", "RETEST_DOWN"]: bear_score += 10
+
+        bullish_patterns = ["Bullish Flag", "Bullish Pennant", "Symmetrical Triangle", "Ascending Triangle", "Falling Wedge", "Double Bottom", "Inverted Head and Shoulders"]
+        bearish_patterns = ["Bearish Flag", "Bearish Pennant", "Descending Triangle", "Rising Wedge", "Double Top", "Head and Shoulders"]
+
+        if pattern_15m in bullish_patterns and rsi_15m < 78: bull_score += 10
+        elif pattern_15m in bearish_patterns and rsi_15m > 22: bear_score += 10
 
         # --- 📊 3️⃣ تحديد الاتجاه النهائي بناءً على المنتصر ---
         total_score = bull_score + bear_score
-        if total_score == 0: total_score = 1 # لمنع القسمة على صفر
+        if total_score == 0: total_score = 1
         
         if bull_score >= bear_score:
             trade_direction = "LONG"
             direction_text = "شراء (LONG) 🟢"
             emoji_trend = "🚀"
-            confidence_rate = (bull_score / 100) * 100
+            confidence_rate = min((bull_score / 100) * 100 * 1.2, 99) # Boost confidence slightly if elements align
         else:
             trade_direction = "SHORT"
             direction_text = "بيع (SHORT) 🔴"
             emoji_trend = "📉"
-            confidence_rate = (bear_score / 100) * 100
+            confidence_rate = min((bear_score / 100) * 100 * 1.2, 99)
 
-        # حساب المخاطرة
         risk_percentage = evaluate_reversal_risk(price, support_1d, res_1d, trade_direction)
         
         # --- ⏳ 4️⃣ تحديد التوقيت الزمني للحركة ---
-        if is_expanding:
+        if channel_1h_status in ["BREAKOUT_UP", "BREAKOUT_DOWN"]:
+            time_estimate = "الآن (انفجار سيولة 🌊)"
+            move_when = "تم كسر القناة السعرية بقوة"
+        elif channel_1h_status in ["RETEST_UP", "RETEST_DOWN"]:
+            time_estimate = "جاهز للانطلاق 🎯"
+            move_when = "نهاية إعادة الاختبار (قنص الارتداد)"
+        elif is_expanding:
             time_estimate = "الآن (بدأ تدفق السيولة 🌊)"
             move_when = "السعر يتحرك في هذه اللحظة"
         elif is_squeezed:
@@ -1943,16 +2037,17 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
             time_estimate = "خلال 1 - 4 ساعات 🕰️"
             move_when = "حركة اعتيادية متدرجة"
 
-        # --- 🎯 5️⃣ تحديد الأهداف ونقاط الدخول بناءً على الاتجاه ---
+        # --- 🎯 5️⃣ تحديد الأهداف ونقاط الدخول (دخول هجومي متقدم) ---
         if trade_direction == "LONG":
             entry_1 = price
+            # دخول هجومي على دعم قوي مثل EMA20 أو بعد إعادة اختبار القناة
             entry_2 = ema20_15m if ema20_15m < price else price * 0.995
             dca = ema50_15m
             sl = ema50_15m - (atr_15m * 1.5)
             
             tp1 = res_1h if (res_1h - price) > (atr_15m * 1.2) else price + (atr_15m * 1.5)
             tp2 = tp1 + (atr_15m * 2.0)
-            tp3 = min(res_1d, tp2 + (atr_15m * 3.0))
+            tp3 = min(res_1d, tp2 + (atr_15m * 3.5))
         else:
             entry_1 = price
             entry_2 = ema20_15m if ema20_15m > price else price * 1.005
@@ -1961,26 +2056,36 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
             
             tp1 = support_1h if (price - support_1h) > (atr_15m * 1.2) else price - (atr_15m * 1.5)
             tp2 = tp1 - (atr_15m * 2.0)
-            tp3 = max(support_1d, tp2 - (atr_15m * 3.0))
+            tp3 = max(support_1d, tp2 - (atr_15m * 3.5))
 
-        # تقييم النجوم
         stars = "⭐" * int(confidence_rate / 20) if confidence_rate >= 20 else "⭐"
+
+        # تجهيز نصوص البرايس أكشن للعرض
+        trend_display = "صاعد 📈" if trend_1h == "UP" else "هابط 📉" if trend_1h == "DOWN" else "عرضي ↔️"
+        pattern_display = f"نموذج {pattern_15m} ({'إيجابي' if pattern_15m in bullish_patterns else 'سلبي'})" if pattern_15m != "NONE" else "لا يوجد"
+        
+        channel_display = "مستقرة داخل النطاق"
+        if "BREAKOUT" in channel_1h_status: channel_display = "🔥 اختراق قوي للقناة السعرية"
+        elif "RETEST" in channel_1h_status: channel_display = "🎯 إعادة اختبار ناجحة (فرصة قنص)"
 
         # --- 📝 6️⃣ القالب النهائي (VIP) ---
         signal_text = f"🔥 <b> القنص المتقدم :</b> #{symbol} {emoji_trend}\n"
         signal_text += f"ــــــــــــــــــــــــــــــــــــــــــــــــــ\n\n"
         
-        signal_text += f"📊 <b>الوضع الفني :</b>\n"
+        signal_text += f"📊 <b>الوضع الفني والبرايس أكشن :</b>\n"
         signal_text += f"• القرار: <b>{direction_text}</b>\n"
         signal_text += f"• جودة الصفقة: {stars} ({confidence_rate:.0f}%)\n"
-        signal_text += f"• نسبة المخاطرة: <b>{risk_percentage:.0f}%</b> {'🟢' if risk_percentage < 40 else '🟡' if risk_percentage < 70 else '🔴'}\n"
-        signal_text += f"• ضغط السيولة (Orderbook): <b>{orderbook_imb:.2f}x</b>\n\n"
+        signal_text += f"• الترند العام (1H): <b>{trend_display}</b>\n"
+        signal_text += f"• حالة القناة: <b>{channel_display}</b>\n"
+        if pattern_15m != "NONE":
+            signal_text += f"• النماذج الفنية: <b>{pattern_display}</b>\n"
+        signal_text += f"• نسبة المخاطرة: <b>{risk_percentage:.0f}%</b> {'🟢' if risk_percentage < 40 else '🟡' if risk_percentage < 70 else '🔴'}\n\n"
 
         signal_text += f"⏳ <b>التوقيت الزمني للحركة:</b>\n"
         signal_text += f"• متى سيتحرك؟: <b>{move_when}</b>\n"
         signal_text += f"• المدة المتوقعة: <b>{time_estimate}</b>\n\n"
         
-        signal_text += f"📐 <b>خطة التداول الموصى بها:</b>\n"
+        signal_text += f"📐 <b>خطة الهجوم الموصى بها:</b>\n"
         signal_text += f"🎯 مناطق الدخول: <code>{f_num(entry_2)}</code> - <code>{f_num(entry_1)}</code>\n"
         signal_text += f"🛡️ نقطة التبريد (DCA): <code>{f_num(dca)}</code>\n"
         signal_text += f"🚫 وقف الخسارة (SL): <code>{f_num(sl)}</code>\n\n"
@@ -1997,7 +2102,6 @@ async def process_vip_signal(callback_query: types.CallbackQuery):
         print(f"VIP Error: {e}")
         await callback_query.answer("❌ تعذر التوليد. حدث خطأ أثناء تحليل البيانات.", show_alert=True)
         
-                
 # ==========================================
 # 7. معالجات دورة الصفقة (المطورة لدعم الفواصل والأمان)
 # ==========================================
