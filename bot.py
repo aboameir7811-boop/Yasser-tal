@@ -3450,9 +3450,11 @@ def calculate_macd_values(closes, fast=12, slow=26, signal=9):
         print(f"❌ خطأ في الحساب اليدوي للماكد: {e}")
         return {"macd": 0.0, "signal": 0.0, "hist": 0.0}
         
+
 # ==========================================
 # 1. دالة استخراج الدعوم والمقاومات (المحدثة)
 # ==========================================
+
 def calculate_price_action_sr(highs, lows, return_swings=False):
     """
     تستخرج أحدث دعم وأحدث مقاومة، مع إمكانية إرجاع كافة القمم والقيعان (Swings)
@@ -3526,6 +3528,7 @@ def find_swing_points(df, window=5):
             
     return swing_highs, swing_lows
 
+
 def calculate_trendline_angle(x1, y1, x2, y2, avg_price):
     """حساب تقريبي للزاوية بناء على نسبة التغير مقابل الزمن"""
     dx = x2 - x1
@@ -3533,6 +3536,7 @@ def calculate_trendline_angle(x1, y1, x2, y2, avg_price):
     dy = ((y2 - y1) / avg_price) * 100  
     angle_rad = math.atan(dy / dx)
     return abs(math.degrees(angle_rad))
+
 
 def validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
     """
@@ -3557,13 +3561,14 @@ def validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
                 
     return True
 
+
 def generate_trend_data(df, min_distance=10):
     swings_high, swings_low = find_swing_points(df, window=5)
     avg_price = df['close'].mean()
     tolerance = avg_price * 0.001 
     
     best_trend = {
-        "direction": "SIDEWAY", "angle": 0.0, "touches": 0, 
+        "direction": "عرضي", "angle": 0.0, "touches": 0, 
         "current_line_price": 0.0, "is_valid": 2, "slope": 0.0 
     }
     
@@ -3593,7 +3598,7 @@ def generate_trend_data(df, min_distance=10):
                             if touches > best_trend["touches"]:
                                 current_line_price = (slope * (len(df) - 1)) + intercept
                                 best_trend.update({
-                                    "direction": "UP", "angle": round(angle, 2), "touches": touches, 
+                                    "direction": "صاعد", "angle": round(angle, 2), "touches": touches, 
                                     "current_line_price": round(current_line_price, 4), "is_valid": 1,
                                     "slope": slope
                                 })
@@ -3624,12 +3629,13 @@ def generate_trend_data(df, min_distance=10):
                             if touches > best_trend["touches"]:
                                 current_line_price = (slope * (len(df) - 1)) + intercept
                                 best_trend.update({
-                                    "direction": "DOWN", "angle": round(angle, 2), "touches": touches, 
+                                    "direction": "هابط", "angle": round(angle, 2), "touches": touches, 
                                     "current_line_price": round(current_line_price, 4), "is_valid": 1,
                                     "slope": slope
                                 })
 
     return best_trend
+
 
 def calculate_price_channel(df, best_trend, swings_high, swings_low):
     """
@@ -3638,9 +3644,9 @@ def calculate_price_channel(df, best_trend, swings_high, swings_low):
     channel_data = {
         "channel_upper": 0.0,
         "channel_lower": 0.0,
-        "channel_direction": "NONE",
+        "channel_direction": "لا يوجد",
         "channel_touches": 0,
-        "channel_status": "NONE"
+        "channel_status": "لا يوجد"
     }
     
     if best_trend["is_valid"] != 1 or "slope" not in best_trend or best_trend["slope"] == 0:
@@ -3661,8 +3667,8 @@ def calculate_price_channel(df, best_trend, swings_high, swings_low):
     
     total_touches = best_trend["touches"] # لمسات الترند الأساسي
     
-    if best_trend["direction"] == "UP":
-        channel_data["channel_direction"] = "UP"
+    if best_trend["direction"] == "صاعد":
+        channel_data["channel_direction"] = "صاعدة"
         channel_data["channel_lower"] = best_trend["current_line_price"]
         
         # إيجاد الخط الموازي العلوي (بحيث يحتوي كل القمم)
@@ -3684,8 +3690,8 @@ def calculate_price_channel(df, best_trend, swings_high, swings_low):
         prev_upper = (slope * prev_index) + max_intercept
         prev_lower = (slope * prev_index) + best_trend["current_line_price"] - (slope * current_index)
 
-    elif best_trend["direction"] == "DOWN":
-        channel_data["channel_direction"] = "DOWN"
+    elif best_trend["direction"] == "هابط":
+        channel_data["channel_direction"] = "هابطة"
         channel_data["channel_upper"] = best_trend["current_line_price"]
         
         # إيجاد الخط الموازي السفلي (بحيث يحتوي كل القيعان)
@@ -3718,25 +3724,24 @@ def calculate_price_channel(df, best_trend, swings_high, swings_low):
         
         # 1. حالة شمعة الاختبار (Retest) للكسر العلوي
         if prev_close > prev_upper and current_low <= (current_upper + tolerance) and current_close > current_upper:
-            channel_data["channel_status"] = "RETEST_UP"
+            channel_data["channel_status"] = "إعادة اختبار (اختراق علوي)"
             
         # 2. حالة شمعة الاختبار (Retest) للكسر السفلي
         elif prev_close < prev_lower and current_high >= (current_lower - tolerance) and current_close < current_lower:
-            channel_data["channel_status"] = "RETEST_DOWN"
+            channel_data["channel_status"] = "إعادة اختبار (كسر سفلي)"
             
         # 3. حالة شمعة الكسر (Breakout) لم يتم اختبارها بعد
         elif current_close > current_upper:
-            channel_data["channel_status"] = "BREAKOUT_UP"
+            channel_data["channel_status"] = "اختراق للأعلى (شراء)"
             
         elif current_close < current_lower:
-            channel_data["channel_status"] = "BREAKOUT_DOWN"
+            channel_data["channel_status"] = "كسر للأسفل (بيع)"
             
         # 4. السعر داخل القناة
         else:
-            channel_data["channel_status"] = "INSIDE"
+            channel_data["channel_status"] = "داخل القناة"
             
     return channel_data
-    
 
 
 def calculate_continuation_logic(
@@ -3747,21 +3752,21 @@ def calculate_continuation_logic(
     pattern_low: float
 ) -> Dict[str, Union[str, float]]:
     """حساب أهداف النماذج الاستمرارية"""
-    if not pattern_name or pattern_name == "Normal":
-        return {"name": "NONE", "class": "NONE", "breakout": 0.0, "target": 0.0, "sl": 0.0}
+    if not pattern_name or pattern_name in ["Normal", "عادي"]:
+        return {"name": "لا يوجد", "class": "لا يوجد", "breakout": 0.0, "target": 0.0, "sl": 0.0}
 
     height = pattern_high - pattern_low
     
-    if prior_trend == "Bullish":
+    if prior_trend == "شراء":
         target = breakout_point + height
         sl = breakout_point - (height * 0.5)
-    else: # Bearish
+    else: # بيع
         target = breakout_point - height
         sl = breakout_point + (height * 0.5)
 
     return {
         "name": pattern_name,
-        "class": "Continuation",
+        "class": "استمراري",
         "breakout": round(breakout_point, 5),
         "target": round(target, 5),
         "sl": round(sl, 5)
@@ -3774,21 +3779,21 @@ def calculate_reversal_logic(
     extreme_point: float
 ) -> Dict[str, Union[str, float]]:
     """حساب أهداف النماذج الانعكاسية"""
-    if not pattern_name or pattern_name == "Normal":
-        return {"name": "NONE", "class": "NONE", "breakout": 0.0, "target": 0.0, "sl": 0.0}
+    if not pattern_name or pattern_name in ["Normal", "عادي"]:
+        return {"name": "لا يوجد", "class": "لا يوجد", "breakout": 0.0, "target": 0.0, "sl": 0.0}
 
     height = abs(extreme_point - neckline)
     
-    if pattern_direction == "Bullish_Reversal":
+    if pattern_direction == "شراء":
         target = neckline + height
         sl = neckline - (height * 0.3)
-    else: # Bearish_Reversal
+    else: # بيع
         target = neckline - height
         sl = neckline + (height * 0.3)
 
     return {
         "name": pattern_name,
-        "class": "Reversal",
+        "class": "انعكاسي",
         "breakout": round(neckline, 5),
         "target": round(target, 5),
         "sl": round(sl, 5)
@@ -3804,7 +3809,7 @@ def detect_patterns_and_calculate(
     strict_breakout: bool = False
 ) -> Dict[str, Union[str, float]]:
     """اكتشاف الأنماط وحساب أهدافها رياضياً باستخدام الميل الحقيقي"""
-    default_pattern = {"name": "NONE", "class": "NONE", "breakout": 0.0, "target": 0.0, "sl": 0.0}
+    default_pattern = {"name": "لا يوجد", "class": "لا يوجد", "breakout": 0.0, "target": 0.0, "sl": 0.0}
 
     if df_tf is None or len(df_tf) < min_bars:
         return default_pattern
@@ -3827,17 +3832,17 @@ def detect_patterns_and_calculate(
     recent_low = lows[-10:].min() if len(lows) >= 10 else lows.min()
     consolidation_height = recent_high - recent_low
 
-    # أ. علم صاعد (Bullish Flag)
+    # أ. علم صاعد (Bullish Flag) -> شراء
     if price_change > trend_threshold and current_price > (recent_high - (consolidation_height * 0.2)):
         pole_height = recent_high - lows[-lookback:].min()
         if current_price > recent_high:
-            return calculate_continuation_logic("Bullish Flag", "Bullish", recent_high, recent_high, recent_high - pole_height)
+            return calculate_continuation_logic("علم صاعد", "شراء", recent_high, recent_high, recent_high - pole_height)
 
-    # ب. علم هابط (Bearish Flag)
+    # ب. علم هابط (Bearish Flag) -> بيع
     elif price_change < -trend_threshold and current_price < (recent_low + (consolidation_height * 0.2)):
         pole_height = highs[-lookback:].max() - recent_low
         if current_price < recent_low:
-            return calculate_continuation_logic("Bearish Flag", "Bearish", recent_low, recent_low + pole_height, recent_low)
+            return calculate_continuation_logic("علم هابط", "بيع", recent_low, recent_low + pole_height, recent_low)
 
     # --- [2. منطق المثلثات والأوتاد والرايات المتقدمة] ---
     if len(peaks) >= 2 and len(troughs) >= 2:
@@ -3856,41 +3861,41 @@ def detect_patterns_and_calculate(
         pattern_high_max = highs[peaks[-2:]].max()
         pattern_low_min = lows[troughs[-2:]].min()
 
-        # الرايات (Pennants) - مثلث متماثل صغير مع ترند قوي يسبقه
+        # الرايات (Pennants)
         if abs(price_change) > trend_threshold and dx_highs < 10 and dx_lows < 10:
             if slope_highs < 0 and slope_lows > 0:
                 pole_h = abs(current_price - closes[-lookback])
                 if price_change > 0 and current_price > last_peak:
-                    return calculate_continuation_logic("Bullish Pennant", "Bullish", current_price, current_price + pole_h, current_price)
+                    return calculate_continuation_logic("راية صاعدة", "شراء", current_price, current_price + pole_h, current_price)
                 elif price_change < 0 and current_price < last_trough:
-                    return calculate_continuation_logic("Bearish Pennant", "Bearish", current_price, current_price, current_price - pole_h)
+                    return calculate_continuation_logic("راية هابطة", "بيع", current_price, current_price, current_price - pole_h)
 
         # أ. المثلث المتماثل
         if slope_highs < 0 and slope_lows > 0:
             if current_price > last_peak:
-                return calculate_continuation_logic("Symmetrical Triangle", "Bullish", current_price, pattern_high_max, pattern_low_min)
+                return calculate_continuation_logic("مثلث متماثل", "شراء", current_price, pattern_high_max, pattern_low_min)
             elif current_price < last_trough:
-                return calculate_continuation_logic("Symmetrical Triangle", "Bearish", current_price, pattern_high_max, pattern_low_min)
+                return calculate_continuation_logic("مثلث متماثل", "بيع", current_price, pattern_high_max, pattern_low_min)
 
         # ب. المثلث الصاعد
         elif abs(dy_highs) / last_peak < tolerance and slope_lows > 0:
             if current_price > last_peak:
-                return calculate_continuation_logic("Ascending Triangle", "Bullish", current_price, pattern_high_max, pattern_low_min)
+                return calculate_continuation_logic("مثلث صاعد", "شراء", current_price, pattern_high_max, pattern_low_min)
 
         # ج. المثلث الهابط
         elif slope_highs < 0 and abs(dy_lows) / last_trough < tolerance:
             if current_price < last_trough:
-                return calculate_continuation_logic("Descending Triangle", "Bearish", current_price, pattern_high_max, pattern_low_min)
+                return calculate_continuation_logic("مثلث هابط", "بيع", current_price, pattern_high_max, pattern_low_min)
 
-        # د. الوتد الهابط (Falling Wedge) - قمم وقيعان هابطة، والقمم تهبط بشكل أسرع
+        # د. الوتد الهابط (Falling Wedge)
         elif slope_highs < 0 and slope_lows < 0 and abs(slope_highs) > abs(slope_lows):
             if current_price > last_peak:
-                return calculate_continuation_logic("Falling Wedge", "Bullish", current_price, pattern_high_max, pattern_low_min)
+                return calculate_continuation_logic("وتد هابط", "شراء", current_price, pattern_high_max, pattern_low_min)
 
-        # هـ. الوتد الصاعد (Rising Wedge) - قمم وقيعان صاعدة، والقيعان تصعد بشكل أسرع
+        # هـ. الوتد الصاعد (Rising Wedge)
         elif slope_highs > 0 and slope_lows > 0 and slope_lows > slope_highs:
             if current_price < last_trough:
-                return calculate_continuation_logic("Rising Wedge", "Bearish", current_price, pattern_high_max, pattern_low_min)
+                return calculate_continuation_logic("وتد صاعد", "بيع", current_price, pattern_high_max, pattern_low_min)
 
     # --- [3. منطق النماذج الانعكاسية] ---
     
@@ -3902,7 +3907,7 @@ def detect_patterns_and_calculate(
             if valley_slice.size > 0:
                 neckline = valley_slice.min()
                 if current_price < neckline:
-                    return calculate_reversal_logic("Head and Shoulders", "Bearish_Reversal", neckline, p2)
+                    return calculate_reversal_logic("رأس وكتفين", "بيع", neckline, p2)
 
     if len(troughs) >= 3:
         t1, t2, t3 = lows[troughs[-3]], lows[troughs[-2]], lows[troughs[-1]]
@@ -3911,7 +3916,7 @@ def detect_patterns_and_calculate(
             if peak_slice.size > 0:
                 neckline = peak_slice.max()
                 if current_price > neckline:
-                    return calculate_reversal_logic("Inverted Head and Shoulders", "Bullish_Reversal", neckline, t2)
+                    return calculate_reversal_logic("رأس وكتفين مقلوب", "شراء", neckline, t2)
 
     # القمم والقيعان المزدوجة
     if len(peaks) >= 2:
@@ -3921,7 +3926,7 @@ def detect_patterns_and_calculate(
             if valley_slice.size > 0:
                 neckline = valley_slice.min()
                 if current_price < neckline:
-                    return calculate_reversal_logic("Double Top", "Bearish_Reversal", neckline, max(p1, p2))
+                    return calculate_reversal_logic("قمة مزدوجة", "بيع", neckline, max(p1, p2))
 
     if len(troughs) >= 2:
         t1, t2 = lows[troughs[-2]], lows[troughs[-1]]
@@ -3930,10 +3935,9 @@ def detect_patterns_and_calculate(
             if peak_slice.size > 0:
                 neckline = peak_slice.max()
                 if current_price > neckline:
-                    return calculate_reversal_logic("Double Bottom", "Bullish_Reversal", neckline, min(t1, t2))
+                    return calculate_reversal_logic("قاع مزدوج", "شراء", neckline, min(t1, t2))
 
     return default_pattern
-    
 
 async def fetch_klines(session, symbol, interval, limit=100):
     url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
