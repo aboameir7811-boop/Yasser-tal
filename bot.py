@@ -562,9 +562,9 @@ async def intelligence_scanner():
 
             # --- [ فلتر الأمان للفريمات الكبيرة 4H & 1D ] ---
             trend_4h = coin.get('4h_trend_direction') or 'SIDEWAY'
-            is_huge_resistance = price >= float(c.get('resistance_1d', price * 1.5))
-            is_huge_support = price <= float(c.get('support_1d', price * 0.5))
-            
+            # التعديل الصحيح:
+            is_huge_resistance = price >= float(coin.get('resistance_1d', price * 1.5))
+            is_huge_support = price <= float(coin.get('support_1d', price * 0.5))                        
             # --- أ. قوة الترند العام (Trend Alignment) ---
             # الثقة تزداد إذا كان الترند مدعوماً بـ 3 لمسات فأكثر وتوافق مع فريم 4H
             trend_multiplier = 1.2 if trend_touches_1h >= 3 else 1.0
