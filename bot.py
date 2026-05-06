@@ -35,8 +35,6 @@ from supabase import create_client, Client
 # --- [ 1. إعدادات الهوية والاتصال ] ---
 ADMIN_ID = 8627110934
 OWNER_USERNAME = "@Ya_79k"
-# إضافة معرف المجموعة هنا
-GROUP_ID = os.getenv('GROUP_ID')
 
 # سحب التوكينات من Render (لن يعمل البوت بدونها في الإعدادات)
 API_TOKEN = os.getenv('BOT_TOKEN')
@@ -44,10 +42,21 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 # --- [ استدعاء القلوب الثلاثة - تشفير خارجي ] ---
+# 1. التعريف أولاً
+GROQ_KEYS = [
+    os.getenv('G_KEY_1'),
+    os.getenv('G_KEY_2'),
+    os.getenv('G_KEY_3')
+]
+GROQ_KEYS = [k for k in GROQ_KEYS if k] # تصفية المفاتيح
 
+GROUP_ID = os.getenv('GROUP_ID')
+
+# 2. التحقق ثانياً
 if not API_TOKEN or not GROQ_KEYS or not GROUP_ID:
-    logging.error("❌ خطأ: المتغيرات المشفرة (بما فيها GROUP_ID) مفقودة في إعدادات Render!")
+    logging.error("❌ خطأ: المتغيرات المشفرة مفقودة في إعدادات Render!")
     
+
 # تعريف المحركات
 bot = Bot(token=API_TOKEN, parse_mode="HTML")
 storage = MemoryStorage()
