@@ -4449,7 +4449,8 @@ async def update_crypto_market_data():
                             obv_prev_val = calculate_obv(closes[:-1], volumes[:-1]) if len(closes) > 1 else 0.0
 
                             v_delta = calculate_volume_delta(taker_buy_vols, volumes) 
-                            rsi_val = calculate_rsi(closes)
+                            rsi_series = calculate_rsi(closes)
+                            rsi_val = float(rsi_series.iloc[-1]) if hasattr(rsi_series, 'iloc') and len(rsi_series) > 0 else 50.0
                             mood = get_market_mood(rsi_val) 
                             
                             tf_support, tf_resistance = calculate_price_action_sr(highs, lows)
