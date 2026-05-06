@@ -4374,14 +4374,13 @@ async def update_crypto_market_data():
                         lows = df_tf['low'].tolist()
                         closes = df_tf['close'].tolist()
                         volumes = df_tf['volume'].tolist()
-
-                        trend_info = generate_trend_data(df_tf)
+                        trend_info, s_highs, s_lows = generate_trend_data(df_tf)                        
                         adx_val = calculate_adx(highs, lows, closes)
 
                         # حساب القناة السعرية
                         swings_high, swings_low = calculate_price_action_sr(highs, lows, return_swings=True) 
-                        channel_info = calculate_price_channel(df_tf, trend_info, swings_high, swings_low)
-                        
+                        # تأكد أنه هكذا (استخدام المتغيرات الجديدة التي فككناها من الـ Tuple)
+                        channel_info = calculate_price_channel(df_tf, trend_info, s_highs, s_lows)                        
                         # 🌟 [ تعديل: تمرير df_4h لمحرك الأنماط ] 🌟
                         pattern_data = detect_patterns_and_calculate(df_tf, symbol, tf, df_4h=df_4h_data)
 
