@@ -16,6 +16,7 @@ import math
 import traceback
 import numpy as np
 import pandas as pd
+from scipy.stats import linregress
 from scipy.signal import find_peaks
 from typing import Dict, Union
 from aiogram import types
@@ -4522,10 +4523,12 @@ async def update_crypto_market_data():
                 continue
 
         if final_records:
-            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات الترند، القنوات، الأنماط الهندسية والأعمدة الجديدة...")
+            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات الترند...")
             for i in range(0, len(final_records), 10):
-                await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
-    
+                # ✅ سحر التنظيف: تصفية الـ NaN قبل الرفع
+                clean_chunk = [clean_nans(rec) for rec in final_records[i:i + 10]]
+                await async_manual_upsert("crypto_market_simulation", clean_chunk)
+                
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
     
     
