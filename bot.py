@@ -3658,14 +3658,24 @@ def calculate_exact_accuracy(actual: float, target: float) -> float:
     acc = 1.0 - (abs(actual - target) / target)
     return round(max(0, acc) * 100, 2)
 
-def calculate_rsi(series: pd.Series, period: int = 14) -> pd.Series:
-    """حساب مؤشر القوة النسبية (RSI)"""
+
+def calculate_rsi(series, period: int = 14):
+    """حساب مؤشر القوة النسبية (RSI) بشكل آمن"""
+    # تحويل البيانات إلى Series إذا كانت قائمة (List) لتجنب خطأ 'list' object has no attribute 'diff'
+    if isinstance(series, list):
+        series = pd.Series(series)
+    
     delta = series.diff()
+    
+    # حساب المكاسب والخسائر
     gain = (delta.where(delta > 0, 0)).ewm(alpha=1/period, adjust=False).mean()
     loss = (-delta.where(delta < 0, 0)).ewm(alpha=1/period, adjust=False).mean()
+    
+    # التعامل مع حالة القسمة على صفر إذا كانت الخسائر صفراً
     rs = gain / loss
-    return 100 - (100 / (1 + rs))
-
+    rsi = 100 - (100 / (1 + rs))
+    
+    return rsi
 def detect_rsi_divergence_4h(df_4h: pd.DataFrame) -> str:
     """اكتشاف الدايفرجنس باستخدام فريم 4 ساعات ومستويات السيولة العميقة (78/22)"""
     if df_4h is None or len(df_4h) < 50:
