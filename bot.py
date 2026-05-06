@@ -35,6 +35,8 @@ from supabase import create_client, Client
 # --- [ 1. إعدادات الهوية والاتصال ] ---
 ADMIN_ID = 8627110934
 OWNER_USERNAME = "@Ya_79k"
+# إضافة معرف المجموعة هنا
+GROUP_ID = os.getenv('GROUP_ID')
 
 # سحب التوكينات من Render (لن يعمل البوت بدونها في الإعدادات)
 API_TOKEN = os.getenv('BOT_TOKEN')
@@ -42,21 +44,10 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 # --- [ استدعاء القلوب الثلاثة - تشفير خارجي ] ---
-# هنا الكود يطلب المفاتيح من المتغيرات فقط، ولا توجد أي قيمة مسجلة هنا
-GROQ_KEYS = [
-    os.getenv('G_KEY_1'),
-    os.getenv('G_KEY_2'),
-    os.getenv('G_KEY_3')
-]
 
-# تصفية المصفوفة لضمان عدم وجود قيم فارغة
-GROQ_KEYS = [k for k in GROQ_KEYS if k]
-current_key_index = 0  # مؤشر تدوير القلوب
-
-# التحقق من وجود المتغيرات الأساسية لضمان عدم حدوث Crash
-if not API_TOKEN or not GROQ_KEYS:
-    logging.error("❌ خطأ: المتغيرات المشفرة مفقودة في إعدادات Render!")
-
+if not API_TOKEN or not GROQ_KEYS or not GROUP_ID:
+    logging.error("❌ خطأ: المتغيرات المشفرة (بما فيها GROUP_ID) مفقودة في إعدادات Render!")
+    
 # تعريف المحركات
 bot = Bot(token=API_TOKEN, parse_mode="HTML")
 storage = MemoryStorage()
@@ -4973,6 +4964,29 @@ async def unified_trading_system():
             await asyncio.sleep(10) # انتظار قصير للتعافي من الصدمة
                                                                                                                        
 
+# 1. 🟢 ضع هذا الكلاس قبل "نظام الإنعاش الأبدي" (في منطقة عامة خارج الدوال)
+class TelegramLoggerHandler(logging.Handler):
+    def __init__(self, bot, chat_id):
+        super().__init__()
+        self.bot = bot
+        self.chat_id = chat_id
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        if record.levelno >= logging.ERROR:
+            try:
+                loop = asyncio.get_event_loop()
+                loop.create_task(self.send_log(log_entry))
+            except RuntimeError:
+                pass
+
+    async def send_log(self, message):
+        try:
+            msg = f"⚠️ <b>تنبيـه خطأ في النظام:</b>\n<code>{message[:3500]}</code>"
+            await self.bot.send_message(self.chat_id, msg, parse_mode="HTML")
+        except Exception:
+            pass
+
 # ==========================================
 # 5. نهاية الملف: نظام الإنعاش الأبدي 24/7 (النبض الذاتي) ⚡
 # ==========================================
@@ -4994,8 +5008,10 @@ async def handle_ping(request):
         headers={"Connection": "keep-alive"}
     )
 
+
 async def handle_telegram_login(request):
     return web.Response(text="✅ Data Received")
+
 
 async def self_resuscitation():
     """النبض الذاتي: البوت يوقظ نفسه لمنع النوم (Anti-Idle)"""
@@ -5014,6 +5030,7 @@ async def self_resuscitation():
         
         await asyncio.sleep(240) # كل 4 دقائق
 
+
 async def watch_dog(task_func, *args):
     """
     بروتوكول اليقظة: مراقب دائم للمحركات.
@@ -5028,7 +5045,18 @@ async def watch_dog(task_func, *args):
             logging.info("♻️ إعادة التشغيل التلقائي الآن...")
             await asyncio.sleep(10) # انتظار بسيط لتجنب التكرار السريع عند الخطأ
 
+
 async def main_startup():
+    # 2. 🟢 ضع هذا الإعداد هنا في أول سطر داخل دالة main_startup
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(), # للطباعة في شاشة راندر كالعادة
+            TelegramLoggerHandler(bot, GROUP_ID) # ليرسل الأخطاء للقروب فوراً
+        ]
+    )
+
     # أ) إعداد سيرفر الويب للبقاء Online (مهم للمنصات مثل Render/Heroku)
     app = web.Application()
     app.router.add_get('/', handle_ping)
@@ -5041,21 +5069,15 @@ async def main_startup():
     await site.start()
     logging.info(f"🌐 Server Active on port {port}")
 
-    # ب) تشغيل المحركات تحت حماية الـ WatchDog (لا نوم بعد اليوم)
-    # 1. نظام النبض الذاتي
+    # ب) تشغيل المحركات تحت حماية الـ WatchDog
     asyncio.create_task(watch_dog(self_resuscitation))
-    
-    # 2. محرك التداول (Reaper)
     asyncio.create_task(watch_dog(trade_reaper)) 
-    
-    # 3. النظام الموحد (المصنع + الرادار)
     asyncio.create_task(watch_dog(unified_trading_system))
         
     # ج) تشغيل البوت الرئيسي (Aiogram) مع نظام إعادة المحاولة الصامد
     while True:
         try:
             logging.info("🚀 إقلاع محرك التليجرام... النظام تحت الحماية القصوى.")
-            # تنظيف التحديثات المعلقة لضمان عدم حدوث تداخل عند إعادة التشغيل
             await bot.delete_webhook(drop_pending_updates=True)
             await dp.start_polling(bot)
         except Exception as e:
@@ -5065,7 +5087,6 @@ async def main_startup():
 
 if __name__ == '__main__':
     try:
-        # تشغيل المحرك الرئيسي
         asyncio.run(main_startup())
     except KeyboardInterrupt:
         logging.info("🛑 تم إيقاف النظام يدوياً من قبل أثير.")
