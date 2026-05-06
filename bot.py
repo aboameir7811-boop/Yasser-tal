@@ -3214,7 +3214,9 @@ def detect_all_pdf_patterns(df):
     # تجنب القسمة على صفر
     candle_range = np.where(candle_range == 0, 0.00001, candle_range)
     direction = np.where(cl > op, 1, -1)
-    avg_body = np.convolve(body, np.ones(20)/20, mode='same') 
+    # استبدل السطر القديم بهذا:
+    window = min(20, len(body)) # يأخذ 20 أو أقل إذا كانت الشموع قليلة
+    avg_body = np.convolve(body, np.ones(window)/window, mode='same')
     
     # نسبة التسامح للقمم والقيعان المتساوية
     tolerance = avg_body * 0.1 
@@ -3481,7 +3483,8 @@ def extract_smart_money_concepts(df):
         "volume_anomaly": volume_anomaly,
         "strict_pattern": strict_pattern
     }
-    
+
+
 def detect_divergence(prices, indicators):
     """
     🕵️‍♂️ كاشف الانحرافات (Divergence Detector)
@@ -3510,6 +3513,7 @@ def detect_divergence(prices, indicators):
         return "Normal"
     except Exception:
         return "Normal"
+
 
 def calculate_macd_values(closes, fast=12, slow=26, signal=9):
     try:
@@ -3653,6 +3657,7 @@ def calculate_statistical_trend(x_coords: np.ndarray, y_coords: np.ndarray):
 def is_near_ratio(value: float, target: float, tolerance: float = 0.02) -> bool:
     return abs(value - target) <= tolerance
 
+
 def calculate_exact_accuracy(actual: float, target: float) -> float:
     """حساب الدقة المئوية لنسبة الفيبوناتشي"""
     if target == 0: return 0.0
@@ -3677,6 +3682,8 @@ def calculate_rsi(series, period: int = 14):
     rsi = 100 - (100 / (1 + rs))
     
     return rsi
+
+
 def detect_rsi_divergence_4h(df_4h: pd.DataFrame) -> str:
     """اكتشاف الدايفرجنس باستخدام فريم 4 ساعات ومستويات السيولة العميقة (78/22)"""
     if df_4h is None or len(df_4h) < 50:
@@ -3702,6 +3709,7 @@ def detect_rsi_divergence_4h(df_4h: pd.DataFrame) -> str:
             return "BULLISH_DIVERGENCE"
             
     return "NONE"
+
 
 def calculate_marubozu_status(open_p: float, high_p: float, low_p: float, close_p: float) -> int:
     """تحديد ما إذا كانت شمعة الاختراق ماروبوزو (1: نعم، 2: لا)"""
@@ -3746,6 +3754,7 @@ def calculate_harmonic_targets(
         "harmonic_d_confluence": confluence
     }
     
+
 def detect_elite_patterns(
     df: pd.DataFrame, highs: np.ndarray, lows: np.ndarray, closes: np.ndarray, 
     current_price: float, tolerance: float = 0.02
@@ -3903,12 +3912,14 @@ def find_swing_points(df, window=5):
             swing_lows.append((i, lows[i]))
     return swing_highs, swing_lows
 
+
 def calculate_trendline_angle(x1, y1, x2, y2, avg_price):
     dx = x2 - x1
     if dx == 0: return 90
     dy = ((y2 - y1) / avg_price) * 100  
     angle_rad = math.atan(dy / dx)
     return abs(math.degrees(angle_rad))
+
 
 def validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
     slope = (y2 - y1) / (x2 - x1)
@@ -3921,6 +3932,7 @@ def validate_strict_trendline(df, x1, y1, x2, y2, trend_type="UP"):
         elif trend_type == "DOWN" and body_top > trend_price: return False                
     return True
     
+
 def generate_trend_data(df, min_distance=10):
     swings_high, swings_low = find_swing_points(df, window=5)
     avg_price = df['close'].mean()
@@ -4109,6 +4121,7 @@ def calculate_continuation_logic(pattern_name: str, prior_trend: str, breakout_p
     sl = breakout_point - (height * 0.5) if prior_trend == "شراء" else breakout_point + (height * 0.5)
     return {"name": pattern_name, "class": "استمراري", "breakout": round(breakout_point, 5), "target": round(target, 5), "sl": round(sl, 5), "pattern_high": pattern_high, "pattern_low": pattern_low}
 
+
 def detect_patterns_and_calculate(
     df_tf: pd.DataFrame, symbol: str, tf: str, df_4h: pd.DataFrame = None, 
     min_bars: int = 20, trend_threshold: float = 0.03, tolerance: float = 0.02, strict_breakout: bool = True
@@ -4253,6 +4266,7 @@ async def fetch_klines(session, symbol, interval, limit=100):
         async with session.get(url, timeout=10) as res:
             if res.status == 200: return await res.json()
     except: return None
+
 
 async def update_crypto_market_data():
     print(f"\n🚀 {datetime.now().strftime('%H:%M:%S')} | بدء جلب بيانات Binance Vision (شاملة فلترة العملات والأنماط الفنية)...")
@@ -4897,7 +4911,7 @@ async def forensic_investigation_cycle(active_investigations):
                         current_price = float(coin.get('lastPrice', 0))
                         
                         # أ. هل هي جريمة جديدة؟ (تجاوزت +40% أو -30% بسيولة جيدة)
-                        if vol > 50000 and (change >= 40 or change <= -30):
+                        if vol > 50000 and (change >= 30 or change <= -20):
                             if symbol not in active_investigations:
                                 active_investigations[symbol] = current_time
                                 logging.info(f"🚨 [المحقق] رصد انفجار جديد {symbol} بنسبة {change}%")
@@ -4938,13 +4952,13 @@ async def unified_trading_system():
             print("⚙️ [1] المصنع يشتغل ويحدث كل الفريمات...")
             await update_crypto_market_data()
             print("✅ المصنع أكمل الحقن بنجاح. استراحة 60 ثانية...")
-            await asyncio.sleep(60)
+            await asyncio.sleep(30)
 
             # 📡 [الخطوة الثانية]: الرادار (مسح الفرص الذهبية)
             print("\n📡 [2] نداء للرادار: البيانات جاهزة، ابدأ المسح وإطلاق الإشارات...")
             await intelligence_scanner()
             print("✅ الرادار أكمل مهمته. استراحة 60 ثانية...")
-            await asyncio.sleep(60)
+            await asyncio.sleep(30)
             
             # 🕵️‍♂️ [الخطوة الثالثة]: المحقق (تسجيل الانفجارات ومتابعة الأسعار)
             print("\n🕵️‍♂️ [3] نداء للمحقق: راجع السوق، افتح ملفات جديدة، وحَدِّث الأسعار...")
@@ -4952,11 +4966,11 @@ async def unified_trading_system():
             
             # ⏳ نهاية الجولة
             print("\n⏳ جولة (سلم واستلم) اكتملت بامتياز. استراحة 60 ثانية قبل الدورة القادمة...")
-            await asyncio.sleep(60)
+            await asyncio.sleep(30)
             
         except Exception as e:
             logging.error(f"⚠️ خطأ قاتل في النظام الموحد المايسترو: {e}")
-            await asyncio.sleep(30) # انتظار قصير للتعافي من الصدمة
+            await asyncio.sleep(10) # انتظار قصير للتعافي من الصدمة
                                                                                                                        
 
 # ==========================================
