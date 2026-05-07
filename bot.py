@@ -41,19 +41,11 @@ API_TOKEN = os.getenv('BOT_TOKEN')
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# --- [ استدعاء القلوب الثلاثة - تشفير خارجي ] ---
-# 1. التعريف أولاً
-GROQ_KEYS = [
-    os.getenv('G_KEY_1'),
-    os.getenv('G_KEY_2'),
-    os.getenv('G_KEY_3')
-]
-GROQ_KEYS = [k for k in GROQ_KEYS if k] # تصفية المفاتيح
 
 GROUP_ID = os.getenv('GROUP_ID')
 
 # 2. التحقق ثانياً
-if not API_TOKEN or not GROQ_KEYS or not GROUP_ID:
+if not API_TOKEN or not GROUP_ID:
     logging.error("❌ خطأ: المتغيرات المشفرة مفقودة في إعدادات Render!")
     
 
@@ -4537,14 +4529,13 @@ async def update_crypto_market_data():
                 continue
 
         if final_records:
-            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات الترند...")
+            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات الترند، القنوات، الأنماط الهندسية والأعمدة الجديدة...")
             for i in range(0, len(final_records), 10):
-                # ✅ سحر التنظيف: تصفية الـ NaN قبل الرفع
-                clean_chunk = [clean_nans(rec) for rec in final_records[i:i + 10]]
-                await async_manual_upsert("crypto_market_simulation", clean_chunk)
-                
+                await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
+    
     print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
     
+                  
     
 async def async_manual_upsert1(table_name, records):
     headers = {
@@ -4940,8 +4931,6 @@ async def unified_trading_system():
     """
     print("✅ بدء تشغيل النظام الموحد (المايسترو)...")
     
-    # 🟢 السطر الذي كان مفقوداً ويدمر الكود بصمت!
-    active_investigations = {} 
     
     while True:
         try:
@@ -4954,13 +4943,13 @@ async def unified_trading_system():
             print("⚙️ [1] المصنع يشتغل ويحدث كل الفريمات...")
             await update_crypto_market_data()
             print("✅ المصنع أكمل الحقن بنجاح. استراحة 60 ثانية...")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
             # 📡 [الخطوة الثانية]: الرادار (مسح الفرص الذهبية)
             print("\n📡 [2] نداء للرادار: البيانات جاهزة، ابدأ المسح وإطلاق الإشارات...")
             await intelligence_scanner()
             print("✅ الرادار أكمل مهمته. استراحة 60 ثانية...")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
             
             # 🕵️‍♂️ [الخطوة الثالثة]: المحقق (تسجيل الانفجارات ومتابعة الأسعار)
             print("\n🕵️‍♂️ [3] نداء للمحقق: راجع السوق، افتح ملفات جديدة، وحَدِّث الأسعار...")
@@ -4968,11 +4957,11 @@ async def unified_trading_system():
             
             # ⏳ نهاية الجولة
             print("\n⏳ جولة (سلم واستلم) اكتملت بامتياز. استراحة 60 ثانية قبل الدورة القادمة...")
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
             
         except Exception as e:
             logging.error(f"⚠️ خطأ قاتل في النظام الموحد المايسترو: {e}")
-            await asyncio.sleep(10) # انتظار قصير للتعافي من الصدمة
+            await asyncio.sleep(30) # انتظار قصير للتعافي من الصدمة
                                                                                                                        
 
 # 1. 🟢 ضع هذا الكلاس قبل "نظام الإنعاش الأبدي" (في منطقة عامة خارج الدوال)
