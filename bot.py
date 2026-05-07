@@ -545,7 +545,7 @@ async def intelligence_scanner():
             # ==========================================
 
             # --- [ استخراج بيانات الترند والقنوات ] ---
-            trend_1h = coin.get('1h_trend_direction') or 'SIDEWAY'
+            trend_1h = coin.get('1h_trend_direction') or 'عرضي'
             trend_touches_1h = int(coin.get('1h_trend_touches') or 0)
             trend_angle_1h = float(coin.get('1h_trend_angle') or 0.0)
             is_body_close = int(coin.get('is_body_close') or 2) # 1: نعم، 2: لا
@@ -555,9 +555,9 @@ async def intelligence_scanner():
             channel_weakness = coin.get('channel_weakness') or 'NONE' 
 
             # --- [ استخراج بيانات النماذج الفنية والدايفرجنز ] ---
-            pattern_15m = coin.get('15m_pattern_name') or 'NONE'
-            pattern_class_15m = coin.get('15m_pattern_class') or 'NONE'
-            pattern_4h = coin.get('4h_pattern_name') or 'NONE'
+            pattern_15m = coin.get('15m_pattern_name') or 'لا يوجد'
+            pattern_class_15m = coin.get('15m_pattern_class') or 'لايوجد'
+            pattern_4h = coin.get('4h_pattern_name') or 'لايوجد'
 
             pattern_retracement_pct = float(coin.get('pattern_retracement_pct') or 0.0)
             pattern_apex_progress = float(coin.get('pattern_apex_progress') or 0.0)
@@ -566,9 +566,10 @@ async def intelligence_scanner():
             harmonic_d_confluence = int(coin.get('harmonic_d_confluence') or 2) # 1: نعم، 2: لا
 
             # --- [ فلتر الأمان للفريمات الكبيرة 4H & 1D ] ---
-            trend_4h = coin.get('4h_trend_direction') or 'SIDEWAY'
+            trend_4h = coin.get('4h_trend_direction') or 'عرضي'
             is_huge_resistance = price >= float(coin.get('resistance_1d', price * 1.5))
             is_huge_support = price <= float(coin.get('support_1d', price * 0.5))                        
+
 
             # ==========================================
             # أ. قوة الترند العام (Trend Alignment & Health)
@@ -710,13 +711,13 @@ async def intelligence_scanner():
 
             signal_type = "NONE"
             
-            if score >= 400:
+            if score >= 250:
                 if is_near_support_general or is_uptrend or is_at_tf_support:
                     signal_type = "LONG"
                 else:
                     reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
 
-            elif score <= -356:
+            elif score <= -256:
                 if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
                     signal_type = "SHORT"
                 else:
