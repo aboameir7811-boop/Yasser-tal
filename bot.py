@@ -4936,14 +4936,16 @@ async def forensic_investigation_cycle(active_investigations):
 async def unified_trading_system():
     """
     المايسترو الأكبر للنظام: 
-    1. المصنع (تحديث الفريمات) -> 2. الرادار (صيد الفرص) -> 3. المحقق (أرشفة الانفجارات)
+    1. المصنع -> 2. الرادار -> 3. المحقق
     """
     print("✅ بدء تشغيل النظام الموحد (المايسترو)...")
     
-    # قائمة الذاكرة الحية للمحقق (تُحفظ هنا لتبقى نشطة طوال عمل البوت)     
+    # 🟢 السطر الذي كان مفقوداً ويدمر الكود بصمت!
+    active_investigations = {} 
     
     while True:
         try:
+
             print("\n" + "="*50)
             print(f"🔄 جولة مايسترو جديدة تبدأ الآن: {datetime.now().strftime('%H:%M:%S')}")
             print("="*50)
@@ -5093,12 +5095,20 @@ async def main_startup():
             logging.error(f"❌ خطأ في البوت: {e}")
             logging.info("🔄 محاولة إعادة التشغيل تلقائياً خلال 10 ثوانٍ...")
             await asyncio.sleep(10)
-
+    
 if __name__ == '__main__':
     try:
+        # تشغيل المحرك الرئيسي
         asyncio.run(main_startup())
     except KeyboardInterrupt:
-        logging.info("🛑 تم إيقاف النظام يدوياً من قبل أثير.")
+        print("🛑 تم إيقاف النظام يدوياً من قبل أثير.")
     except Exception as e:
-        logging.critical(f"💥 انهيار غير متوقع في النظام: {e}")
+        # 🟢 طباعة إجبارية باللون الأحمر في راندر لكشف الخطأ القاتل
+        print("\n" + "❌"*20)
+        print(f"💥 انهيار قاتل منع البوت من الإقلاع:")
+        print(f"{type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        print("❌"*20 + "\n")
         
+        logging.critical(f"💥 انهيار غير متوقع في النظام: {e}")
