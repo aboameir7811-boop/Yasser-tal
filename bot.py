@@ -5080,8 +5080,8 @@ async def main_startup():
     logging.info(f"🌐 Server Active on port {port}")
 
     # ب) تشغيل المحركات تحت حماية الـ WatchDog
-    asyncio.create_task(watch_dog(self_resuscitation))
-    asyncio.create_task(watch_dog(trade_reaper)) 
+    #asyncio.create_task(watch_dog(self_resuscitation))
+    #asyncio.create_task(watch_dog(trade_reaper)) 
     asyncio.create_task(watch_dog(unified_trading_system))
         
     # ج) تشغيل البوت الرئيسي (Aiogram) مع نظام إعادة المحاولة الصامد
