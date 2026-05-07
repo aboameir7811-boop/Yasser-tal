@@ -4522,21 +4522,31 @@ async def update_crypto_market_data():
                                 "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                                 "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                             })
-
+# --- نهاية حلقة معالجة العملات ---
+        # هنا يتم إضافة السجل للقائمة (إزاحة 16 فراغاً)
                 final_records.append(record)
+                print(f"🔹 [فحص] تم تجهيز {symbol}") # رادار للتأكد من المعالجة
             except Exception as e: 
                 logging.error(f"❌ خطأ في معالجة {symbol}: {e}")
                 continue
 
+        # --- بعد خروجنا من حلقة الـ for (إزاحة 8 أو 12 فراغاً حسب الكود لديك) ---
+        print(f"📊 إجمالي العملات الجاهزة للرفع: {len(final_records)}")
+
         if final_records:
-            print(f"📦 جاري رفع {len(final_records)} عملة مع بيانات الترند، القنوات، الأنماط الهندسية والأعمدة الجديدة...")
+            print(f"📦 جاري رفع {len(final_records)} عملة إلى سوبابيس...")
             for i in range(0, len(final_records), 10):
-                await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
-    
-    print(f"✅ {datetime.now().strftime('%H:%M:%S')} | تم التحديث والحقن بنجاح.")
-    
-                  
-    
+                # تقسيم الرفع لـ 10 عملات في كل مرة لتفادي ضغط الشبكة
+                success = await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
+                if success:
+                    print(f"✅ تم حقن الدفعة {i//10 + 1}")
+                else:
+                    print(f"⚠️ فشل في حقن الدفعة {i//10 + 1}")
+
+    # --- السطر النهائي (يجب أن يكون بمحاذاة بداية الكود داخل الدالة) ---
+    print(f"🏁 {datetime.now().strftime('%H:%M:%S')} | انتهت دورة التحديث بالكامل.")
+
+
 async def async_manual_upsert1(table_name, records):
     headers = {
         "apikey": SUPABASE_KEY,
