@@ -4334,8 +4334,8 @@ async def update_crypto_market_data():
         
         timeframes = ['5m', '15m', '1h', '2h', '4h', '1d', '1w', '1M']
         final_records = []
-
-        for coin in top_coins:
+        
+        for index, coin in enumerate(top_coins): # ✅ الآن index معرف وسيعمل الكود
             symbol = coin.get('symbol')
             try:
                 price = float(coin.get('lastPrice', 0))
