@@ -2991,21 +2991,27 @@ async def async_manual_upsert(table_name, records):
         "Prefer": "resolution=merge-duplicates"
     }
     endpoint = f"{SUPABASE_URL}/rest/v1/{table_name}"
+    
+    # ⏱️ وضع حد زمني ذكي (15 ثانية للاتصال، 30 ثانية للرفع)
+    timeout = aiohttp.ClientTimeout(total=45, connect=15)
+    
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(endpoint, json=records, headers=headers, timeout=30) as response:
+        # يفضل لاحقاً جعل الـ session عامة (Global)، لكن الآن سنصلحها هكذا:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(endpoint, json=records, headers=headers) as response:
                 if response.status in [200, 201, 204]:
                     return True
                 else:
-                    # طباعة الخطأ القادم من سوبابيس بالتفصيل
                     error_text = await response.text()
-                    print(f"❌ فشل الرفع إلى {table_name}!")
-                    print(f"📊 الحالة: {response.status}")
-                    print(f"📝 رسالة الخطأ من سوبابيس: {error_text}")
+                    logging.error(f"❌ فشل الرفع إلى {table_name}! الحالة: {response.status}")
+                    logging.error(f"📝 رسالة الخطأ: {error_text}")
                     return False
+    except asyncio.TimeoutError:
+        logging.error("⏳ نفد الوقت (Timeout) سوبابيس لم ترد، سيتم التخطي لإكمال الباقي.")
+        return False
     except Exception as e:
-        print(f"⚠️ خطأ تقني أثناء محاولة الرفع: {str(e)}")
-        return False       
+        logging.error(f"⚠️ خطأ تقني أثناء محاولة الرفع: {str(e)}")
+        return False
         
 # ==========================================
 # --- [ دوال الحساب الرياضي ] ---
@@ -4536,16 +4542,20 @@ async def update_crypto_market_data():
 
         if final_records:
             print(f"📦 جاري رفع {len(final_records)} عملة إلى سوبابيس...")
-            for i in range(0, len(final_records), 10):
-                # تقسيم الرفع لـ 10 عملات في كل مرة لتفادي ضغط الشبكة
-                success = await async_manual_upsert("crypto_market_simulation", final_records[i:i + 10])
+            for i in range(0, len(final_records), 50): 
+                batch = final_records[i:i + 50]
+                success = await async_manual_upsert("crypto_market_simulation", batch)
+                
                 if success:
-                    print(f"✅ تم حقن الدفعة {i//10 + 1}")
+                    logging.info(f"✅ تم حقن الدفعة {i//50 + 1} بنجاح")
                 else:
-                    print(f"⚠️ فشل في حقن الدفعة {i//10 + 1}")
+                    logging.error(f"⚠️ فشل في حقن الدفعة {i//50 + 1}")
+                
+                # 🚨 السطر السحري: استراحة لمنع حظر سوبابيس
+                await asyncio.sleep(1)
 
-    # --- السطر النهائي (يجب أن يكون بمحاذاة بداية الكود داخل الدالة) ---
-    print(f"🏁 {datetime.now().strftime('%H:%M:%S')} | انتهت دورة التحديث بالكامل.")
+        # --- [ دمج السطر هنا: نهاية العملية بالكامل ] ---
+        print(f"🏁 {datetime.now().strftime('%H:%M:%S')} | انتهت دورة التحديث بالكامل.")
 
 
 async def async_manual_upsert1(table_name, records):
@@ -5081,7 +5091,7 @@ async def main_startup():
     logging.info(f"🌐 Server Active on port {port}")
 
     # ب) تشغيل المحركات تحت حماية الـ WatchDog
-    #asyncio.create_task(watch_dog(self_resuscitation))
+    asyncio.create_task(watch_dog(self_resuscitation))
     #asyncio.create_task(watch_dog(trade_reaper)) 
     asyncio.create_task(watch_dog(unified_trading_system))
         
