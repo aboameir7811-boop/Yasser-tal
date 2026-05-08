@@ -4530,17 +4530,20 @@ async def update_crypto_market_data():
                                 "market_mood": mood if tf == '15m' else record.get("market_mood", "STABLE"),
                                 "stop_loss_atr": price - (atr_val * 1.5) if tf == '15m' else record.get("stop_loss_atr", 0)
                             })
-# --- نهاية حلقة معالجة العملات ---
-        # هنا يتم إضافة السجل للقائمة (إزاحة 16 فراغاً)
-                final_records.append(record)
-                print(f"🔹 [فحص] تم تجهيز {symbol}") # رادار للتأكد من المعالجة
-                
-                await asyncio.sleep(0.02)
-                
-            except Exception as e: 
-                logging.error(f"❌ خطأ في معالجة {symbol}: {e}")
-                continue
 
+                final_records.append(record)
+                
+                # 🛑 السطر السحري لإنقاذ السيرفر المجاني:
+                # كل 20 عملة، نجبر الكود يوقف ثانية كاملة يتنفس فيها البوت
+                if index % 20 == 0:
+                    logging.info(f"⏳ تمت معالجة {index} عملة.. إعطاء مساحة للبوت ليتنفس...")
+                    await asyncio.sleep(1) # هذه الثانية تكفي تليجرام ليرسل أي رسائل متأخرة
+                    
+            except Exception as e:
+                logging.error(f"❌ خطأ في {symbol}: {e}")
+                continue
+                
+                
         # --- بعد خروجنا من حلقة الـ for (إزاحة 8 أو 12 فراغاً حسب الكود لديك) ---
         print(f"📊 إجمالي العملات الجاهزة للرفع: {len(final_records)}")
 
