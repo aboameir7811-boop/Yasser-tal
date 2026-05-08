@@ -4534,6 +4534,9 @@ async def update_crypto_market_data():
         # هنا يتم إضافة السجل للقائمة (إزاحة 16 فراغاً)
                 final_records.append(record)
                 print(f"🔹 [فحص] تم تجهيز {symbol}") # رادار للتأكد من المعالجة
+                
+                await asyncio.sleep(0.02)
+                
             except Exception as e: 
                 logging.error(f"❌ خطأ في معالجة {symbol}: {e}")
                 continue
@@ -5093,7 +5096,7 @@ async def main_startup():
 
     # ب) تشغيل المحركات تحت حماية الـ WatchDog
     #asyncio.create_task(watch_dog(update_crypto_market_data))
-    #asyncio.create_task(watch_dog(unified_trading_system))
+    asyncio.create_task(watch_dog(unified_trading_system))
     asyncio.create_task(watch_dog(self_resuscitation))
     #asyncio.create_task(watch_dog(trade_reaper)) 
     
@@ -5109,25 +5112,12 @@ async def main_startup():
             logging.info("🔄 محاولة إعادة التشغيل تلقائياً خلال 10 ثوانٍ...")
             await asyncio.sleep(10)
     
-async def main():
-    
-    
-    while True:
-        try:
-            # تشغيل دالتك الأساسية
-            await update_crypto_market_data()
-            print("⏳ استراحة المحارب (60 ثانية)...")
-            await asyncio.sleep(60)
-        except Exception as e:
-            print(f"⚠️ خطأ: {e}")
-            await asyncio.sleep(10)
 
 if __name__ == '__main__':
     try:
         # تشغيل المحرك الرئيسي
         
         asyncio.run(main_startup())
-        asyncio.run(main()) 
     except KeyboardInterrupt:
         print("🛑 تم إيقاف النظام يدوياً من قبل أثير.")
     except Exception as e:
