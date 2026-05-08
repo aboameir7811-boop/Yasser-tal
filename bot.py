@@ -16,6 +16,7 @@ import math
 import traceback
 import numpy as np
 import pandas as pd
+from aiohttp import web
 from scipy.stats import linregress
 from scipy.signal import find_peaks
 from typing import Dict, Union
@@ -539,7 +540,6 @@ async def intelligence_scanner():
                 score -= 80  
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
                 reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.") 
-
             # ==========================================
             # 📐 [ 8. دمج القنوات السعرية، الترند، والنماذج الكلاسيكية - الرادار الشامل ]
             # ==========================================
@@ -567,9 +567,10 @@ async def intelligence_scanner():
 
             # --- [ فلتر الأمان للفريمات الكبيرة 4H & 1D ] ---
             trend_4h = coin.get('4h_trend_direction') or 'عرضي'
-            is_huge_resistance = price >= float(coin.get('resistance_1d', price * 1.5))
-            is_huge_support = price <= float(coin.get('support_1d', price * 0.5))                        
-
+            
+            # 🟢 [ التعديل السحري لحل مشكلة NoneType نهائياً ]
+            is_huge_resistance = price >= float(coin.get('resistance_1d') or (price * 1.5))
+            is_huge_support = price <= float(coin.get('support_1d') or (price * 0.5))
 
             # ==========================================
             # أ. قوة الترند العام (Trend Alignment & Health)
