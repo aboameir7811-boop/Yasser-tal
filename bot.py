@@ -5095,7 +5095,7 @@ async def main_startup():
     #asyncio.create_task(watch_dog(update_crypto_market_data))
     #asyncio.create_task(watch_dog(unified_trading_system))
     asyncio.create_task(watch_dog(self_resuscitation))
-    asyncio.create_task(watch_dog(trade_reaper)) 
+    #asyncio.create_task(watch_dog(trade_reaper)) 
     
         
     # ج) تشغيل البوت الرئيسي (Aiogram) مع نظام إعادة المحاولة الصامد
