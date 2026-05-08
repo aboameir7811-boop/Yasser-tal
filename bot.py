@@ -5094,8 +5094,8 @@ async def main_startup():
     # ب) تشغيل المحركات تحت حماية الـ WatchDog
     #asyncio.create_task(watch_dog(update_crypto_market_data))
     #asyncio.create_task(watch_dog(unified_trading_system))
-    #asyncio.create_task(watch_dog(self_resuscitation))
-    #asyncio.create_task(watch_dog(trade_reaper)) 
+    asyncio.create_task(watch_dog(self_resuscitation))
+    asyncio.create_task(watch_dog(trade_reaper)) 
     
         
     # ج) تشغيل البوت الرئيسي (Aiogram) مع نظام إعادة المحاولة الصامد
@@ -5125,8 +5125,9 @@ async def main():
 if __name__ == '__main__':
     try:
         # تشغيل المحرك الرئيسي
-        asyncio.run(main()) 
+        
         asyncio.run(main_startup())
+        asyncio.run(main()) 
     except KeyboardInterrupt:
         print("🛑 تم إيقاف النظام يدوياً من قبل أثير.")
     except Exception as e:
