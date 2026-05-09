@@ -540,37 +540,51 @@ async def intelligence_scanner():
                 score -= 80  
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
                 reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.") 
+
             # ==========================================
             # 📐 [ 8. دمج القنوات السعرية، الترند، والنماذج الكلاسيكية - الرادار الشامل ]
             # ==========================================
 
-            # --- [ استخراج بيانات الترند والقنوات ] ---
-            trend_1h = coin.get('1h_trend_direction') or 'عرضي'
-            trend_touches_1h = int(coin.get('1h_trend_touches') or 0)
-            trend_angle_1h = float(coin.get('1h_trend_angle') or 0.0)
-            is_body_close = int(coin.get('is_body_close') or 2) # 1: نعم، 2: لا
+            # --- [ دوال مساعدة للحماية من أخطاء التحويل والقيم الفارغة ] ---
+            def safe_int(val, default):
+                try: return int(float(val)) if val not in [None, '', 'NaN'] else default
+                except: return default
+                
+            def safe_float(val, default):
+                try: return float(val) if val not in [None, '', 'NaN'] else default
+                except: return default
 
-            channel_1h_status = coin.get('1h_channel_status') or 'NONE'
-            channel_touches_1h = int(coin.get('1h_channel_touches') or 0)
-            channel_weakness = coin.get('channel_weakness') or 'NONE' 
+            # --- [ استخراج بيانات الترند والقنوات وتوحيدها ] ---
+            # توحيد اتجاهات الترند لتفادي تعارض الإنجليزي والعربي
+            t1h_raw = str(coin.get('1h_trend_direction') or 'عرضي').upper().strip()
+            trend_1h = "صاعد" if t1h_raw in ['UP', 'صاعد'] else "هابط" if t1h_raw in ['DOWN', 'هابط'] else "عرضي"
+            
+            t4h_raw = str(coin.get('4h_trend_direction') or 'عرضي').upper().strip()
+            trend_4h = "UP" if t4h_raw in ['UP', 'صاعد'] else "DOWN" if t4h_raw in ['DOWN', 'هابط'] else "عرضي"
+
+            trend_touches_1h = safe_int(coin.get('1h_trend_touches'), 0)
+            trend_angle_1h = safe_float(coin.get('1h_trend_angle'), 0.0)
+            is_body_close = safe_int(coin.get('is_body_close'), 2) # 1: نعم، 2: لا
+
+            channel_1h_status = str(coin.get('1h_channel_status') or 'NONE').upper().strip()
+            channel_touches_1h = safe_int(coin.get('1h_channel_touches'), 0)
+            channel_weakness = str(coin.get('channel_weakness') or 'NONE').upper().strip() 
 
             # --- [ استخراج بيانات النماذج الفنية والدايفرجنز ] ---
-            pattern_15m = coin.get('15m_pattern_name') or 'لا يوجد'
-            pattern_class_15m = coin.get('15m_pattern_class') or 'لايوجد'
-            pattern_4h = coin.get('4h_pattern_name') or 'لايوجد'
+            # 💡 السر هنا: استبدال الشرطات السفلية بمسافات ليتطابق الجدول مع شروطك المكتوبة
+            pattern_15m = str(coin.get('15m_pattern_name') or 'لا يوجد').replace('_', ' ')
+            pattern_class_15m = str(coin.get('15m_pattern_class') or 'لايوجد').replace('_', ' ')
+            pattern_4h = str(coin.get('4h_pattern_name') or 'لايوجد').replace('_', ' ')
 
-            pattern_retracement_pct = float(coin.get('pattern_retracement_pct') or 0.0)
-            pattern_apex_progress = float(coin.get('pattern_apex_progress') or 0.0)
-            is_marubozu = int(coin.get('is_marubozu_breakout') or 2) # 1: نعم، 2: لا
-            divergence_4h = coin.get('rsi_divergence_4h') or 'NONE'
-            harmonic_d_confluence = int(coin.get('harmonic_d_confluence') or 2) # 1: نعم، 2: لا
+            pattern_retracement_pct = safe_float(coin.get('pattern_retracement_pct'), 0.0)
+            pattern_apex_progress = safe_float(coin.get('pattern_apex_progress'), 0.0)
+            is_marubozu = safe_int(coin.get('is_marubozu_breakout'), 2) # 1: نعم، 2: لا
+            divergence_4h = str(coin.get('rsi_divergence_4h') or 'NONE').upper().strip()
+            harmonic_d_confluence = safe_int(coin.get('harmonic_d_confluence'), 2) # 1: نعم، 2: لا
 
-            # --- [ فلتر الأمان للفريمات الكبيرة 4H & 1D ] ---
-            trend_4h = coin.get('4h_trend_direction') or 'عرضي'
-            
             # 🟢 [ التعديل السحري لحل مشكلة NoneType نهائياً ]
-            is_huge_resistance = price >= float(coin.get('resistance_1d') or (price * 1.5))
-            is_huge_support = price <= float(coin.get('support_1d') or (price * 0.5))
+            is_huge_resistance = price >= safe_float(coin.get('resistance_1d'), price * 1.5)
+            is_huge_support = price <= safe_float(coin.get('support_1d'), price * 0.5)
 
             # ==========================================
             # أ. قوة الترند العام (Trend Alignment & Health)
@@ -663,7 +677,8 @@ async def intelligence_scanner():
             # 3. النماذج الانعكاسية الكلاسيكية والهارمونيك الاحترافي (4H+)
             if is_body_close == 1:
                 # مسار الهارمونيك الشرائي
-                if pattern_4h in bullish_harmonics and pattern_class_15m == "هارمونيك - احترافي":
+                # 💡 تعديل شرط الكلاس ليكون مرناً ويتجاهل الشرطات أو المسافات
+                if pattern_4h in bullish_harmonics and "هارمونيك" in pattern_class_15m and "احترافي" in pattern_class_15m:
                     if harmonic_d_confluence == 1 and divergence_4h == "BULLISH_DIVERGENCE":
                         score += 100
                         reasons.append(f"💠 {pattern_4h} (نخبوي): النقطة D تتوافق مع دعم تاريخي ودايفرجنز إيجابي (+100)")
@@ -681,7 +696,7 @@ async def intelligence_scanner():
                         reasons.append("🔄 قاع ثلاثي (4H): فشل البائعين في الكسر للمرة الثالثة (+75)")
 
                 # مسار الهارمونيك البيعي
-                if pattern_4h in bearish_harmonics and pattern_class_15m == "هارمونيك - احترافي":
+                if pattern_4h in bearish_harmonics and "هارمونيك" in pattern_class_15m and "احترافي" in pattern_class_15m:
                     if harmonic_d_confluence == 1 and divergence_4h == "BEARISH_DIVERGENCE":
                         score -= 100
                         reasons.append(f"💠 {pattern_4h} (نخبوي): النقطة D تتوافق مع مقاومة قوية ودايفرجنز سلبي (-100)")
@@ -697,7 +712,6 @@ async def intelligence_scanner():
                     elif pattern_4h == "قمة ثلاثية":
                         score -= 75
                         reasons.append("🔄 قمة ثلاثية (4H): فشل المشترين في الاختراق للمرة الثالثة (-75)")
-                               
             # ==========================================
             # 🎯 [ 8. قرار الإطلاق النهائي ]
             # ==========================================
