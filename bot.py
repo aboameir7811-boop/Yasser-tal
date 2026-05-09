@@ -4722,39 +4722,56 @@ from aiohttp import web
 # 5. نظام الإنعاش الأبدي: "لا تأخذه سنة ولا نوم" ⚡
 # ==========================================
 async def sync_and_error_bridge():
-    """الجسر: يفحص الأخطاء، ويرسل الإشعارات، ويتأكد من الدور"""
+    """
+    الجسر المطور: يفحص الأخطاء، ويرسل الإشعارات، ويتأكد من الدور.
+    تمت إضافة نظام معالجة الجلسات المغلقة (Session Fix).
+    """
+    headers = {
+        "apikey": SUPABASE_KEY, 
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+    
     try:
-        # أ) فحص وجلب الأخطاء الجديدة من السكربت
+        # ✅ فتح جلسة جديدة لكل محاولة لضمان عدم حدوث Session is closed
         async with aiohttp.ClientSession() as session:
-            # جلب الأخطاء غير المبلغ عنها
+            
+            # [1] جلب الأخطاء الجديدة من السكربت
             error_url = f"{SUPABASE_URL}/rest/v1/script_errors?is_reported=eq.false"
-            headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-            
-            async with session.get(error_url, headers=headers) as resp:
-                errors = await resp.json()
-                for err in errors:
-                    # إرسال الخطأ لتلجرام عبر البوت
-                    alert = f"⚠️ <b>تنبيه من السكربت الخارجي:</b>\n<code>{err['error_message']}</code>"
-                    await bot.send_message(GROUP_ID, alert, parse_mode="HTML")
-                    
-                    # تحديث الحالة إلى "تم التبليغ" وحذفها لاحقاً لتخفيف الضغط
-                    update_url = f"{SUPABASE_URL}/rest/v1/script_errors?id=eq.{err['id']}"
-                    await session.patch(update_url, json={"is_reported": True}, headers=headers)
-            
-            # ب) حذف الأخطاء القديمة (التنظيف الذاتي)
+            async with session.get(error_url, headers=headers, timeout=10) as resp:
+                if resp.status == 200:
+                    errors = await resp.json()
+                    for err in errors:
+                        alert = f"⚠️ <b>تنبيه من السكربت الخارجي:</b>\n<code>{err['error_message']}</code>"
+                        try:
+                            await bot.send_message(GROUP_ID, alert, parse_mode="HTML")
+                            # تحديث الحالة إلى "تم التبليغ"
+                            update_url = f"{SUPABASE_URL}/rest/v1/script_errors?id=eq.{err['id']}"
+                            await session.patch(update_url, json={"is_reported": True}, headers=headers)
+                        except Exception as telegram_err:
+                            logging.error(f"❌ فشل إرسال تنبيه تلجرام: {telegram_err}")
+
+            # [2] تنظيف الأخطاء القديمة (اختياري لتوفير المساحة)
             delete_url = f"{SUPABASE_URL}/rest/v1/script_errors?is_reported=eq.true"
             await session.delete(delete_url, headers=headers)
 
-        # ج) فحص من عليه الدور الآن؟
-        sync_url = f"{SUPABASE_URL}/rest/v1/system_sync?id=eq.1"
-        async with session.get(sync_url, headers=headers) as resp:
-            sync_data = await resp.json()
-            if sync_data:
-                return sync_data[0]['current_turn']
+            # [3] فحص من عليه الدور الآن؟
+            sync_url = f"{SUPABASE_URL}/rest/v1/system_sync?id=eq.1"
+            async with session.get(sync_url, headers=headers, timeout=10) as resp:
+                if resp.status == 200:
+                    sync_data = await resp.json()
+                    if sync_data:
+                        return sync_data[0]['current_turn']
+                else:
+                    logging.warning(f"⚠️ فشل جلب الدور من سوبابيس، كود الحالة: {resp.status}")
+
+    except aiohttp.ClientError as e:
+        logging.error(f"🌐 خطأ في اتصال الشبكة: {e}")
     except Exception as e:
-        logging.error(f"⚠️ خطأ في جسر التنسيق: {e}")
-    return "wait" # في حالة الخطأ انتظر
+        logging.error(f"⚠️ خطأ غير متوقع في جسر التنسيق: {e}")
     
+    return "wait" # في حالة أي خلل، نطلب من المايسترو الانتظار
+
 
 async def handle_ping(request):
     """استجابة سريعة لإخبار السيرفر أن النظام مستيقظ"""
