@@ -541,177 +541,241 @@ async def intelligence_scanner():
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
                 reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.") 
 
-            # ==========================================
-            # 📐 [ 8. دمج القنوات السعرية، الترند، والنماذج الكلاسيكية - الرادار الشامل ]
+                        # ==========================================
+            # 📐 [ 8. تحليل الترند والقنوات السعرية - القواعد الصارمة ]
             # ==========================================
 
-            # --- [ دوال مساعدة للحماية من أخطاء التحويل والقيم الفارغة ] ---
-            def safe_int(val, default):
-                try: return int(float(val)) if val not in [None, '', 'NaN'] else default
-                except: return default
-                
-            def safe_float(val, default):
-                try: return float(val) if val not in [None, '', 'NaN'] else default
-                except: return default
-
-            # --- [ استخراج بيانات الترند والقنوات وتوحيدها ] ---
-            # توحيد اتجاهات الترند لتفادي تعارض الإنجليزي والعربي
-            t1h_raw = str(coin.get('1h_trend_direction') or 'عرضي').upper().strip()
-            trend_1h = "صاعد" if t1h_raw in ['UP', 'صاعد'] else "هابط" if t1h_raw in ['DOWN', 'هابط'] else "عرضي"
+            # --- [ 1. استخراج بيانات الترند (تركيز على الفريمات الأقوى 1H و 4H) ] ---
+            trend_1h = coin.get('1h_trend_direction', 'عرضي')
+            valid_1h = int(coin.get('1h_is_valid_trend', 2))
             
-            t4h_raw = str(coin.get('4h_trend_direction') or 'عرضي').upper().strip()
-            trend_4h = "UP" if t4h_raw in ['UP', 'صاعد'] else "DOWN" if t4h_raw in ['DOWN', 'هابط'] else "عرضي"
+            trend_4h = coin.get('4h_trend_direction', 'عرضي')
+            touches_4h = int(coin.get('4h_trend_touches', 0))
+            angle_4h = float(coin.get('4h_trend_slope_angle', 0.0))
+            valid_4h = int(coin.get('4h_is_valid_trend', 2))
 
-            trend_touches_1h = safe_int(coin.get('1h_trend_touches'), 0)
-            trend_angle_1h = safe_float(coin.get('1h_trend_angle'), 0.0)
-            is_body_close = safe_int(coin.get('is_body_close'), 2) # 1: نعم، 2: لا
-
-            channel_1h_status = str(coin.get('1h_channel_status') or 'NONE').upper().strip()
-            channel_touches_1h = safe_int(coin.get('1h_channel_touches'), 0)
-            channel_weakness = str(coin.get('channel_weakness') or 'NONE').upper().strip() 
-
-            # --- [ استخراج بيانات النماذج الفنية والدايفرجنز ] ---
-            # 💡 السر هنا: استبدال الشرطات السفلية بمسافات ليتطابق الجدول مع شروطك المكتوبة
-            pattern_15m = str(coin.get('15m_pattern_name') or 'لا يوجد').replace('_', ' ')
-            pattern_class_15m = str(coin.get('15m_pattern_class') or 'لايوجد').replace('_', ' ')
-            pattern_4h = str(coin.get('4h_pattern_name') or 'لايوجد').replace('_', ' ')
-
-            pattern_retracement_pct = safe_float(coin.get('pattern_retracement_pct'), 0.0)
-            pattern_apex_progress = safe_float(coin.get('pattern_apex_progress'), 0.0)
-            is_marubozu = safe_int(coin.get('is_marubozu_breakout'), 2) # 1: نعم، 2: لا
-            divergence_4h = str(coin.get('rsi_divergence_4h') or 'NONE').upper().strip()
-            harmonic_d_confluence = safe_int(coin.get('harmonic_d_confluence'), 2) # 1: نعم، 2: لا
-
-            # 🟢 [ التعديل السحري لحل مشكلة NoneType نهائياً ]
-            is_huge_resistance = price >= safe_float(coin.get('resistance_1d'), price * 1.5)
-            is_huge_support = price <= safe_float(coin.get('support_1d'), price * 0.5)
+            # --- [ 2. استخراج بيانات القنوات ومبطلات الترند ] ---
+            chan_status_1h = coin.get('1h_channel_status', 'NONE')
+            chan_status_4h = coin.get('4h_channel_status', 'NONE')
+            chan_weakness = coin.get('channel_weakness', 'NONE')
+            
+            # أهم متغير لإثبات الاختراقات الحقيقية وتجاهل المصائد (Liquidity Sweep)
+            is_body_close = int(coin.get('is_body_close', 2)) # 1: جسم شمعة, 2: ذيل فقط
 
             # ==========================================
-            # أ. قوة الترند العام (Trend Alignment & Health)
+            # أ. قوة خط الاتجاه (Trendline) - الاعتماد على 4H
             # ==========================================
-            trend_multiplier = 1.0
+            trend_power_bonus = 0
+            
+            if trend_4h in ["صاعد", "هابط"] and valid_4h == 1:
+                # 1. فحص اللمسات (الارتكازات)
+                if touches_4h >= 3:
+                    trend_power_bonus += 20 # ترند مؤكد وقوي
+                elif touches_4h == 2:
+                    trend_power_bonus += 10 # ترند احتمالي
+                
+                # 2. فحص الزاوية والميل
+                if 30 <= abs(angle_4h) <= 45:
+                    trend_power_bonus += 20
+                    reasons.append(f"📐 ترند (4H) مثالي: زاوية صحية ومستدامة ({int(abs(angle_4h))}°) بـ {touches_4h} ارتكازات")
+                elif abs(angle_4h) >= 70 or abs(angle_4h) <= 15:
+                    trend_power_bonus -= 10
+                    reasons.append(f"⚠️ ترند (4H) غير مستقر: زاوية حادة/مسطحة جداً ({int(abs(angle_4h))}°)")
 
-            if 30 <= abs(trend_angle_1h) <= 45 and trend_touches_1h >= 3:
-                trend_multiplier = 1.5 # ترند صحي ومستدام
-            elif abs(trend_angle_1h) >= 70 or abs(trend_angle_1h) <= 15:
-                trend_multiplier = 0.5 # ترند حاد جداً معرض للكسر، أو مسطح ضعيف العزم
-            elif trend_touches_1h >= 3:
-                trend_multiplier = 1.2
-
-            if (trend_4h == "UP" and trend_1h == "صاعد") or (trend_4h == "DOWN" and trend_1h == "هابط"): 
-                trend_multiplier += 0.3 
-
-            if trend_1h == "صاعد" and is_uptrend:
-                if not is_huge_resistance:
-                    score += (40 * trend_multiplier)
-                    reasons.append(f"📈 توافق الترند (1H/4H): زحف إيجابي صحي ({trend_touches_1h} لمسات) (+{int(40 * trend_multiplier)})")
-            elif trend_1h == "هابط" and is_downtrend:
-                if not is_huge_support:
-                    score -= (40 * trend_multiplier)
-                    reasons.append(f"📉 ضغط الترند (1H/4H): مسار هابط صحي ({trend_touches_1h} لمسات) (-{int(40 * trend_multiplier)})")
+            # 3. توافق الفريمات (1H مع 4H)
+            if trend_4h == "صاعد" and trend_1h == "صاعد" and valid_1h == 1:
+                score += (40 + trend_power_bonus)
+                reasons.append("📈 توافق الفريمات (1H/4H): سيطرة كاملة للمشترين")
+            elif trend_4h == "هابط" and trend_1h == "هابط" and valid_1h == 1:
+                score -= (40 + trend_power_bonus)
+                reasons.append("📉 توافق الفريمات (1H/4H): سيطرة كاملة للبائعين")
 
             # ==========================================
-            # ب. القنوات السعرية (Price Channels) والإنذار المبكر
+            # ب. القنوات السعرية (Price Channels)
             # ==========================================
-            channel_power = 1.3 if channel_touches_1h >= 3 else 1.0
+            
+            # 1. قوة وموثوقية القناة (استخدام الحالات الجديدة)
+            channel_power_bonus = 0
+            if chan_status_4h == "STRONG_CONFIRMED" or chan_status_1h == "STRONG_CONFIRMED":
+                channel_power_bonus = 40
+                reasons.append("🛡️ قناة سعرية مؤكدة وقوية جداً (STRONG_CONFIRMED)")
+            elif chan_status_4h == "VALID" or chan_status_1h == "VALID":
+                channel_power_bonus = 20
+                reasons.append("✅ قناة سعرية صحيحة (VALID)")
+            elif chan_status_4h == "WEAK" or chan_status_1h == "WEAK":
+                reasons.append("⚠️ قناة سعرية ضعيفة (WEAK) - تحت المراقبة")
+            
+            # دمج قوة القناة مع اتجاه الترند العام لزيادة أو إنقاص السكور
+            if trend_1h == "صاعد":
+                score += channel_power_bonus
+            elif trend_1h == "هابط":
+                score -= channel_power_bonus
 
-            if trend_1h == "صاعد" and channel_weakness == "BULLISH_EXHAUSTION":
+            # 2. مبطلات القناة (الإنذار المبكر للإرهاق)
+            if chan_weakness == "BULLISH_EXHAUSTION":
                 score -= 30
-                reasons.append("⚠️ إنذار مبكر: إرهاق شرائي - فشل السعر في الوصول لسقف القناة الصاعدة (-30)")
-            elif trend_1h == "هابط" and channel_weakness == "BEARISH_EXHAUSTION":
+                reasons.append("⚠️ إنذار مبكر: إرهاق شرائي - السعر فشل في لمس سقف القناة الصاعدة")
+            elif chan_weakness == "BEARISH_EXHAUSTION":
                 score += 30
-                reasons.append("⚠️ إنذار مبكر: إرهاق بيعي - فشل السعر في الوصول لقاع القناة الهابطة (+30)")
-
-            if channel_1h_status == "BREAKOUT_UP" and is_body_close == 1:
-                score += (70 * channel_power)
-                reasons.append(f"🚀 اختراق قناة (1H): انفجار سعري موثق بجسم الشمعة (+{int(70 * channel_power)})")
-            elif channel_1h_status == "BREAKOUT_DOWN" and is_body_close == 1:
-                score -= (70 * channel_power)
-                reasons.append(f"🩸 كسر قناة (1H): انهيار سفلي موثق بجسم الشمعة (-{int(70 * channel_power)})")
-
+                reasons.append("⚠️ إنذار مبكر: إرهاق بيعي - السعر فشل في لمس قاع القناة الهابطة")
+                
             # ==========================================
-            # ج. النماذج الاستمرارية والانعكاسية (Strict Validation)
+            # ج. 🎯 محرك النماذج الفنية المتقدم (نظام الفريمات التراكمي المتسلسل)
             # ==========================================
 
-            # قوائم النماذج المخصصة
-            bullish_harmonics = ["سايفر شرائي", "قرش شرائي", "جارتلي شرائي", "خفاش شرائي"]
-            bearish_harmonics = ["سايفر بيعي", "قرش بيعي", "جارتلي بيعي", "خفاش بيعي"]
+            # --- [ 1. استخراج متغيرات الشروط الصارمة ] ---
+            pattern_retracement_pct = float(coin.get('pattern_retracement_pct', 0.0))
+            pattern_apex_progress = float(coin.get('pattern_apex_progress', 0.0))
+            is_marubozu = int(coin.get('is_marubozu_breakout', 2)) 
+            divergence_4h = coin.get('rsi_divergence_4h', 'NONE')
+            harmonic_d_confluence = int(coin.get('harmonic_d_confluence', 2)) 
+
+            # --- [ 2. قواميس النماذج (مطابقة لقاعدة البيانات) ] ---
+            bullish_continuation = ["علم صاعد", "راية صاعدة", "صندوق دارفاس صاعد"]
+            bearish_continuation = ["علم هابط", "راية هابطة", "صندوق دارفاس هابط"]
+            
+            bullish_triangles = ["مثلث متماثل صاعد"]
+            bearish_triangles = ["مثلث متماثل هابط"]
+            
+            bullish_wedges = ["وتد هابط صاعد"]
+            bearish_wedges = ["وتد صاعد هابط"]
             
             bullish_reversals = ["قاع مزدوج", "رأس وكتفين مقلوب", "قاع ثلاثي"]
             bearish_reversals = ["قمة مزدوجة", "رأس وكتفين", "قمة ثلاثية"]
+            
+            bullish_harmonics = ["سايفر شرائي", "قرش شرائي", "جارتلي شرائي", "خفاش شرائي"]
+            bearish_harmonics = ["سايفر بيعي", "قرش بيعي", "جارتلي بيعي", "خفاش بيعي"]
+            
+            bullish_megaphone = ["بوق متسع صاعد"]
+            bearish_megaphone = ["بوق متسع هابط"]
 
-            # 1. النماذج الاستمرارية (الأعلام وصناديق دارفاس)
-            if pattern_15m in ["علم صاعد", "صندوق دارفاس صاعد"]:
-                if pattern_retracement_pct <= 61.8 and is_marubozu == 1:
-                    score += 60
-                    reasons.append(f"🎯 استمراري صاعد ({pattern_15m}): تصحيح صحي لم يتجاوز 61.8% واختراق زخم (+60)")
-                elif pattern_retracement_pct > 61.8:
-                    score -= 40
-                    reasons.append(f"⚠️ فشل {pattern_15m}: التصحيح تجاوز 61.8% وتحول لنموذج انعكاسي (-40)")
+            # --- [ 3. نظام الفريمات (من الأكبر للأصغر) ] ---
+            # يتم فحص كل فريم لضمان أخذ أقوى الإشارات من الفريمات الكبيرة
+            tf_patterns = {
+                '1D': coin.get('1d_pattern_name', 'لا يوجد'),
+                '4H': coin.get('4h_pattern_name', 'لا يوجد'),
+                '1H': coin.get('1h_pattern_name', 'لا يوجد'),
+                '15m': coin.get('15m_pattern_name', 'لا يوجد')
+            }
 
-            elif pattern_15m in ["علم هابط", "صندوق دارفاس هابط"]:
-                if pattern_retracement_pct <= 61.8 and is_marubozu == 1:
-                    score -= 60
-                    reasons.append(f"🩸 استمراري هابط ({pattern_15m}): تصحيح ضعيف واستئناف الهبوط بقوة (-60)")
+            for tf, pat_name in tf_patterns.items():
+                if pat_name == "لا يوجد":
+                    continue
 
-            # 2. المثلثات والأوتاد ونموذج البوق
-            if pattern_15m == "مثلث متماثل":
-                if 50 <= pattern_apex_progress <= 75 and is_body_close == 1:
-                    if rsi_15m < 78:
-                        score += 50
-                        reasons.append("📐 اختراق مثلث متماثل: في المساحة الذهبية (50-75%) بجسم الشمعة (+50)")
-                elif pattern_apex_progress > 75:
-                    reasons.append("⚠️ مثلث متماثل: السعر وصل للرأس وفقد الزخم (حركة عشوائية)")
+                # تحديد الوزن (السكور) بناءً على الفريم
+                if tf == '1D':
+                    weight = 120
+                    tf_label = "1D - استراتيجي"
+                elif tf == '4H':
+                    weight = 80
+                    tf_label = "4H - سوينج"
+                elif tf == '1H':
+                    weight = 40
+                    tf_label = "1H - يومي"
+                else: # 15m
+                    weight = 15
+                    tf_label = "15m - مضاربة"
 
-            if pattern_15m == "وتد هابط" and divergence_4h == "BULLISH_DIVERGENCE":
-                score += 70
-                reasons.append("🚀 وتد هابط انعكاسي: مدعوم بدايفرجنز إيجابي وتضيق سعري (+70)")
-            elif pattern_15m == "وتد صاعد" and divergence_4h == "BEARISH_DIVERGENCE":
-                score -= 70
-                reasons.append("⚠️ وتد صاعد انعكاسي: ضعف مشترين مدعوم بدايفرجنز سلبي (-70)")
+                # ----------------------------------------------------
+                # 1. النماذج الاستمرارية (الأعلام والرايات) - الأقوى على 15m و 1H
+                # ----------------------------------------------------
+                if pat_name in bullish_continuation:
+                    if pattern_retracement_pct <= 61.8 and is_marubozu == 1:
+                        score += weight
+                        reasons.append(f"🎯ا [{tf_label}] {pat_name}: اختراق بزخم قوي وتصحيح صحي لم يتجاوز 61.8%")
+                    elif pattern_retracement_pct > 61.8:
+                        score -= int(weight * 0.5)
+                        reasons.append(f"⚠️ا [{tf_label}] فشل {pat_name}: التصحيح عميق وتجاوز 61.8% مما ينذر بانعكاس")
 
-            if pattern_4h == "بوق متسع" and is_body_close == 1:
-                score += 80
-                reasons.append("🌋 انفجار سعري (4H): اختراق نموذج بوق متسع بعد تذبذب عالٍ (+80)")
+                elif pat_name in bearish_continuation:
+                    if pattern_retracement_pct <= 61.8 and is_marubozu == 1:
+                        score -= int(weight * 1.5)
+                        reasons.append(f"🩸ا [{tf_label}] {pat_name}: كسر بيعي عنيف واستئناف قوي للهبوط")
 
-            # 3. النماذج الانعكاسية الكلاسيكية والهارمونيك الاحترافي (4H+)
-            if is_body_close == 1:
-                # مسار الهارمونيك الشرائي
-                # 💡 تعديل شرط الكلاس ليكون مرناً ويتجاهل الشرطات أو المسافات
-                if pattern_4h in bullish_harmonics and "هارمونيك" in pattern_class_15m and "احترافي" in pattern_class_15m:
-                    if harmonic_d_confluence == 1 and divergence_4h == "BULLISH_DIVERGENCE":
-                        score += 100
-                        reasons.append(f"💠 {pattern_4h} (نخبوي): النقطة D تتوافق مع دعم تاريخي ودايفرجنز إيجابي (+100)")
-                    elif harmonic_d_confluence == 1:
-                        score += 85
-                        reasons.append(f"💠 {pattern_4h}: ارتداد قوي من النقطة D مع توافق دعوم (+85)")
+                # ----------------------------------------------------
+                # 2. المثلثات المتماثلة - الأقوى على 1H و 4H
+                # ----------------------------------------------------
+                elif pat_name in bullish_triangles:
+                    if 50 <= pattern_apex_progress <= 75 and is_body_close == 1:
+                        score += weight
+                        reasons.append(f"📐ا [{tf_label}] اختراق {pat_name}: تم في المساحة الذهبية (50-75%) مؤكد بجسم الشمعة")
+                    elif pattern_apex_progress > 75:
+                        reasons.append(f"⚠️ا [{tf_label}] ضعف {pat_name}: السعر وصل للرأس وفقد الزخم (حركة عشوائية)")
+                        
+                elif pat_name in bearish_triangles:
+                    if 50 <= pattern_apex_progress <= 75 and is_body_close == 1:
+                        score -= int(weight * 1.5)
+                        reasons.append(f"📉ا [{tf_label}] كسر {pat_name}: تم في المساحة الذهبية بضغط بيعي مؤكد")
 
-                # مسار الانعكاس الكلاسيكي الشرائي
-                elif pattern_4h in bullish_reversals:
+                # ----------------------------------------------------
+                # 3. الأوتاد الانعكاسية (Wedges) - تعتمد على الدايفرجنز
+                # ----------------------------------------------------
+                elif pat_name in bullish_wedges:
+                    if divergence_4h == "BULLISH_DIVERGENCE" and tf in ['4H', '1D']:
+                        score += int(weight * 1.5)
+                        reasons.append(f"🚀ا [{tf_label}] انعكاس قوي ({pat_name}): مدعوم بدايفرجنز إيجابي وتضيق سعري واضح")
+                    else:
+                        score += weight
+                        reasons.append(f"⚡ا [{tf_label}] اختراق {pat_name}: دلالة فنية على بداية الإيجابية")
+                        
+                elif pat_name in bearish_wedges:
+                    if divergence_4h == "BEARISH_DIVERGENCE" and tf in ['4H', '1D']:
+                        score -= int(weight * 1.5)
+                        reasons.append(f"🔴ا [{tf_label}] انهيار عنيف ({pat_name}): مدعوم بدايفرجنز سلبي تاريخي")
+                    else:
+                        score -= weight
+                        reasons.append(f"⚠️ا [{tf_label}] كسر {pat_name}: دلالة قوية على السلبية والضغط البيعي")
+
+                # ----------------------------------------------------
+                # 4. النماذج الانعكاسية الكلاسيكية (رأس وكتفين، قمتين) - الأقوى 4H+
+                # ----------------------------------------------------
+                elif pat_name in bullish_reversals:
                     if divergence_4h == "BULLISH_DIVERGENCE":
-                        score += 80
-                        reasons.append(f"🔄 انعكاس صاعد (4H): نموذج {pattern_4h} مكتمل ومؤكد بدايفرجنز (+80)")
-                    elif pattern_4h == "قاع ثلاثي":
-                        score += 75
-                        reasons.append("🔄 قاع ثلاثي (4H): فشل البائعين في الكسر للمرة الثالثة (+75)")
+                        score += int(weight * 1.2)
+                        reasons.append(f"🔄ا [{tf_label}] انعكاس صاعد ({pat_name}): نموذج مكتمل ومؤكد بدايفرجنز إيجابي")
+                    elif pat_name == "قاع ثلاثي":
+                        score += weight
+                        reasons.append(f"🛡️ا [{tf_label}] {pat_name}: فشل البائعين في الكسر للمرة الثالثة (دعم حديدي)")
+                    else:
+                        score += weight
+                        reasons.append(f"📈ا [{tf_label}] نموذج شرائي ({pat_name}): اكتمل النموذج باختراق خط العنق")
 
-                # مسار الهارمونيك البيعي
-                if pattern_4h in bearish_harmonics and "هارمونيك" in pattern_class_15m and "احترافي" in pattern_class_15m:
-                    if harmonic_d_confluence == 1 and divergence_4h == "BEARISH_DIVERGENCE":
-                        score -= 100
-                        reasons.append(f"💠 {pattern_4h} (نخبوي): النقطة D تتوافق مع مقاومة قوية ودايفرجنز سلبي (-100)")
-                    elif harmonic_d_confluence == 1:
-                        score -= 85
-                        reasons.append(f"💠 {pattern_4h}: انعكاس هابط من النقطة D مع توافق مقاومات (-85)")
-
-                # مسار الانعكاس الكلاسيكي البيعي
-                elif pattern_4h in bearish_reversals:
+                elif pat_name in bearish_reversals:
                     if divergence_4h == "BEARISH_DIVERGENCE":
-                        score -= 80
-                        reasons.append(f"🔄 انعكاس هابط (4H): نموذج {pattern_4h} مكتمل ومؤكد بدايفرجنز (-80)")
-                    elif pattern_4h == "قمة ثلاثية":
-                        score -= 75
-                        reasons.append("🔄 قمة ثلاثية (4H): فشل المشترين في الاختراق للمرة الثالثة (-75)")
+                        score -= int(weight * 1.5)
+                        reasons.append(f"🩸ا [{tf_label}] انعكاس هابط ({pat_name}): نموذج بيعي مكتمل ومؤكد بدايفرجنز سلبي")
+                    elif pat_name == "قمة ثلاثية":
+                        score -= int(weight * 1.2)
+                        reasons.append(f"🔴ا [{tf_label}] {pat_name}: فشل المشترين في الاختراق للمرة الثالثة (مقاومة صلبة)")
+
+                # ----------------------------------------------------
+                # 5. الهارمونيك الاحترافي - يعتمد على السيولة (D) والدايفرجنز
+                # ----------------------------------------------------
+                elif pat_name in bullish_harmonics:
+                    if harmonic_d_confluence == 1 and divergence_4h == "BULLISH_DIVERGENCE":
+                        score += int(weight * 1.5) # نخبوي
+                        reasons.append(f"💠ا [{tf_label}] هارمونيك نخبوي ({pat_name}): النقطة D مدعومة بدايفرجنز وسيولة تاريخية")
+                    elif harmonic_d_confluence == 1:
+                        score += weight
+                        reasons.append(f"💠ا [{tf_label}] هارمونيك إيجابي ({pat_name}): ارتداد قوي ومؤكد من منطقة الانعكاس المحتملة (PRZ)")
+
+                elif pat_name in bearish_harmonics:
+                    if harmonic_d_confluence == 1 and divergence_4h == "BEARISH_DIVERGENCE":
+                        score -= int(weight * 1.5)
+                        reasons.append(f"💠ا [{tf_label}] هارمونيك بيعي عنيف ({pat_name}): النقطة D تتوافق مع مقاومة شرسة ودايفرجنز سلبي")
+
+                # ----------------------------------------------------
+                # 6. البوق المتسع (Megaphone) - الأقوى على اليومي
+                # ----------------------------------------------------
+                elif pat_name in bullish_megaphone:
+                    if is_body_close == 1 and tf in ['4H', '1D']:
+                        score += int(weight * 1.5)
+                        reasons.append(f"🌋ا [{tf_label}] {pat_name}: انفجار سعري هائل للأعلى بعد نطاق تذبذب عالٍ")
+                elif pat_name in bearish_megaphone:
+                    if is_body_close == 1 and tf in ['4H', '1D']:
+                        score -= int(weight * 1.5)
+                        reasons.append(f"🌋ا [{tf_label}] {pat_name}: انهيار سعري للأسفل بعد نطاق تذبذب عالٍ ومصيدة سيولة")
+
             # ==========================================
             # 🎯 [ 8. قرار الإطلاق النهائي ]
             # ==========================================
