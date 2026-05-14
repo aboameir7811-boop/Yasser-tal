@@ -297,6 +297,7 @@ async def intelligence_scanner():
             macd_hist_15m = float(coin.get('macd_hist_15m') or 0)
             
             obv_slope_15m = float(coin.get('obv_slope_15m') or 0) 
+            obv_slope = float(coin.get('obv_slope_15m') or 0)
             oi_change = float(coin.get('open_interest_change_24h') or 0) 
             
             funding_rate = float(coin.get('funding_rate') or 0)
