@@ -315,7 +315,7 @@ async def intelligence_scanner():
             adx_val = float(coin.get('adx_15m') or 0)
             stop_loss = float(coin.get('stop_loss_atr') or 0)
             mood = coin.get('market_mood') or 'NEUTRAL'
-            orderbook_ratio = float(coin.get('orderbook_imbalance_ratio') or 0)
+            orderbook_ratio = float(coin.get('orderbook_imbalance_ratio') or 1.0)
             whale_detected = coin.get('whale_absorption_detected') or False
 
             # --- [ استخراج أنماط الشموع ] ---
@@ -341,7 +341,25 @@ async def intelligence_scanner():
             
             has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2)
             is_sqz = bbw_15m < 0.065
+            # ==========================================
+            # 🌊 [ 3.5. تحليل الحيتان وعمق السوق - إضافة الرادار ]
+            # ==========================================
+            # أ. فحص جدران السيولة (Orderbook Imbalance)
+            if orderbook_ratio > 1.10: # طلبات الشراء أقوى بـ 10% على الأقل
+                score += 50
+                reasons.append(f"🧱 جدار شراء: تكدس طلبات عند الدعم (Ratio: {orderbook_ratio:.2f})")
+            elif orderbook_ratio < 0.90: # طلبات البيع تضغط
+                score -= 50
+                reasons.append(f"⚠️ ضغط بيعي: جدران مقاومة تمنع الصعود (Ratio: {orderbook_ratio:.2f})")
 
+            # ب. تأكيد تدفق السيولة (OBV Slope)
+            if obv_slope > 0:
+                score += 50
+                reasons.append("💧 سيولة ذكية: تراكم  إيجابي يؤكد دخول الأموال")
+            elif obv_slope < 0:
+                score -= 50
+                reasons.append("🚫 هروب سيولة:  يتناقص رغم حركة السعر")
+                
             # ==========================================
             # 💣 [ 3. المحرك الاستخباراتي والسيولة ]
             # ==========================================
