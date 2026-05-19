@@ -347,18 +347,18 @@ async def intelligence_scanner():
             # ==========================================
             # أ. فحص جدران السيولة (Orderbook Imbalance)
             if orderbook_ratio > 1.10: # طلبات الشراء أقوى بـ 10% على الأقل
-                score += 50
+                score += 30
                 reasons.append(f"🧱 جدار شراء: تكدس طلبات عند الدعم (Ratio: {orderbook_ratio:.2f})")
             elif orderbook_ratio < 0.90: # طلبات البيع تضغط
-                score -= 50
+                score -= 30
                 reasons.append(f"⚠️ ضغط بيعي: جدران مقاومة تمنع الصعود (Ratio: {orderbook_ratio:.2f})")
 
             # ب. تأكيد تدفق السيولة (OBV Slope)
             if obv_slope > 0:
-                score += 50
+                score += 30
                 reasons.append("💧 سيولة ذكية: تراكم  إيجابي يؤكد دخول الأموال")
             elif obv_slope < 0:
-                score -= 50
+                score -= 30
                 reasons.append("🚫 هروب سيولة:  يتناقص رغم حركة السعر")
                 
             # ==========================================
@@ -851,18 +851,55 @@ async def intelligence_scanner():
                     "last_updated": "now()" 
                 }).execute() 
 
-                await trigger_golden_signal(symbol, score, reasons, fib_618, price, signal_type) 
+                # 👈 1. هنا نستخرج نسبة التغير للعملة خلال 24 ساعة
+                change_24h = float(coin.get('change_24h', 0.0))
+
+                # 👈 2. نمرر المتغير change_24h في نهاية استدعاء الدالة
+                await trigger_golden_signal(symbol, score, reasons, fib_618, price, direction=signal_type, change_24h=change_24h) 
                 
     except Exception as e: 
         import logging 
         logging.error(f"❌ خطأ داخلي في الرادار القناص v11.1: {e}") 
 
     print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.1) بنجاح.")
+    
 
+from datetime import datetime, timedelta
 
-# تحديث دالة التنبيه لتقبل السعر الحالي والاتجاه (v10.4)
-async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG"):
-    # تخصيص المظهر بناءً على الاتجاه
+async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG", change_24h=0.0):
+    
+    # ==========================================
+    # ⛔ 1. فلتر التضخم والانهيار (تجاهل العملات الخطرة)
+    # ==========================================
+    if (20 <= change_24h <= 100) or (-50 <= change_24h <= -15):
+        # يتم تجاهل العملة بصمت لعدم الإزعاج
+        return 
+
+    # ==========================================
+    # 🛡️ 2. فحص التكرار في قاعدة البيانات (آخر 12 ساعة)
+    # ==========================================
+    try:
+        time_threshold = (datetime.utcnow() - timedelta(hours=12)).isoformat()
+        
+        # البحث عن إشارة لنفس العملة والاتجاه خلال 12 ساعة
+        existing_signal = supabase.table("radar_signals") \
+            .select("id") \
+            .eq("symbol", symbol) \
+            .eq("signal_type", direction) \
+            .gte("created_at", time_threshold) \
+            .execute()
+            
+        if existing_signal.data:
+            # الإشارة مكررة، نتخطى الإرسال والحفظ
+            return
+            
+    except Exception as db_err:
+        import logging
+        logging.error(f"❌ خطأ في فحص تكرار الإشارة: {db_err}")
+
+    # ==========================================
+    # 📲 3. إعداد وإرسال إشعار التلجرام
+    # ==========================================
     is_long = direction == "LONG"
     emoji_main = "🚀" if is_long else "📉"
     trade_label = "شراء (LONG)" if is_long else "بيع (SHORT)"
@@ -887,14 +924,9 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         f"<i>⚠️ هذه البيانات مرسلة لك فقط.</i>"
     )
 
-    # أزرار التحكم الديناميكية
     keyboard = types.InlineKeyboardMarkup()
-    
-    # زر إصدار التوصية (سيرسل نوع الاتجاه أيضاً للـ Callback)
     callback_vip = f"vip_signal:{ADMIN_ID}:{symbol}:{direction}"
     keyboard.add(types.InlineKeyboardButton(f"⚡ إصدار توصية VIP ({trade_label})", callback_data=callback_vip))
-    
-    # زر عرض الشارت
     keyboard.add(types.InlineKeyboardButton(f"📊 عرض شارت {symbol}", callback_data=f"coin_view:{ADMIN_ID}:{symbol}:15m"))
 
     try:
@@ -902,9 +934,96 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
     except Exception as e:
         import logging
         logging.error(f"❌ HTML Parse Error: {e}")
-        # نسخة احتياطية في حال خطأ التنسيق لضمان عدم ضياع الصفقة
         clean_text = f"إشارة {trade_label} لعملة {symbol}\nالسعر: {price}\nالسكور: {score}"
         await bot.send_message(chat_id=ADMIN_ID, text=f"⚠️ خطأ في التنسيق، إليك البيانات الأساسية:\n\n{clean_text}")
+
+    # ==========================================
+    # 💾 4. حفظ الإشارة الجديدة في قاعدة البيانات
+    # ==========================================
+    try:
+        signal_data = {
+            "symbol": symbol,
+            "signal_type": direction,
+            "score": score,
+            "price": price,
+            "fib_618": fib_618,
+            "reasons": reasons,
+            "status": "pending"
+        }
+        supabase.table("radar_signals").insert(signal_data).execute()
+    except Exception as db_err:
+        import logging
+        logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
+
+async def evaluate_old_signals():
+    """
+    تقوم هذه الدالة بفحص الإشارات التي مر عليها 12 ساعة، 
+    ومقارنة السعر القديم بالسعر الحالي لتحديد قوة الإشارة ونجاحها.
+    """
+    try:
+        # 1. جلب الإشارات التي مر عليها أكثر من 12 ساعة وما زالت 'pending'
+        time_threshold = (datetime.utcnow() - timedelta(hours=12)).isoformat()
+        
+        pending_signals = supabase.table("radar_signals") \
+            .select("*") \
+            .eq("status", "pending") \
+            .lte("created_at", time_threshold) \
+            .execute()
+            
+        if not pending_signals.data:
+            return # لا توجد إشارات تحتاج تقييم الآن
+            
+        for sig in pending_signals.data:
+            symbol = sig['symbol']
+            entry_price = float(sig['price'])
+            direction = sig['signal_type']
+            
+            # 2. جلب السعر الحالي للعملة من جدول الأسعار
+            coin_res = supabase.table("crypto_market_simulation") \
+                .select("current_price") \
+                .eq("symbol", symbol) \
+                .execute()
+                
+            if not coin_res.data: 
+                continue
+                
+            current_price = float(coin_res.data[0]['current_price'])
+            
+            # 3. حساب النسبة المئوية للتغير
+            move_percent = ((current_price - entry_price) / entry_price) * 100
+            
+            # 4. تقييم الإشارة بناءً على الاتجاه
+            rating = "عادي ➖"
+            
+            if direction == "LONG":
+                if move_percent >= 5.0:
+                    rating = "ممتاز 🔥"
+                elif move_percent >= 1.5:
+                    rating = "جيد ✅"
+                elif move_percent <= -2.0:
+                    rating = "فاشل ❌"
+            else: # SHORT
+                if move_percent <= -5.0:
+                    rating = "ممتاز 🔥"
+                elif move_percent <= -1.5:
+                    rating = "جيد ✅"
+                elif move_percent >= 2.0:
+                    rating = "فاشل ❌"
+            
+            # 5. تحديث الجدول بالنتيجة
+            supabase.table("radar_signals") \
+                .update({
+                    "status": "evaluated",
+                    "price_change_percent": round(move_percent, 2),
+                    "signal_rating": rating
+                }) \
+                .eq("id", sig['id']) \
+                .execute()
+                
+    except Exception as e:
+        import logging
+        logging.error(f"❌ خطأ أثناء تقييم الإشارات القديمة: {e}")
+        
 # ==========================================
 # 🛠️ 1. دوال القوالب (صناعة القالب بناءً على الأعمدة)
 # ==========================================
