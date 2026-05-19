@@ -1680,9 +1680,83 @@ def get_trades_keyboard(user_id, trades):
 class BankTransfer(StatesGroup):
     waiting_for_amount = State()      # انتظار مبلغ التحويل/الإيداع
     waiting_for_account = State()     # انتظار رقم الحساب (في حال التحويل لشخص)
+
 # ==========================================
-# 4. مستمعات المحفظة (متوافق مع Trade_ID)
-# ==========================================         
+# 6. معالج أمر البدء المطور في الخاص /start
+# ==========================================
+@dp.message_handler(commands=['start'], chat_type=types.ChatType.PRIVATE)
+async def private_start_handler(message: types.Message):
+    user_id = message.from_user.id
+    first_name = message.from_user.first_name
+    last_name = message.from_user.last_name or ""
+    username = f"@{message.from_user.username}" if message.from_user.username else "بدون معرف"
+    full_name = f"{first_name} {last_name}".strip()
+    
+    # ---------------------------------------------------------
+    # 🚨 [ نظام إنذار المطور: إرسال إشعار للمجموعة بدخول شخص جديد ]
+    # ---------------------------------------------------------
+    try:
+        # تأكد أن المتغير GROUP_ID مسحوب بشكل صحيح في بداية ملفك
+        if GROUP_ID: 
+            # إنشاء رابط يفتح بروفايل الشخص بمجرد الضغط على اسمه
+            user_profile_link = f"<a href='tg://user?id={user_id}'>{full_name}</a>"
+            
+            alert_msg = (
+                f"🚨 <b>رادار البوت: مستخدم جديد!</b>\n\n"
+                f"👤 <b>الاسم:</b> {user_profile_link}\n"
+                f"🔗 <b>المعرف:</b> {username}\n"
+                f"🆔 <b>الآيدي:</b> <code>{user_id}</code>"
+            )
+            # إرسال الإشعار للمجموعة
+            await bot.send_message(chat_id=GROUP_ID, text=alert_msg, parse_mode="HTML")
+    except Exception as e:
+        import logging
+        logging.error(f"❌ خطأ في إرسال إشعار دخول المستخدم للمجموعة: {e}")
+
+    # ---------------------------------------------------------
+    # 📲 [ لوحة الأزرار ورسالة الترحيب للمستخدم ]
+    # ---------------------------------------------------------
+    kb_start = InlineKeyboardMarkup(row_width=2)
+    kb_start.add(
+        InlineKeyboardButton("💻 تواصل مع المطور", url="https://t.me/Ya_79k"),
+        InlineKeyboardButton("📢 قناة البوت", url="https://t.me/YourChannel") # لا تنسَ تعديل رابط القناة هنا
+    )
+
+    # تحسين التنسيق ليكون أكثر احترافية وفخامة
+    welcome_msg = (
+        f"👋 <b>أهلاً بك يا {first_name} في أعظم نظام تداول في سوق العملات الرقمية!</b> 🚀\n\n"
+        f"يتفوق هذا النظام على البنوك، صناديق التحوط، والمواقع المدفوعة بمراحل؛ بل هي مجرد ألعاب أطفال مقارنةً بالمنطق الجبار الذي يحتويه.\n\n"
+        f"👁️‍🗨️ <b>ماذا يقدم لك النظام؟</b>\n"
+        f"• كاشف متقدم للسوق، الخديعة، المصائد، وتلاعبات الحيتان.\n"
+        f"• أسرار وخفايا حصرية لا تُدرّس حتى في الجامعات.\n"
+        f"• نظام إنذار استباقي قبل وقوع الأحداث.\n"
+        f"• تنبيه يومي بالعملات المرشحة للارتفاع أو الهبوط مع تحديد النسب بدقة متناهية.\n"
+        f"• درع أمان متكامل لحمايتك من فوضى وتقلبات السوق.\n\n"
+        f"💳 <b> تفاصيل أسعار الباقات بالدولار:</b>\n"
+        f"▫️ أسبوع: <b>80$</b>\n"
+        f"▫️ شهر: <b>250$</b>\n"
+        f"▫️ 3 أشهر: <b>450$</b>\n"
+        f"▫️ 6 أشهر: <b>650$</b>\n"
+        f"▫️ سنة كاملة: <b>1,000$</b>\n\n"
+        f"<i>🤍 ملاحظة: جميع أموال الاشتراكات تذهب لدعم الفقراء واليتامى ابتغاء وجه الله تعالى.</i>\n\n"
+        f"💬 <b>للتواصل المباشر مع المطور، طلب الاشتراك، أو الإبلاغ عن خلل فني، يرجى استخدام الأزرار أدناه.</b>\n"
+        f"نتمنى لكم التوفيق والنجاح الدائم."
+    )
+    
+    try:
+        # Photo ID الخاص بصورة الترحيب (يفضل صورة فخمة للبوت)
+        bot_photo = "AgACAgQAAxkBAA..." 
+        await message.answer_photo(
+            photo=bot_photo,
+            caption=welcome_msg,
+            reply_markup=kb_start,
+            parse_mode="HTML"
+        )
+    except Exception:
+        # في حال كانت الصورة غير صالحة، يرسل النص فقط
+        await message.answer(welcome_msg, reply_markup=kb_start, parse_mode="HTML")
+
+
 @dp.message_handler(Text(equals=["فحص", "تقييم", "تدقيق"], ignore_case=True), state="*")
 async def manual_evaluation_trigger(message: types.Message):
     """
