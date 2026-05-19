@@ -956,7 +956,7 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
 
 
- async def evaluate_old_signals():
+async def evaluate_old_signals():
     """
     تقوم هذه الدالة بفحص الإشارات التي مر عليها 12 ساعة، 
     ومقارنة السعر القديم بالسعر الحالي لتحديد قوة الإشارة ونجاحها.
