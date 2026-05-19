@@ -955,7 +955,8 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         import logging
         logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
 
-async def evaluate_old_signals():
+
+ async def evaluate_old_signals():
     """
     تقوم هذه الدالة بفحص الإشارات التي مر عليها 12 ساعة، 
     ومقارنة السعر القديم بالسعر الحالي لتحديد قوة الإشارة ونجاحها.
@@ -992,21 +993,31 @@ async def evaluate_old_signals():
             # 3. حساب النسبة المئوية للتغير
             move_percent = ((current_price - entry_price) / entry_price) * 100
             
-            # 4. تقييم الإشارة بناءً على الاتجاه
+            # 4. تقييم الإشارة بناءً على الاتجاه (تم إصلاح التداخل المنطقي)
             rating = "عادي ➖"
             
             if direction == "LONG":
-                if move_percent >= 5.0:
+                if move_percent >= 80.0:
+                    rating = "أسطوري 🚀"
+                elif move_percent >= 50.0:
+                    rating = "ممتاز جداً 🔥🔥"
+                elif move_percent >= 20.0:
                     rating = "ممتاز 🔥"
-                elif move_percent >= 1.5:
+                elif move_percent >= 5.0:
                     rating = "جيد ✅"
+                elif move_percent <= -10.0:
+                    rating = "كارثي 💀"
                 elif move_percent <= -2.0:
                     rating = "فاشل ❌"
             else: # SHORT
-                if move_percent <= -5.0:
+                if move_percent <= -50.0:
+                    rating = "أسطوري 🚀"
+                elif move_percent <= -20.0:
                     rating = "ممتاز 🔥"
-                elif move_percent <= -1.5:
+                elif move_percent <= -5.0:
                     rating = "جيد ✅"
+                elif move_percent >= 10.0:
+                    rating = "كارثي 💀"
                 elif move_percent >= 2.0:
                     rating = "فاشل ❌"
             
@@ -1672,6 +1683,21 @@ class BankTransfer(StatesGroup):
 # ==========================================
 # 4. مستمعات المحفظة (متوافق مع Trade_ID)
 # ==========================================         
+@dp.message_handler(Text(equals=["فحص", "تقييم", "تدقيق"], ignore_case=True), state="*")
+async def manual_evaluation_trigger(message: types.Message):
+    """
+    مستمع الأوامر اليدوية: يقوم بتشغيل التقييم فوراً عند كتابة 'فحص'
+    """
+    # إرسال رسالة للمستخدم بأن العملية بدأت
+    processing_msg = await message.answer("⏳ جاري تفتيش السجلات وتقييم الإشارات التي مر عليها 12 ساعة...")
+    
+    # تشغيل دالة التقييم
+    await evaluate_old_signals()
+    
+    # تعديل الرسالة بعد الانتهاء
+    await processing_msg.edit_text("✅ تمت عملية التدقيق! تم تحديث تقييمات الإشارات القديمة في قاعدة البيانات (Forensic Reports).")
+
+    
 @dp.message_handler(Text(equals=["محفظتي", "المحفظة"], ignore_case=True), state="*")
 async def message_wallet_view(message: types.Message):
     await process_wallet_logic(message.from_user.id, message.from_user.first_name, message=message)
@@ -4969,7 +4995,7 @@ async def forensic_investigation_cycle(active_investigations):
                         current_price = float(coin.get('lastPrice', 0))
                         
                         # أ. هل هي جريمة جديدة؟ (تجاوزت +40% أو -30% بسيولة جيدة)
-                        if vol > 50000 and (change >= 30 or change <= -20):
+                        if vol > 50000 and (change >= 50 or change <= -20):
                             if symbol not in active_investigations:
                                 active_investigations[symbol] = current_time
                                 logging.info(f"🚨 [المحقق] رصد انفجار جديد {symbol} بنسبة {change}%")
@@ -5159,12 +5185,22 @@ async def watch_dog(task_func, *args):
             logging.info("♻️ إعادة التشغيل التلقائي الآن...")
             await asyncio.sleep(10) # انتظار بسيط لتجنب التكرار السريع عند الخطأ
 
-async def main_startup():
-    # ... الإعدادات السابقة (Logging, Web Server) ...
-    
-    # تشغيل المايسترو المنسق تحت حماية الواشدوج
-    asyncio.create_task(watch_dog(unified_trading_system))
-    
+
+async def auto_evaluation_scheduler():
+    """
+    مجدول زمني شبحي يعمل في الخلفية لتقييم الصفقات كل 12 ساعة.
+    """
+    while True:
+        try:
+            print(f"🔄 [مجدول التقييم] بدء فحص الإشارات القديمة في: {datetime.now().strftime('%H:%M:%S')}")
+            await evaluate_old_signals()
+        except Exception as e:
+            print(f"⚠️ خطأ في المجدول الزمني: {e}")
+        
+        # النوم لمدة 12 ساعة (بثواني) قبل الفحص التالي
+        await asyncio.sleep(12 * 60 * 60)
+
+
     # ... تشغيل polling التلجرام ...
 async def main_startup():
     # 2. 🟢 ضع هذا الإعداد هنا في أول سطر داخل دالة main_startup
@@ -5192,6 +5228,7 @@ async def main_startup():
     # ب) تشغيل المحركات تحت حماية الـ WatchDog
     asyncio.create_task(watch_dog(unified_trading_system))
     asyncio.create_task(watch_dog(self_resuscitation))
+    asyncio.create_task(watch_dog(auto_evaluation_scheduler))
     #asyncio.create_task(watch_dog(trade_reaper)) 
     
         
