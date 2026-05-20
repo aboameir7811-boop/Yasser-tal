@@ -400,10 +400,10 @@ async def intelligence_scanner():
 
             if is_macd_bullish and has_volume_confirmation:
                 score += 40
-                reasons.append("📈 تأكيد الماكد (MACD): تقاطع إيجابي وزخم صاعد مدعوم بالسيولة (+40)")
+                reasons.append("📈 تأكيد الماكد (MACD): تقاطع إيجابي وزخم صاعد مدعوم بالسيولة ")
             elif is_macd_bearish:
                 score -= 50  # عقوبة قوية للاتجاه السلبي الواضح
-                reasons.append("📉 رفض الماكد (MACD): تقاطع سلبي يضغط على السعر (-50)")
+                reasons.append("📉 رفض الماكد (MACD): تقاطع سلبي يضغط على السعر ")
 
             # ==========================================
             # 🕯️ [ 5. محرك الشموع v11.1 (المدعوم بالدعوم والمقاومات) ]
@@ -893,13 +893,13 @@ def get_signal_rating(direction: str, move_percent: float) -> str:
         elif move_percent >= 10.0: return "جيد ✅"
         elif move_percent <= -10.0: return "كارثي 💀"
         elif move_percent <= -3.0: return "فاشل ❌"
-        elif move_percent >= -5.0: return "فاشل جداً ❌"
+        elif move_percent <= -5.0: return "فاشل جداً ❌"
         else: return "عادي ➖"
     else: # SHORT
         if move_percent <= -80.0: return "أسطوري 🚀"
-        elif move_percent >= -60.0: return "متفوق"
-        elif move_percent >= -40.0: return "ممتاز جداً"
-        elif move_percent >= -30.0: return "ممتاز"
+        elif move_percent <= -60.0: return "متفوق"
+        elif move_percent <= -40.0: return "ممتاز جداً"
+        elif move_percent <= -30.0: return "ممتاز"
         elif move_percent <= -20.0: return "جيد جدا 🔥"
         elif move_percent <= -10.0: return "جيد ✅"
         elif move_percent >= 10.0: return "كارثي 💀"
