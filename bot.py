@@ -348,10 +348,10 @@ async def intelligence_scanner():
             # أ. فحص جدران السيولة (Orderbook Imbalance)
             if orderbook_ratio > 1.10: # طلبات الشراء أقوى بـ 10% على الأقل
                 score += 30
-                reasons.append(f"🧱 جدار شراء: تكدس طلبات عند الدعم (Ratio: {orderbook_ratio:.2f})")
+                reasons.append(f"🧱 جدار شراء: تكدس طلبات عند الدعم ( {orderbook_ratio:.2f})")
             elif orderbook_ratio < 0.90: # طلبات البيع تضغط
                 score -= 30
-                reasons.append(f"⚠️ ضغط بيعي: جدران مقاومة تمنع الصعود (Ratio: {orderbook_ratio:.2f})")
+                reasons.append(f"⚠️ ضغط بيعي: جدران مقاومة تمنع الصعود ( {orderbook_ratio:.2f})")
 
             # ب. تأكيد تدفق السيولة (OBV Slope)
             if obv_slope > 0:
@@ -505,9 +505,7 @@ async def intelligence_scanner():
                 score += 50
                 reasons.append("🛡️ ا غطاء جوي (1H): ترتيب هجومي مثالي يدعم الانفجار")
                 is_1h_confirmed = True
-            else:
-                reasons.append("⚠️ ا تنبيه: الانفجار محلي بدون غطاء جوي 1H")
-                is_1h_confirmed = False
+           
                 
             is_crawling_up = (
                 (price >= ema20) and  
@@ -684,16 +682,16 @@ async def intelligence_scanner():
                 # تحديد الوزن (السكور) بناءً على الفريم
                 if tf == '1D':
                     weight = 120
-                    tf_label = "1D - استراتيجي"
+                    tf_label = "1D - "
                 elif tf == '4H':
                     weight = 80
-                    tf_label = "4H - سوينج"
+                    tf_label = "4H - "
                 elif tf == '1H':
                     weight = 40
-                    tf_label = "1H - يومي"
+                    tf_label = "1H - "
                 else: # 15m
                     weight = 15
-                    tf_label = "15m - مضاربة"
+                    tf_label = "15m - "
 
                 # ----------------------------------------------------
                 # 1. النماذج الاستمرارية (الأعلام والرايات) - الأقوى على 15m و 1H
@@ -895,7 +893,7 @@ def get_signal_rating(direction: str, move_percent: float) -> str:
         elif move_percent >= 10.0: return "جيد ✅"
         elif move_percent <= -10.0: return "كارثي 💀"
         elif move_percent <= -3.0: return "فاشل ❌"
-         elif move_percent >= -5.0: return "فاشل جداً ❌"
+        elif move_percent >= -5.0: return "فاشل جداً ❌"
         else: return "عادي ➖"
     else: # SHORT
         if move_percent <= -80.0: return "أسطوري 🚀"
@@ -906,7 +904,7 @@ def get_signal_rating(direction: str, move_percent: float) -> str:
         elif move_percent <= -10.0: return "جيد ✅"
         elif move_percent >= 10.0: return "كارثي 💀"
         elif move_percent >= 2.0: return "فاشل ❌"
-         elif move_percent >= 5.0: return "فاشله جداً ❌"
+        elif move_percent >= 5.0: return "فاشله جداً ❌"
         else: return "عادي ➖"
             
 # ==========================================
