@@ -887,21 +887,28 @@ import asyncio
 # ==========================================
 def get_signal_rating(direction: str, move_percent: float) -> str:
     if direction == "LONG":
-        if move_percent >= 80.0: return "أسطوري 🚀"
-        elif move_percent >= 50.0: return "ممتاز جداً 🔥🔥"
-        elif move_percent >= 20.0: return "ممتاز 🔥"
+        if move_percent >= 100.0: return "أسطوري 🚀"
+        elif move_percent >= 60.0: return "متفوق"
+        elif move_percent >= 40.0: return "ممتازة جدا 🔥"
+        elif move_percent >= 30.0: return "ممتازة"
+        elif move_percent >= 20.0: return "جيد جدا"
         elif move_percent >= 10.0: return "جيد ✅"
         elif move_percent <= -10.0: return "كارثي 💀"
         elif move_percent <= -3.0: return "فاشل ❌"
+         elif move_percent >= -5.0: return "فاشل جداً ❌"
         else: return "عادي ➖"
     else: # SHORT
-        if move_percent <= -50.0: return "أسطوري 🚀"
-        elif move_percent <= -20.0: return "ممتاز 🔥"
+        if move_percent <= -80.0: return "أسطوري 🚀"
+        elif move_percent >= -60.0: return "متفوق"
+        elif move_percent >= -40.0: return "ممتاز جداً"
+        elif move_percent >= -30.0: return "ممتاز"
+        elif move_percent <= -20.0: return "جيد جدا 🔥"
         elif move_percent <= -10.0: return "جيد ✅"
         elif move_percent >= 10.0: return "كارثي 💀"
         elif move_percent >= 2.0: return "فاشل ❌"
+         elif move_percent >= 5.0: return "فاشله جداً ❌"
         else: return "عادي ➖"
-
+            
 # ==========================================
 # 1. دالة إطلاق الإشارة وحفظها (محدثة لمنع التكرار > 10)
 # ==========================================
@@ -940,7 +947,7 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         f"🚨 <b>إشعار مهم: فرصة {trade_label}!</b> {emoji_main}\n\n"
         f"🪙 <b>العملة:</b> <code>{symbol}</code>\n"
         f"💵 <b>السعر لحظة الرصد:</b> <code>{price}</code>\n"
-        f"🔥 <b>درجة الانفجار:</b> {color_circle}\n"
+        f"🔥 <b>درجة الانفجار:</b> <code>{score}/100</code> {color_circle}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
         f"🕵️‍♂️ <b>الأسرار المرصودة:</b>\n"
     )
@@ -982,7 +989,74 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         import logging
         logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
 
+import json
+from collections import Counter
 
+def fetch_and_analyze_signals():
+    """
+    تسحب البيانات من سوبابيس وتحللها لاستخراج الناجحة، الفاشلة، 
+    وأكثر الأسباب (الأنماط) تكراراً في الصفقات الرابحة.
+    """
+    # جلب كل الإشارات من سوبابيس
+    res = supabase.table("radar_signals").select("*").execute()
+    records = res.data
+    
+    if not records:
+        return [], [], []
+
+    success_keywords = ["جيد", "ممتاز", "أسطوري"]
+    fail_keywords = ["فاشل", "كارثي"]
+    
+    successful_signals = []
+    failed_signals = []
+    all_successful_reasons = [] # لجمع الأسباب وحساب تكرارها
+    
+    time_stations = [4, 8, 12, 16, 20, 24]
+    
+    for row in records:
+        direction = row['signal_type']
+        
+        best_change = 0.0
+        best_rating = "لم تقيم بعد"
+        
+        # البحث عن أفضل أداء في جميع المحطات الزمنية
+        for t in time_stations:
+            change_val = row.get(f"change_{t}h")
+            rating_val = row.get(f"rating_{t}h")
+            
+            if change_val is not None and rating_val is not None:
+                current_change = float(change_val)
+                current_rating = str(rating_val)
+                
+                if direction == "LONG" and current_change > best_change:
+                    best_change = current_change
+                    best_rating = current_rating
+                elif direction == "SHORT" and current_change < best_change:
+                    best_change = current_change
+                    best_rating = current_rating
+
+        # استخراج الأسباب
+        raw_reasons = row.get('initial_reasons', [])
+        clean_reasons = raw_reasons if isinstance(raw_reasons, list) else []
+
+        # التصنيف
+        is_success = any(kw in best_rating for kw in success_keywords)
+        is_fail = any(kw in best_rating for kw in fail_keywords)
+        
+        signal_data = f"🪙 {row['symbol']} ({direction}) | الأداء: {best_change:.2f}% | التقييم: {best_rating}"
+        
+        if is_success:
+            successful_signals.append(signal_data)
+            # إضافة الأسباب لقائمة العد لمعرفة سر النجاح
+            all_successful_reasons.extend(clean_reasons)
+        elif is_fail:
+            failed_signals.append(signal_data)
+
+    # حساب أكثر الأسباب تكراراً في الصفقات الناجحة (التردد)
+    reasons_counter = Counter(all_successful_reasons).most_common(10)
+    
+    return successful_signals, failed_signals, reasons_counter
+    
 # ==========================================
 # 2. دالة التحديث الديناميكية (تلتقط البيانات من الرادار مباشرة)
 # ==========================================
@@ -1773,25 +1847,39 @@ async def private_start_handler(message: types.Message):
         # في حال كانت الصورة غير صالحة، يرسل النص فقط
         await message.answer(welcome_msg, reply_markup=kb_start, parse_mode="HTML")
 
+# ==========================================
+# 📊 مركز القيادة (مستمع الأوامر + المستمع النصي)
+# ==========================================
+@dp.message_handler(commands=['analytics', 'reports'], chat_type=types.ChatType.PRIVATE)
+@dp.message_handler(Text(equals=["التحليلات", "التقارير", "النتائج", "الاحصائيات", "مركز القيادة"], ignore_case=True), chat_type=types.ChatType.PRIVATE, state="*")
+async def analytics_dashboard_handler(message: types.Message):
+    
+    # التأكد أن من يطلب التحليل هو أنت (الآدمن)
+    if message.from_user.id != int(ADMIN_ID):
+        return
 
-@dp.message_handler(Text(equals=["فحص", "تقييم", "تدقيق"], ignore_case=True), state="*")
-async def manual_evaluation_trigger(message: types.Message):
-    """
-    مستمع الأوامر اليدوية: يقوم بتشغيل التقييم فوراً عند كتابة 'فحص'
-    """
-    # إرسال رسالة للمستخدم بأن العملية بدأت
-    processing_msg = await message.answer("⏳ جاري تفتيش السجلات وتقييم الإشارات التي مر عليها 12 ساعة...")
+    kb_analytics = InlineKeyboardMarkup(row_width=2)
+    kb_analytics.add(
+        InlineKeyboardButton("✅ الإشارات الناجحة", callback_data="report_success"),
+        InlineKeyboardButton("❌ الإشارات الفاشلة", callback_data="report_failed")
+    )
+    kb_analytics.add(
+        InlineKeyboardButton("👑 أسرار النجاح (الأكثر تكراراً)", callback_data="report_secrets")
+    )
     
-    # تشغيل دالة التقييم
-    await evaluate_old_signals()
+    text = (
+        "📊 <b>مركز القيادة والتحليل المتقدم (Backtesting)</b>\n\n"
+        "من هنا يمكنك الاطلاع على عصارة قاعدة البيانات لمعرفة ما الذي يعمل في السوق وما الذي يخسر.\n\n"
+        "👇 <b>اختر التقرير المطلوب:</b>"
+    )
     
-    # تعديل الرسالة بعد الانتهاء
-    await processing_msg.edit_text("✅ تمت عملية التدقيق! تم تحديث تقييمات الإشارات القديمة في قاعدة البيانات (Forensic Reports).")
+    await message.answer(text, reply_markup=kb_analytics, parse_mode="HTML")
 
-    
+
 @dp.message_handler(Text(equals=["محفظتي", "المحفظة"], ignore_case=True), state="*")
 async def message_wallet_view(message: types.Message):
     await process_wallet_logic(message.from_user.id, message.from_user.first_name, message=message)
+    
 
 async def process_wallet_logic(user_id, first_name, message=None, callback=None):
     try:
@@ -1951,7 +2039,7 @@ async def main_deals_menu(message: types.Message):
     
     await message.reply(text, reply_markup=keyboard)
 
-
+   
 # ==========================================
 # 🗂️ 3. مستمع تصنيفات الصفقات (الأقسام)
 # ==========================================
@@ -2040,18 +2128,79 @@ async def coin_detail_handler(call: types.CallbackQuery):
 # ==========================================
 # 🔙 5. مستمع الرجوع للقائمة الرئيسية
 # ==========================================
-@dp.callback_query_handler(Text(equals="back_to_main"), state="*")
-async def back_to_main_handler(call: types.CallbackQuery):
-    text = "☢️ **غرفة العمليات الاستخباراتية**\n\nاختر نوع الصفقات المرصودة من الرادار v9.0:"
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('report_'))
+async def process_analytics_callback(callback_query: types.CallbackQuery):
+    await bot.answer_callback_query(callback_query.id, "⏳ جاري استخراج وتحليل البيانات من سوبابيس...")
     
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton("🔥 صفقات VIP (الانفجار النووي)", callback_data="cat_vip"),
-        InlineKeyboardButton("⚡ صفقات متوسطة (زخم تصاعدي)", callback_data="cat_mid"),
-        InlineKeyboardButton("🤫 صفقات تجميع (انضغاط السيولة)", callback_data="cat_squeeze")
+    action = callback_query.data.split("_")[1]
+    
+    # استدعاء الدالة التحليلية
+    successful, failed, top_reasons = fetch_and_analyze_signals()
+    
+    text = ""
+    
+    if action == "success":
+        text = f"✅ <b>أفضل الإشارات الناجحة (إجمالي: {len(successful)}):</b>\n\n"
+        # عرض آخر 15 صفقة ناجحة حتى لا تتجاوز حدود رسالة التلجرام
+        for sig in successful[-15:]: 
+            text += f"{sig}\n"
+            
+    elif action == "failed":
+        text = f"❌ <b>الإشارات الفاشلة والكارثية (إجمالي: {len(failed)}):</b>\n\n"
+        for sig in failed[-15:]:
+            text += f"{sig}\n"
+            
+    elif action == "secrets":
+        text = "👑 <b>الجينات الوراثية للصفقات الناجحة:</b>\n"
+        text += "<i>هذه هي الأسباب الفنية التي تكررت في الصفقات الرابحة:</i>\n\n"
+        
+        if not top_reasons:
+            text += "لا يوجد بيانات كافية بعد."
+        else:
+            for reason, count in top_reasons:
+                text += f"▪️ تكرر ({count}) مرات: <b>{reason}</b>\n"
+                
+    # إضافة زر العودة
+    kb_back = InlineKeyboardMarkup()
+    kb_back.add(InlineKeyboardButton("🔙 عودة للوحة التحليل", callback_data="report_back"))
+    
+    # تحديث الرسالة
+    try:
+        await bot.edit_message_text(
+            chat_id=callback_query.message.chat.id,
+            message_id=callback_query.message.message_id,
+            text=text,
+            parse_mode="HTML",
+            reply_markup=kb_back
+        )
+    except:
+        pass # لتجنب خطأ تعديل الرسالة بنفس النص
+
+# مستمع لزر العودة
+@dp.callback_query_handler(lambda c: c.data == 'report_back')
+async def back_to_analytics_dashboard(callback_query: types.CallbackQuery):
+    kb_analytics = InlineKeyboardMarkup(row_width=2)
+    kb_analytics.add(
+        InlineKeyboardButton("✅ الإشارات الناجحة", callback_data="report_success"),
+        InlineKeyboardButton("❌ الإشارات الفاشلة", callback_data="report_failed")
+    )
+    kb_analytics.add(
+        InlineKeyboardButton("👑 أسرار النجاح (الأكثر تكراراً)", callback_data="report_secrets")
     )
     
-    await call.message.edit_text(text, reply_markup=keyboard)
+    text = (
+        "📊 <b>مركز القيادة والتحليل المتقدم (Backtesting)</b>\n\n"
+        "من هنا يمكنك الاطلاع على عصارة قاعدة البيانات لمعرفة ما الذي يعمل في السوق وما الذي يخسر.\n\n"
+        "👇 <b>اختر التقرير المطلوب:</b>"
+    )
+    
+    await bot.edit_message_text(
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
+        text=text,
+        parse_mode="HTML",
+        reply_markup=kb_analytics
+        )
     
  # ==========================================
 # 6. معالجات الأزرار الأساسية (Secured Callbacks)
