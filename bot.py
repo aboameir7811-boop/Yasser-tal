@@ -807,6 +807,13 @@ async def intelligence_scanner():
             if is_crawling_up and is_5m_spark and is_volume_spike: 
                 score += 60  
 
+            # 👈👈👈 هنا نضع دالة التحديث المستمر (قبل الشروط)
+            # ==========================================
+            # 🔄 تحديث الإشارات القديمة في محطات (4h, 8h...)
+            # ==========================================
+            await update_tracked_signals(symbol, price, reasons)
+
+
             signal_type = "NONE"
             
             if score >= 250:
@@ -851,11 +858,18 @@ async def intelligence_scanner():
                     "last_updated": "now()" 
                 }).execute() 
 
-                # 👈 1. هنا نستخرج نسبة التغير للعملة خلال 24 ساعة
+                # 👈👈👈 لا تنسَ استخراج change_24h وتمريرها لمنع العملات المتضخمة
                 change_24h = float(coin.get('change_24h', 0.0))
-
-                # 👈 2. نمرر المتغير change_24h في نهاية استدعاء الدالة
-                await trigger_golden_signal(symbol, score, reasons, fib_618, price, direction=signal_type, change_24h=change_24h) 
+                
+                await trigger_golden_signal(
+                    symbol=symbol, 
+                    score=abs(score), # نرسلها كموجب للتلجرام دائماً
+                    reasons=reasons, 
+                    fib_618=fib_618, 
+                    price=price, 
+                    direction=signal_type, 
+                    change_24h=change_24h # تمرير المتغير الجديد هنا
+                ) 
                 
     except Exception as e: 
         import logging 
@@ -864,42 +878,59 @@ async def intelligence_scanner():
     print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.1) بنجاح.")
     
 
+import hashlib
 from datetime import datetime, timedelta
+import asyncio
 
+# ==========================================
+# دالة مساعدة لتقييم النسبة المئوية
+# ==========================================
+def get_signal_rating(direction: str, move_percent: float) -> str:
+    if direction == "LONG":
+        if move_percent >= 80.0: return "أسطوري 🚀"
+        elif move_percent >= 50.0: return "ممتاز جداً 🔥🔥"
+        elif move_percent >= 20.0: return "ممتاز 🔥"
+        elif move_percent >= 10.0: return "جيد ✅"
+        elif move_percent <= -10.0: return "كارثي 💀"
+        elif move_percent <= -3.0: return "فاشل ❌"
+        else: return "عادي ➖"
+    else: # SHORT
+        if move_percent <= -50.0: return "أسطوري 🚀"
+        elif move_percent <= -20.0: return "ممتاز 🔥"
+        elif move_percent <= -10.0: return "جيد ✅"
+        elif move_percent >= 10.0: return "كارثي 💀"
+        elif move_percent >= 2.0: return "فاشل ❌"
+        else: return "عادي ➖"
+
+# ==========================================
+# 1. دالة إطلاق الإشارة وحفظها (محدثة لمنع التكرار > 10)
+# ==========================================
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG", change_24h=0.0):
     
-    # ==========================================
     # ⛔ 1. فلتر التضخم والانهيار (تجاهل العملات الخطرة)
-    # ==========================================
     if (20 <= change_24h <= 100) or (-50 <= change_24h <= -15):
         # يتم تجاهل العملة بصمت لعدم الإزعاج
         return 
 
-    # ==========================================
-    # 🛡️ 2. فحص التكرار في قاعدة البيانات (آخر 12 ساعة)
-    # ==========================================
+    # 🛡️ 2. توليد "بصمة" للأسباب لمعرفة التطابق التام
+    reasons_str = "".join(sorted(reasons))
+    reasons_hash = hashlib.md5(reasons_str.encode('utf-8')).hexdigest()
+
     try:
-        time_threshold = (datetime.utcnow() - timedelta(hours=12)).isoformat()
-        
-        # البحث عن إشارة لنفس العملة والاتجاه خلال 12 ساعة
-        existing_signal = supabase.table("radar_signals") \
-            .select("id") \
-            .eq("symbol", symbol) \
-            .eq("signal_type", direction) \
-            .gte("created_at", time_threshold) \
+        # التحقق من عدد التطابقات لنفس الأسباب (يُسمح بـ 10 فقط للتجارب)
+        res = supabase.table("radar_signals") \
+            .select("id", count="exact") \
+            .eq("reasons_hash", reasons_hash) \
             .execute()
             
-        if existing_signal.data:
-            # الإشارة مكررة، نتخطى الإرسال والحفظ
+        if res.count is not None and res.count >= 10:
+            # تم استيفاء عينة الاختبار لهذه الحالة الفنية المحددة
             return
-            
     except Exception as db_err:
         import logging
-        logging.error(f"❌ خطأ في فحص تكرار الإشارة: {db_err}")
+        logging.error(f"❌ خطأ في فحص بصمة الإشارة: {db_err}")
 
-    # ==========================================
-    # 📲 3. إعداد وإرسال إشعار التلجرام
-    # ==========================================
+    # 📲 3. إعداد وإرسال إشعار التلجرام (نص نظيف بدون أرقام النقاط)
     is_long = direction == "LONG"
     emoji_main = "🚀" if is_long else "📉"
     trade_label = "شراء (LONG)" if is_long else "بيع (SHORT)"
@@ -909,7 +940,7 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         f"🚨 <b>إشعار مهم: فرصة {trade_label}!</b> {emoji_main}\n\n"
         f"🪙 <b>العملة:</b> <code>{symbol}</code>\n"
         f"💵 <b>السعر لحظة الرصد:</b> <code>{price}</code>\n"
-        f"🔥 <b>درجة الانفجار:</b> <code>{score}/100</code> {color_circle}\n"
+        f"🔥 <b>درجة الانفجار:</b> {color_circle}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
         f"🕵️‍♂️ <b>الأسرار المرصودة:</b>\n"
     )
@@ -934,21 +965,17 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
     except Exception as e:
         import logging
         logging.error(f"❌ HTML Parse Error: {e}")
-        clean_text = f"إشارة {trade_label} لعملة {symbol}\nالسعر: {price}\nالسكور: {score}"
-        await bot.send_message(chat_id=ADMIN_ID, text=f"⚠️ خطأ في التنسيق، إليك البيانات الأساسية:\n\n{clean_text}")
 
-    # ==========================================
-    # 💾 4. حفظ الإشارة الجديدة في قاعدة البيانات
-    # ==========================================
+    # 💾 4. حفظ الإشارة الجديدة في قاعدة البيانات للمتابعة
     try:
         signal_data = {
             "symbol": symbol,
             "signal_type": direction,
-            "score": score,
             "price": price,
             "fib_618": fib_618,
-            "reasons": reasons,
-            "status": "pending"
+            "reasons_hash": reasons_hash,
+            "initial_reasons": reasons,
+            "status": "tracking"
         }
         supabase.table("radar_signals").insert(signal_data).execute()
     except Exception as db_err:
@@ -956,84 +983,74 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
 
 
-async def evaluate_old_signals():
+# ==========================================
+# 2. دالة التحديث الديناميكية (تلتقط البيانات من الرادار مباشرة)
+# ==========================================
+async def update_tracked_signals(symbol, current_price, current_reasons):
     """
-    تقوم هذه الدالة بفحص الإشارات التي مر عليها 12 ساعة، 
-    ومقارنة السعر القديم بالسعر الحالي لتحديد قوة الإشارة ونجاحها.
+    تُستدعى هذه الدالة من داخل حلقة الرادار لكل عملة.
+    تقوم بتحديث الإشارات القديمة بالأسباب الفنية الجديدة 
+    ضمن نطاقات زمنية مرنة (مثلاً من 3.5 إلى 4.5 ساعات).
     """
     try:
-        # 1. جلب الإشارات التي مر عليها أكثر من 12 ساعة وما زالت 'pending'
-        time_threshold = (datetime.utcnow() - timedelta(hours=12)).isoformat()
-        
-        pending_signals = supabase.table("radar_signals") \
+        # جلب الإشارات التي لا تزال قيد التتبع (tracking) لهذه العملة
+        tracked_signals = supabase.table("radar_signals") \
             .select("*") \
-            .eq("status", "pending") \
-            .lte("created_at", time_threshold) \
+            .eq("symbol", symbol) \
+            .eq("status", "tracking") \
             .execute()
             
-        if not pending_signals.data:
-            return # لا توجد إشارات تحتاج تقييم الآن
+        if not tracked_signals.data:
+            return 
             
-        for sig in pending_signals.data:
-            symbol = sig['symbol']
+        for sig in tracked_signals.data:
             entry_price = float(sig['price'])
             direction = sig['signal_type']
             
-            # 2. جلب السعر الحالي للعملة من جدول الأسعار
-            coin_res = supabase.table("crypto_market_simulation") \
-                .select("current_price") \
-                .eq("symbol", symbol) \
-                .execute()
-                
-            if not coin_res.data: 
-                continue
-                
-            current_price = float(coin_res.data[0]['current_price'])
+            # حساب كم ساعة مرت منذ انطلاق الإشارة
+            created_at = datetime.fromisoformat(sig['created_at'].replace("Z", "+00:00"))
+            hours_passed = (datetime.utcnow().replace(tzinfo=created_at.tzinfo) - created_at).total_seconds() / 3600
             
-            # 3. حساب النسبة المئوية للتغير
+            # حساب النسبة المئوية للتحرك
             move_percent = ((current_price - entry_price) / entry_price) * 100
+            rating = get_signal_rating(direction, move_percent)
             
-            # 4. تقييم الإشارة بناءً على الاتجاه (تم إصلاح التداخل المنطقي)
-            rating = "عادي ➖"
+            updates = {}
             
-            if direction == "LONG":
-                if move_percent >= 80.0:
-                    rating = "أسطوري 🚀"
-                elif move_percent >= 50.0:
-                    rating = "ممتاز جداً 🔥🔥"
-                elif move_percent >= 20.0:
-                    rating = "ممتاز 🔥"
-                elif move_percent >= 5.0:
-                    rating = "جيد ✅"
-                elif move_percent <= -10.0:
-                    rating = "كارثي 💀"
-                elif move_percent <= -2.0:
-                    rating = "فاشل ❌"
-            else: # SHORT
-                if move_percent <= -50.0:
-                    rating = "أسطوري 🚀"
-                elif move_percent <= -20.0:
-                    rating = "ممتاز 🔥"
-                elif move_percent <= -5.0:
-                    rating = "جيد ✅"
-                elif move_percent >= 10.0:
-                    rating = "كارثي 💀"
-                elif move_percent >= 2.0:
-                    rating = "فاشل ❌"
+            # النطاقات الزمنية المرنة لالتقاط التحديث
+            time_windows = {
+                4: (3.5, 4.5),
+                8: (7.5, 8.5),
+                12: (11.5, 12.5),
+                16: (15.5, 16.5),
+                20: (19.5, 20.5),
+                24: (23.5, 24.5)
+            }
             
-            # 5. تحديث الجدول بالنتيجة
-            supabase.table("radar_signals") \
-                .update({
-                    "status": "evaluated",
-                    "price_change_percent": round(move_percent, 2),
-                    "signal_rating": rating
-                }) \
-                .eq("id", sig['id']) \
-                .execute()
+            # فحص أين يقع الوقت الحالي للعملة
+            for target_hour, (start_h, end_h) in time_windows.items():
+                col_change = f"change_{target_hour}h"
+                col_rating = f"rating_{target_hour}h"
+                col_reasons = f"reasons_{target_hour}h"
+                
+                # إذا كانت داخل النطاق المرن، والخانة فارغة (لم تُحدث بعد)
+                if start_h <= hours_passed <= end_h and sig.get(col_change) is None:
+                    updates[col_change] = round(move_percent, 2)
+                    updates[col_rating] = rating
+                    updates[col_reasons] = current_reasons # حقن الإشارات الجديدة
+                    break # تحديث لمحطة واحدة في كل دورة يكفي
+                    
+            # إذا تجاوزت العملة 24.5 ساعة، نغلق ملفها
+            if hours_passed > 24.5:
+                updates["status"] = "completed"
+                
+            # إرسال التحديث لسوبابيس إذا كان هناك شيء جديد
+            if updates:
+                supabase.table("radar_signals").update(updates).eq("id", sig['id']).execute()
                 
     except Exception as e:
         import logging
-        logging.error(f"❌ خطأ أثناء تقييم الإشارات القديمة: {e}")
+        logging.error(f"❌ خطأ في تحديث الإشارات المتتبعة لـ {symbol}: {e}")
         
 # ==========================================
 # 🛠️ 1. دوال القوالب (صناعة القالب بناءً على الأعمدة)
@@ -5302,7 +5319,7 @@ async def main_startup():
     # ب) تشغيل المحركات تحت حماية الـ WatchDog
     asyncio.create_task(watch_dog(unified_trading_system))
     asyncio.create_task(watch_dog(self_resuscitation))
-    asyncio.create_task(watch_dog(auto_evaluation_scheduler))
+    #asyncio.create_task(watch_dog(auto_evaluation_scheduler))
     #asyncio.create_task(watch_dog(trade_reaper)) 
     
         
