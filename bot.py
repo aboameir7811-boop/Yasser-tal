@@ -886,27 +886,31 @@ import asyncio
 def get_signal_rating(direction: str, move_percent: float) -> str:
     if direction == "LONG":
         if move_percent >= 100.0: return "أسطوري 🚀"
-        elif move_percent >= 60.0: return "متفوق"
+        elif move_percent >= 60.0: return "متفوق 🌟"
         elif move_percent >= 40.0: return "ممتازة جدا 🔥"
         elif move_percent >= 30.0: return "ممتازة"
         elif move_percent >= 20.0: return "جيد جدا"
         elif move_percent >= 10.0: return "جيد ✅"
+        # تم الترتيب من الأسوأ للأقل سوءاً لضمان صحة القراءة البرمجية
         elif move_percent <= -10.0: return "كارثي 💀"
-        elif move_percent <= -3.0: return "فاشل ❌"
         elif move_percent <= -5.0: return "فاشل جداً ❌"
+        elif move_percent <= -3.0: return "فاشل ❌"
         else: return "عادي ➖"
+        
     else: # SHORT
         if move_percent <= -80.0: return "أسطوري 🚀"
-        elif move_percent <= -60.0: return "متفوق"
+        elif move_percent <= -60.0: return "متفوق 🌟"
         elif move_percent <= -40.0: return "ممتاز جداً"
         elif move_percent <= -30.0: return "ممتاز"
         elif move_percent <= -20.0: return "جيد جدا 🔥"
         elif move_percent <= -10.0: return "جيد ✅"
+        # الترتيب الصحيح للخسارة في الشورت (الارتفاع)
         elif move_percent >= 10.0: return "كارثي 💀"
-        elif move_percent >= 2.0: return "فاشل ❌"
         elif move_percent >= 5.0: return "فاشله جداً ❌"
+        elif move_percent >= 2.0: return "فاشل ❌"
         else: return "عادي ➖"
             
+
 # ==========================================
 # 1. دالة إطلاق الإشارة وحفظها (محدثة لمنع تكرار العملة والحد بـ 5)
 # ==========================================
@@ -1001,75 +1005,6 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         import logging
         logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
         
-    
-import json
-from collections import Counter
-
-def fetch_and_analyze_signals():
-    """
-    تسحب البيانات من سوبابيس وتحللها لاستخراج الناجحة، الفاشلة، 
-    وأكثر الأسباب (الأنماط) تكراراً في الصفقات الرابحة.
-    """
-    # جلب كل الإشارات من سوبابيس
-    res = supabase.table("radar_signals").select("*").execute()
-    records = res.data
-    
-    if not records:
-        return [], [], []
-
-    success_keywords = ["جيد", "ممتاز", "أسطوري"]
-    fail_keywords = ["فاشل", "كارثي"]
-    
-    successful_signals = []
-    failed_signals = []
-    all_successful_reasons = [] # لجمع الأسباب وحساب تكرارها
-    
-    time_stations = [4, 8, 12, 16, 20, 24]
-    
-    for row in records:
-        direction = row['signal_type']
-        
-        best_change = 0.0
-        best_rating = "لم تقيم بعد"
-        
-        # البحث عن أفضل أداء في جميع المحطات الزمنية
-        for t in time_stations:
-            change_val = row.get(f"change_{t}h")
-            rating_val = row.get(f"rating_{t}h")
-            
-            if change_val is not None and rating_val is not None:
-                current_change = float(change_val)
-                current_rating = str(rating_val)
-                
-                if direction == "LONG" and current_change > best_change:
-                    best_change = current_change
-                    best_rating = current_rating
-                elif direction == "SHORT" and current_change < best_change:
-                    best_change = current_change
-                    best_rating = current_rating
-
-        # استخراج الأسباب
-        raw_reasons = row.get('initial_reasons', [])
-        clean_reasons = raw_reasons if isinstance(raw_reasons, list) else []
-
-        # التصنيف
-        is_success = any(kw in best_rating for kw in success_keywords)
-        is_fail = any(kw in best_rating for kw in fail_keywords)
-        
-        signal_data = f"🪙 {row['symbol']} ({direction}) | الأداء: {best_change:.2f}% | التقييم: {best_rating}"
-        
-        if is_success:
-            successful_signals.append(signal_data)
-            # إضافة الأسباب لقائمة العد لمعرفة سر النجاح
-            all_successful_reasons.extend(clean_reasons)
-        elif is_fail:
-            failed_signals.append(signal_data)
-
-    # حساب أكثر الأسباب تكراراً في الصفقات الناجحة (التردد)
-    reasons_counter = Counter(all_successful_reasons).most_common(10)
-    
-    return successful_signals, failed_signals, reasons_counter
-    
 # ==========================================
 # 2. دالة التحديث الديناميكية (تلتقط البيانات من الرادار مباشرة)
 # ==========================================
@@ -1139,6 +1074,82 @@ async def update_tracked_signals(symbol, current_price, current_reasons):
         import logging
         logging.error(f"❌ خطأ في تحديث الإشارات المتتبعة لـ {symbol}: {e}")
         
+from collections import Counter
+
+def fetch_and_analyze_signals():
+    """
+    تبحث في كل المحطات الزمنية لاستخراج أقصى حركة (Peak)،
+    وتحدد الوقت الذي استغرقته، وتعيد التقييم بناءً عليها.
+    """
+    # جلب كل الإشارات من سوبابيس
+    res = supabase.table("radar_signals").select("*").execute()
+    records = res.data
+    
+    if not records:
+        return [], [], []
+
+    # كلمات مفتاحية للتصنيف (تم دمج تقييماتك الجديدة)
+    success_keywords = ["جيد", "ممتاز", "متفوق", "أسطوري"]
+    fail_keywords = ["فاشل", "كارثي"]
+    
+    successful_signals = []
+    failed_signals = []
+    all_successful_reasons = [] 
+    
+    time_stations = [4, 8, 12, 16, 20, 24]
+    
+    for row in records:
+        direction = row['signal_type']
+        
+        best_change = None
+        best_time = 0
+        
+        # 1. البحث عن أقصى أداء للعملة في كل المحطات
+        for t in time_stations:
+            change_val = row.get(f"change_{t}h")
+            
+            if change_val is not None:
+                current_change = float(change_val)
+                
+                if best_change is None:
+                    best_change = current_change
+                    best_time = t
+                else:
+                    if direction == "LONG" and current_change > best_change:
+                        best_change = current_change
+                        best_time = t
+                    elif direction == "SHORT" and current_change < best_change:
+                        best_change = current_change
+                        best_time = t
+
+        # إذا لم يكن هناك أي بيانات مسجلة في المحطات بعد، نتجاوز العملة
+        if best_change is None:
+            continue
+
+        # 2. تقييم أقصى أداء وصلت له العملة باستخدام دالتك
+        final_rating = get_signal_rating(direction, best_change)
+
+        # 3. استخراج الأسباب
+        raw_reasons = row.get('initial_reasons', [])
+        clean_reasons = raw_reasons if isinstance(raw_reasons, list) else []
+
+        # 4. التصنيف وبناء النص
+        is_success = any(kw in final_rating for kw in success_keywords)
+        is_fail = any(kw in final_rating for kw in fail_keywords)
+        
+        signal_data = f"🪙 <code>{row['symbol']}</code> ({direction})\n📈 أقصى حركة: <b>{best_change:.2f}%</b> (خلال {best_time}h)\n🎯 التقييم: {final_rating}\n"
+        
+        if is_success:
+            successful_signals.append(signal_data)
+            all_successful_reasons.extend(clean_reasons)
+        elif is_fail:
+            failed_signals.append(signal_data)
+
+    # 5. استخراج "سر النجاح" (أكثر الأسباب تكراراً في الصفقات الرابحة)
+    reasons_counter = Counter(all_successful_reasons).most_common(10)
+    
+    return successful_signals, failed_signals, reasons_counter
+    
 # ==========================================
 # 🛠️ 1. دوال القوالب (صناعة القالب بناءً على الأعمدة)
 # ==========================================
