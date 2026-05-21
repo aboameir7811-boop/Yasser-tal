@@ -908,34 +908,48 @@ def get_signal_rating(direction: str, move_percent: float) -> str:
         else: return "عادي ➖"
             
 # ==========================================
-# 1. دالة إطلاق الإشارة وحفظها (محدثة لمنع التكرار > 10)
+# 1. دالة إطلاق الإشارة وحفظها (محدثة لمنع تكرار العملة والحد بـ 5)
 # ==========================================
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG", change_24h=0.0):
     
     # ⛔ 1. فلتر التضخم والانهيار (تجاهل العملات الخطرة)
     if (20 <= change_24h <= 100) or (-50 <= change_24h <= -15):
-        # يتم تجاهل العملة بصمت لعدم الإزعاج
         return 
 
-    # 🛡️ 2. توليد "بصمة" للأسباب لمعرفة التطابق التام
+    # 🛡️ 2. فحص ما إذا كانت العملة نفسها قيد المراقبة حالياً (لمنع تكرار نفس العملة)
+    try:
+        active_coin = supabase.table("radar_signals") \
+            .select("id") \
+            .eq("symbol", symbol) \
+            .eq("status", "tracking") \
+            .execute()
+            
+        if active_coin.data and len(active_coin.data) > 0:
+            # هذه العملة أُرسل لها إشعار وهي تُراقب الآن، نتجاهلها حتى تنتهي دورتها
+            return
+    except Exception as e:
+        import logging
+        logging.error(f"❌ خطأ في فحص حالة العملة {symbol}: {e}")
+
+    # 🛡️ 3. توليد "بصمة" للأسباب لمعرفة التطابق التام في السوق
     reasons_str = "".join(sorted(reasons))
     reasons_hash = hashlib.md5(reasons_str.encode('utf-8')).hexdigest()
 
     try:
-        # التحقق من عدد التطابقات لنفس الأسباب (يُسمح بـ 10 فقط للتجارب)
+        # التحقق من عدد التطابقات لنفس الأسباب (يُسمح بـ 5 مرات كحد أقصى لعملات مختلفة)
         res = supabase.table("radar_signals") \
             .select("id", count="exact") \
             .eq("reasons_hash", reasons_hash) \
             .execute()
             
-        if res.count is not None and res.count >= 10:
-            # تم استيفاء عينة الاختبار لهذه الحالة الفنية المحددة
+        if res.count is not None and res.count >= 5:
+            # هذا النمط تكرر 5 مرات في قاعدة البيانات، نكتفي بهذا القدر للتجارب
             return
     except Exception as db_err:
         import logging
         logging.error(f"❌ خطأ في فحص بصمة الإشارة: {db_err}")
 
-    # 📲 3. إعداد وإرسال إشعار التلجرام (نص نظيف بدون أرقام النقاط)
+    # 📲 4. إعداد وإرسال إشعار التلجرام
     is_long = direction == "LONG"
     emoji_main = "🚀" if is_long else "📉"
     trade_label = "شراء (LONG)" if is_long else "بيع (SHORT)"
@@ -971,7 +985,7 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         import logging
         logging.error(f"❌ HTML Parse Error: {e}")
 
-    # 💾 4. حفظ الإشارة الجديدة في قاعدة البيانات للمتابعة
+    # 💾 5. حفظ الإشارة الجديدة في قاعدة البيانات للمتابعة
     try:
         signal_data = {
             "symbol": symbol,
@@ -986,7 +1000,8 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
     except Exception as db_err:
         import logging
         logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
-
+        
+    
 import json
 from collections import Counter
 
