@@ -1075,22 +1075,33 @@ async def update_tracked_signals(symbol, current_price, current_reasons):
         logging.error(f"❌ خطأ في تحديث الإشارات المتتبعة لـ {symbol}: {e}")
         
 from collections import Counter
+# ==========================================
+# 🛠️ محلل الأسرار (يحل مشكلة عدم جلب بعض العملات)
+# ==========================================
+def parse_json_reasons(data):
+    if isinstance(data, list):
+        return data
+    if isinstance(data, str):
+        try:
+            clean_data = data.replace('""', '"')
+            parsed = json.loads(clean_data)
+            return parsed if isinstance(parsed, list) else [str(parsed)]
+        except:
+            return [data]
+    return []
 
+# ==========================================
+# 📊 المحرك التحليلي (محدث لدعم الصفحات والتفاصيل)
+# ==========================================
 def fetch_and_analyze_signals():
-    """
-    تبحث في كل المحطات الزمنية لاستخراج أقصى حركة (Peak)،
-    وتحدد الوقت الذي استغرقته، وتعيد التقييم بناءً عليها.
-    """
-    # جلب كل الإشارات من سوبابيس
-    res = supabase.table("radar_signals").select("*").execute()
+    # سحب آخر 5000 إشارة لتفادي الحد الأقصى لسوبابيس
+    res = supabase.table("radar_signals").select("*").order("created_at", desc=True).limit(5000).execute()
     records = res.data
     
     if not records:
         return [], [], []
 
-    # الكلمات المفتاحية للإشارات الناجحة (تشمل كل مستويات الربح في LONG و SHORT)
     success_keywords = ["جيد", "جيد جدا", "ممتازة", "ممتازة جدا", "ممتاز", "ممتاز جداً", "متفوق", "أسطوري"]
-    # الكلمات المفتاحية للإشارات الفاشلة (تشمل كل مستويات الخسارة في LONG و SHORT)
     fail_keywords = ["فاشل", "فاشل جداً", "فاشله جداً", "كارثي"]
     
     successful_signals = []
@@ -1100,18 +1111,15 @@ def fetch_and_analyze_signals():
     time_stations = [4, 8, 12, 16, 20, 24]
     
     for row in records:
-        direction = row['signal_type']
-        
+        direction = row.get('signal_type', 'LONG')
         best_change = None
         best_time = 0
         
-        # 1. البحث عن أقصى أداء للعملة في كل المحطات
+        # البحث عن أقصى قمة للعملة
         for t in time_stations:
             change_val = row.get(f"change_{t}h")
-            
             if change_val is not None:
                 current_change = float(change_val)
-                
                 if best_change is None:
                     best_change = current_change
                     best_time = t
@@ -1123,34 +1131,33 @@ def fetch_and_analyze_signals():
                         best_change = current_change
                         best_time = t
 
-        # إذا لم يكن هناك أي بيانات مسجلة في المحطات بعد، نتجاوز العملة
         if best_change is None:
             continue
 
-        # 2. تقييم أقصى أداء وصلت له العملة باستخدام دالتك
         final_rating = get_signal_rating(direction, best_change)
+        clean_reasons = parse_json_reasons(row.get('initial_reasons'))
 
-        # 3. استخراج الأسباب
-        raw_reasons = row.get('initial_reasons', [])
-        clean_reasons = raw_reasons if isinstance(raw_reasons, list) else []
-
-        # 4. التصنيف وبناء النص
         is_success = any(kw in final_rating for kw in success_keywords)
         is_fail = any(kw in final_rating for kw in fail_keywords)
         
-        signal_data = f"🪙 <code>{row['symbol']}</code> ({direction})\n📈 أقصى حركة: <b>{best_change:.2f}%</b> (خلال {best_time}h)\n🎯 التقييم: {final_rating}\n"
+        # تجهيز الكائن الذي سيُرسل للأزرار
+        sig_obj = {
+            "id": row["id"],
+            "symbol": row["symbol"],
+            "direction": direction,
+            "best_change": best_change,
+            "best_time": best_time,
+            "rating": final_rating
+        }
         
         if is_success:
-            successful_signals.append(signal_data)
+            successful_signals.append(sig_obj)
             all_successful_reasons.extend(clean_reasons)
         elif is_fail:
-            failed_signals.append(signal_data)
+            failed_signals.append(sig_obj)
 
-    # 5. استخراج "سر النجاح" (أكثر الأسباب تكراراً في الصفقات الرابحة)
     reasons_counter = Counter(all_successful_reasons).most_common(10)
-    
     return successful_signals, failed_signals, reasons_counter
-    
 # ==========================================
 # 🛠️ 1. دوال القوالب (صناعة القالب بناءً على الأعمدة)
 # ==========================================
@@ -1873,33 +1880,73 @@ async def private_start_handler(message: types.Message):
         await message.answer(welcome_msg, reply_markup=kb_start, parse_mode="HTML")
 
 # ==========================================
-# 📊 مركز القيادة (مستمع الأوامر + المستمع النصي)
+# 🎛️ مركز القيادة (نقطة الدخول)
 # ==========================================
 @dp.message_handler(commands=['analytics', 'reports'], chat_type=types.ChatType.PRIVATE)
 @dp.message_handler(Text(equals=["التحليلات", "التقارير", "النتائج", "الاحصائيات", "مركز القيادة"], ignore_case=True), chat_type=types.ChatType.PRIVATE, state="*")
 async def analytics_dashboard_handler(message: types.Message):
-    
-    # التأكد أن من يطلب التحليل هو أنت (الآدمن)
-    if message.from_user.id != int(ADMIN_ID):
-        return
+    if message.from_user.id != int(ADMIN_ID): return
 
     kb_analytics = InlineKeyboardMarkup(row_width=2)
     kb_analytics.add(
-        InlineKeyboardButton("✅ الإشارات الناجحة", callback_data="report_success"),
-        InlineKeyboardButton("❌ الإشارات الفاشلة", callback_data="report_failed")
+        InlineKeyboardButton("✅ الإشارات الناجحة", callback_data="report_list:success:0"),
+        InlineKeyboardButton("❌ الإشارات الفاشلة", callback_data="report_list:failed:0")
     )
-    kb_analytics.add(
-        InlineKeyboardButton("👑 أسرار النجاح (الأكثر تكراراً)", callback_data="report_secrets")
-    )
+    kb_analytics.add(InlineKeyboardButton("👑 أسرار النجاح (الأكثر تكراراً)", callback_data="report_secrets"))
     
     text = (
         "📊 <b>مركز القيادة والتحليل المتقدم (Backtesting)</b>\n\n"
         "من هنا يمكنك الاطلاع على عصارة قاعدة البيانات لمعرفة ما الذي يعمل في السوق وما الذي يخسر.\n\n"
         "👇 <b>اختر التقرير المطلوب:</b>"
     )
-    
     await message.answer(text, reply_markup=kb_analytics, parse_mode="HTML")
 
+
+# ==========================================
+# 🔄 التنقل بين الصفحات (الناجحة / الفاشلة)
+# ==========================================
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('report_list:'))
+async def process_report_list(callback_query: types.CallbackQuery):
+    await bot.answer_callback_query(callback_query.id, "⏳ جاري الجلب والتنسيق...")
+    
+    parts = callback_query.data.split(":")
+    list_type = parts[1] # success or failed
+    page = int(parts[2])
+    
+    successful, failed, _ = fetch_and_analyze_signals()
+    data_list = successful if list_type == "success" else failed
+    
+    # إعدادات الصفحات
+    per_page = 10
+    total_pages = (len(data_list) - 1) // per_page + 1 if data_list else 1
+    start_idx = page * per_page
+    end_idx = start_idx + per_page
+    current_page_data = data_list[start_idx:end_idx]
+    
+    emoji = "✅" if list_type == "success" else "❌"
+    text = f"{emoji} <b>سجل الصفقات | صفحة ({page + 1}/{total_pages})</b>\n\nإجمالي الإشارات: {len(data_list)}\nاختر العملة لعرض أسرارها:"
+    
+    markup = InlineKeyboardMarkup(row_width=1)
+    
+    # 1. أزرار العملات
+    for sig in current_page_data:
+        btn_text = f"🪙 {sig['symbol']} ({sig['direction']}) | {sig['best_change']:.2f}% | {sig['rating']}"
+        markup.add(InlineKeyboardButton(btn_text, callback_data=f"sig_view:{sig['id']}"))
+        
+    # 2. أزرار التنقل (السابق / التالي)
+    nav_buttons = []
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton("⬅️ السابق", callback_data=f"report_list:{list_type}:{page - 1}"))
+    if page < total_pages - 1:
+        nav_buttons.append(InlineKeyboardButton("التالي ➡️", callback_data=f"report_list:{list_type}:{page + 1}"))
+    
+    if nav_buttons:
+        markup.row(*nav_buttons)
+        
+    markup.add(InlineKeyboardButton("🔙 عودة للوحة التحليل", callback_data="report_back"))
+    
+    await bot.edit_message_text(text, callback_query.message.chat.id, callback_query.message.message_id, parse_mode="HTML", reply_markup=markup)
+    
 
 @dp.message_handler(Text(equals=["محفظتي", "المحفظة"], ignore_case=True), state="*")
 async def message_wallet_view(message: types.Message):
@@ -2149,84 +2196,85 @@ async def coin_detail_handler(call: types.CallbackQuery):
     
     await call.message.edit_text(template, reply_markup=keyboard, parse_mode="Markdown")
 
+# ==========================================
+# 🕵️ عرض تفاصيل وأسرار إشارة معينة
+# ==========================================
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('sig_view:'))
+async def view_signal_details(callback_query: types.CallbackQuery):
+    await bot.answer_callback_query(callback_query.id, "🔍 جاري سحب أسرار الرصد...")
+    
+    sig_id = int(callback_query.data.split(":")[1])
+    
+    # جلب الإشارة المحددة من سوبابيس
+    res = supabase.table("radar_signals").select("*").eq("id", sig_id).execute()
+    if not res.data:
+        return await callback_query.answer("⚠️ عذراً، لم أجد هذه الإشارة في قاعدة البيانات!", show_alert=True)
+        
+    row = res.data[0]
+    
+    text = (
+        f"📊 <b>تفاصيل الرصد: {row['symbol']} ({row['signal_type']})</b>\n"
+        f"💵 السعر وقت الإشارة: <code>{row['price']}</code>\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+    )
+    
+    # الأسرار الابتدائية
+    initial = parse_json_reasons(row.get('initial_reasons'))
+    if initial:
+        text += "🕵️‍♂️ <b>الأسرار وقت الرصد 0h:</b>\n"
+        for r in initial: text += f" - {r}\n"
+        
+    # تفاصيل المحطات الزمنية وتطور العملة
+    time_stations = [4, 8, 12, 16, 20, 24]
+    for t in time_stations:
+        change = row.get(f"change_{t}h")
+        if change is not None:
+            rating = row.get(f"rating_{t}h", "بدون تقييم")
+            reasons_th = parse_json_reasons(row.get(f"reasons_{t}h"))
+            
+            text += f"\n⏳ <b>محطة {t} ساعات:</b>\n"
+            text += f"📈 الحركة: {change}% | 🎯 {rating}\n"
+            if reasons_th:
+                text += f"🔍 الأسرار والمستجدات:\n"
+                for r in reasons_th: text += f"  • {r}\n"
+
+    markup = InlineKeyboardMarkup()
+    # زر للرجوع للقائمة السابقة
+    markup.add(InlineKeyboardButton("🔙 رجوع", callback_data="report_back"))
+    
+    try:
+        await bot.edit_message_text(text, callback_query.message.chat.id, callback_query.message.message_id, parse_mode="HTML", reply_markup=markup)
+    except Exception as e:
+        import logging
+        logging.error(f"Error in sig_view: {e}")
+
 
 # ==========================================
-# 🔙 5. مستمع الرجوع للقائمة الرئيسية
+# 👑 عرض أسرار النجاح (الزر الثالث) + زر الرجوع الرئيسي
 # ==========================================
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith('report_'))
-async def process_analytics_callback(callback_query: types.CallbackQuery):
-    await bot.answer_callback_query(callback_query.id, "⏳ جاري استخراج وتحليل البيانات من سوبابيس...")
+@dp.callback_query_handler(lambda c: c.data in ['report_secrets', 'report_back'])
+async def handle_secrets_and_back(callback_query: types.CallbackQuery):
+    action = callback_query.data
     
-    action = callback_query.data.split("_")[1]
-    
-    # استدعاء الدالة التحليلية
-    successful, failed, top_reasons = fetch_and_analyze_signals()
-    
-    text = ""
-    
-    if action == "success":
-        text = f"✅ <b>أفضل الإشارات الناجحة (إجمالي: {len(successful)}):</b>\n\n"
-        # عرض آخر 15 صفقة ناجحة حتى لا تتجاوز حدود رسالة التلجرام
-        for sig in successful[-15:]: 
-            text += f"{sig}\n"
-            
-    elif action == "failed":
-        text = f"❌ <b>الإشارات الفاشلة والكارثية (إجمالي: {len(failed)}):</b>\n\n"
-        for sig in failed[-15:]:
-            text += f"{sig}\n"
-            
-    elif action == "secrets":
-        text = "👑 <b>الجينات الوراثية للصفقات الناجحة:</b>\n"
-        text += "<i>هذه هي الأسباب الفنية التي تكررت في الصفقات الرابحة:</i>\n\n"
+    if action == "report_back":
+        # إعادة لوحة التحكم الرئيسية
+        await analytics_dashboard_handler(callback_query.message)
         
+    elif action == "report_secrets":
+        await bot.answer_callback_query(callback_query.id, "⏳ جاري استخراج الجينات...")
+        _, _, top_reasons = fetch_and_analyze_signals()
+        
+        text = "👑 <b>الجينات الوراثية للصفقات الناجحة:</b>\n<i>هذه هي الأسباب الفنية التي تكررت في الصفقات الرابحة:</i>\n\n"
         if not top_reasons:
             text += "لا يوجد بيانات كافية بعد."
         else:
             for reason, count in top_reasons:
                 text += f"▪️ تكرر ({count}) مرات: <b>{reason}</b>\n"
                 
-    # إضافة زر العودة
-    kb_back = InlineKeyboardMarkup()
-    kb_back.add(InlineKeyboardButton("🔙 عودة للوحة التحليل", callback_data="report_back"))
-    
-    # تحديث الرسالة
-    try:
-        await bot.edit_message_text(
-            chat_id=callback_query.message.chat.id,
-            message_id=callback_query.message.message_id,
-            text=text,
-            parse_mode="HTML",
-            reply_markup=kb_back
-        )
-    except:
-        pass # لتجنب خطأ تعديل الرسالة بنفس النص
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔙 عودة للوحة التحليل", callback_data="report_back"))
+        await bot.edit_message_text(text, callback_query.message.chat.id, callback_query.message.message_id, parse_mode="HTML", reply_markup=markup)
 
-# مستمع لزر العودة
-@dp.callback_query_handler(lambda c: c.data == 'report_back')
-async def back_to_analytics_dashboard(callback_query: types.CallbackQuery):
-    kb_analytics = InlineKeyboardMarkup(row_width=2)
-    kb_analytics.add(
-        InlineKeyboardButton("✅ الإشارات الناجحة", callback_data="report_success"),
-        InlineKeyboardButton("❌ الإشارات الفاشلة", callback_data="report_failed")
-    )
-    kb_analytics.add(
-        InlineKeyboardButton("👑 أسرار النجاح (الأكثر تكراراً)", callback_data="report_secrets")
-    )
-    
-    text = (
-        "📊 <b>مركز القيادة والتحليل المتقدم (Backtesting)</b>\n\n"
-        "من هنا يمكنك الاطلاع على عصارة قاعدة البيانات لمعرفة ما الذي يعمل في السوق وما الذي يخسر.\n\n"
-        "👇 <b>اختر التقرير المطلوب:</b>"
-    )
-    
-    await bot.edit_message_text(
-        chat_id=callback_query.message.chat.id,
-        message_id=callback_query.message.message_id,
-        text=text,
-        parse_mode="HTML",
-        reply_markup=kb_analytics
-        )
-    
  # ==========================================
 # 6. معالجات الأزرار الأساسية (Secured Callbacks)
 # ==========================================
