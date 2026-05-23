@@ -1091,7 +1091,7 @@ def parse_json_reasons(data):
     return []
 
 # ==========================================
-# 📊 المحرك التحليلي (محدث لدعم الصفحات والتفاصيل)
+# 📊 المحرك التحليلي (محدث بالتتبع الزمني للصفقات)
 # ==========================================
 def fetch_and_analyze_signals():
     # سحب آخر 5000 إشارة لتفادي الحد الأقصى لسوبابيس
@@ -1112,41 +1112,58 @@ def fetch_and_analyze_signals():
     
     for row in records:
         direction = row.get('signal_type', 'LONG')
-        best_change = None
-        best_time = 0
         
-        # البحث عن أقصى قمة للعملة
+        is_success = False
+        is_fail = False
+        final_rating = "عادي ➖"
+        recorded_change = 0
+        recorded_time = 0
+        
+        # التتبع الزمني (محطة بمحطة)
         for t in time_stations:
             change_val = row.get(f"change_{t}h")
             if change_val is not None:
                 current_change = float(change_val)
-                if best_change is None:
-                    best_change = current_change
-                    best_time = t
-                else:
-                    if direction == "LONG" and current_change > best_change:
-                        best_change = current_change
-                        best_time = t
-                    elif direction == "SHORT" and current_change < best_change:
-                        best_change = current_change
-                        best_time = t
+                
+                # 1. إذا كانت الصفقة لم تُحسم بعد (لم تضرب هدفاً ولم تضرب وقف خسارة)
+                if not is_success and not is_fail:
+                    temp_rating = get_signal_rating(direction, current_change)
+                    
+                    if any(kw in temp_rating for kw in success_keywords):
+                        is_success = True
+                        final_rating = temp_rating
+                        recorded_change = current_change
+                        recorded_time = t
+                    elif any(kw in temp_rating for kw in fail_keywords):
+                        is_fail = True
+                        final_rating = temp_rating
+                        recorded_change = current_change
+                        recorded_time = t
+                
+                # 2. إذا حُسمت بالنجاح، نستمر فقط لنرى إن كانت ستحقق "قمة أعلى" (Peak Tracking)
+                elif is_success:
+                    if direction == "LONG" and current_change > recorded_change:
+                        recorded_change = current_change
+                        recorded_time = t
+                        final_rating = get_signal_rating(direction, current_change)
+                    elif direction == "SHORT" and current_change < recorded_change:
+                        recorded_change = current_change
+                        recorded_time = t
+                        final_rating = get_signal_rating(direction, current_change)
 
-        if best_change is None:
+        # إذا لم تسجل أي بيانات في المحطات، نتجاوزها
+        if recorded_time == 0:
             continue
 
-        final_rating = get_signal_rating(direction, best_change)
         clean_reasons = parse_json_reasons(row.get('initial_reasons'))
-
-        is_success = any(kw in final_rating for kw in success_keywords)
-        is_fail = any(kw in final_rating for kw in fail_keywords)
         
         # تجهيز الكائن الذي سيُرسل للأزرار
         sig_obj = {
             "id": row["id"],
             "symbol": row["symbol"],
             "direction": direction,
-            "best_change": best_change,
-            "best_time": best_time,
+            "best_change": recorded_change,
+            "best_time": recorded_time,
             "rating": final_rating
         }
         
@@ -1158,6 +1175,7 @@ def fetch_and_analyze_signals():
 
     reasons_counter = Counter(all_successful_reasons).most_common(10)
     return successful_signals, failed_signals, reasons_counter
+    
 # ==========================================
 # 🛠️ 1. دوال القوالب (صناعة القالب بناءً على الأعمدة)
 # ==========================================
