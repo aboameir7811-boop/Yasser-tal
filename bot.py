@@ -5394,15 +5394,18 @@ async def forensic_investigation_cycle(active_investigations):
     """
     🕵️‍♂️ دورة المحقق الجنائي: تبحث عن الجرائم الجديدة (الانفجارات) وتحدث الملفات المفتوحة.
     """
-    logging.info("🕵️‍♂️ [المحقق كونان] بدء جولة التفتيش الجنائي...")
-    current_time = time.time()
+    
+    current_time_ms = int(time.time() * 1000)
     
     # 1. تنظيف القائمة: إغلاق الملفات التي مر عليها 24 ساعة (86400 ثانية)
-    keys_to_remove = [sym for sym, timestamp in active_investigations.items() if current_time - timestamp > 86400]
+    keys_to_remove = [
+        sym for sym, timestamp_ms in active_investigations.items() 
+        if current_time_ms - timestamp_ms > 86400000
+    ]
     for k in keys_to_remove:
         del active_investigations[k]
         logging.info(f"📁 [إغلاق ملف] تم إنهاء تتبع {k} لمرور 24 ساعة.")
-
+        
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get("https://data-api.binance.vision/api/v3/ticker/24hr", timeout=10) as res:
@@ -5420,18 +5423,23 @@ async def forensic_investigation_cycle(active_investigations):
                         change = float(coin.get('priceChangePercent', 0))
                         vol = float(coin.get('quoteVolume', 0))
                         current_price = float(coin.get('lastPrice', 0))
-                        
+                        # الحصول على وقت الانفجار (تحديث السعر) بالملي ثانية من سيرفرات بينانس
+                        close_time_ms = int(coin.get('closeTime', current_time_ms))
                         # أ. هل هي جريمة جديدة؟ (تجاوزت +40% أو -30% بسيولة جيدة)
+                        # أ. هل هي جريمة جديدة؟ (تجاوزت +50% أو -20% بسيولة جيدة)
                         if vol > 50000 and (change >= 50 or change <= -20):
                             if symbol not in active_investigations:
-                                active_investigations[symbol] = current_time
-                                logging.info(f"🚨 [المحقق] رصد انفجار جديد {symbol} بنسبة {change}%")
-                                tasks.append(run_forensic_autopsy(symbol, change))
+                                # تخزين وقت الجريمة بالملي ثانية
+                                active_investigations[symbol] = close_time_ms
+                                logging.info(f"🚨 [المحقق] رصد انفجار جديد {symbol} بنسبة {change}% في الوقت {close_time_ms} ms")
+                                
+                                # ملاحظة: تمت إضافة close_time_ms للدالة لتعرف وقت الانفجار بالضبط
+                                tasks.append(run_forensic_autopsy(symbol, change, close_time_ms))
                         
                         # ب. هل هي جريمة تحت المراقبة؟ (تحديث السعر المباشر للعملات المخزنة)
                         if symbol in active_investigations:
                             update_tasks.append(update_live_status(symbol, current_price, change))
-                    
+
                     # 3. التنفيذ المتوازي للمهام
                     if tasks:
                         await asyncio.gather(*tasks)
@@ -5442,6 +5450,8 @@ async def forensic_investigation_cycle(active_investigations):
         logging.error(f"⚠️ خطأ في دورة المحقق الجنائي: {e}")
         
     print(f"🏁 [المحقق] أنهى جولته. يتتبع حالياً {len(active_investigations)} ملف نشط.")
+    
+
     
 
 async def unified_trading_system():
