@@ -296,6 +296,18 @@ async def intelligence_scanner():
             macd_signal_15m = float(coin.get('macd_signal_15m') or 0)
             macd_hist_15m = float(coin.get('macd_hist_15m') or 0)
             
+            macd_1h = float(coin.get('macd_1h') or 0)
+            macd_signal_1h = float(coin.get('macd_signal_1h') or 0)
+            macd_hist_1h = float(coin.get('macd_hist_1h') or 0)
+            
+            macd_2h = float(coin.get('macd_2h') or 0)
+            macd_signal_2h = float(coin.get('macd_signal_2h') or 0)
+            macd_hist_2h = float(coin.get('macd_hist_2h') or 0)         
+            
+            macd_4h = float(coin.get('macd_4h') or 0)
+            macd_signal_4h = float(coin.get('macd_signal_4h') or 0)
+            macd_hist_4h = float(coin.get('macd_hist_4h') or 0)
+            
             obv_slope_15m = float(coin.get('obv_slope_15m') or 0) 
             obv_slope = float(coin.get('obv_slope_15m') or 0)
             oi_change = float(coin.get('open_interest_change_24h') or 0) 
@@ -329,7 +341,8 @@ async def intelligence_scanner():
                 '1d': coin.get('f1d_c1', 'Normal')
             }
 
-            # --- [ هندسة السياق ومناطق القيمة العامة ] ---
+            # --- [ هندسة السياق ومناطق القيمة العامة ] ---   
+            bbw_1h = float(coin.get('bbw_1h') or 1.0) 
             is_uptrend = (ema20_1h > ema50_1h > ema100_1h)
             is_downtrend = (ema20_1h < ema50_1h < ema100_1h)
 
@@ -341,6 +354,18 @@ async def intelligence_scanner():
             is_near_resistance_general = (price >= upper * 0.985) or (price >= ema20 * 1.03)
             
             has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2)
+            # [استخراج فوليوم الفريمات الكبيرة للماكد]
+            vol_1h = float(coin.get('volume_1h') or 0)
+            vol_ma_1h = float(coin.get('volume_ma_1h') or 1)
+            has_volume_confirmation1 = vol_1h > (vol_ma_1h * 1.2)
+
+            vol_2h = float(coin.get('volume_2h') or 0)
+            vol_ma_2h = float(coin.get('volume_ma_2h') or 1)
+            has_volume_confirmation2 = vol_2h > (vol_ma_2h * 1.2)
+
+            vol_4h = float(coin.get('volume_4h') or 0)
+            vol_ma_4h = float(coin.get('volume_ma_4h') or 1)
+            has_volume_confirmation3 = vol_4h > (vol_ma_4h * 1.2)
             is_sqz = bbw_15m < 0.065
             # ==========================================
             # 🌊 [ 3.5. تحليل الحيتان وعمق السوق - إضافة الرادار ]
@@ -395,6 +420,36 @@ async def intelligence_scanner():
             # ==========================================
             # 📊 [ 4. التأكيد الفني الصارم (MACD) ]
             # ==========================================
+            is_macd_bullish1 = (macd_1h > macd_signal_1h) and (macd_hist_1h > 0)
+            is_macd_bearish1 = (macd_1h < macd_signal_1h) and (macd_hist_1h < 0)
+
+            if is_macd_bullish1 and has_volume_confirmation1:
+                score += 40
+                reasons.append("📈 تأكيد الماكد 1h:  ")
+            elif is_macd_bearish1:
+                score -= 50  # عقوبة قوية للاتجاه السلبي الواضح
+                reasons.append("📉 رفض الماكد 1h:  ")
+
+            is_macd_bullish2 = (macd_2h > macd_signal_2h) and (macd_hist_2h > 0)
+            is_macd_bearish2 = (macd_2h < macd_signal_2h) and (macd_hist_2h < 0)
+
+            if is_macd_bullish2 and has_volume_confirmation2:
+                score += 40
+                reasons.append("📈 تأكيد الماكد 2h:  ")
+            elif is_macd_bearish2:
+                score -= 50  # عقوبة قوية للاتجاه السلبي الواضح
+                reasons.append("📉 رفض الماكد 2h:  ")
+                
+            is_macd_bullish3 = (macd_4h > macd_signal_4h) and (macd_hist_4h > 0)
+            is_macd_bearish3 = (macd_4h < macd_signal_4h) and (macd_hist_4h < 0)
+
+            if is_macd_bullish3 and has_volume_confirmation3:
+                score += 40
+                reasons.append("📈 تأكيد الماكد 4h: ")
+            elif is_macd_bearish3:
+                score -= 50  # عقوبة قوية للاتجاه السلبي الواضح
+                reasons.append("📉 رفض الماكد 4h : ")
+
             is_macd_bullish = (macd_15m > macd_signal_15m) and (macd_hist_15m > 0)
             is_macd_bearish = (macd_15m < macd_signal_15m) and (macd_hist_15m < 0)
 
@@ -794,7 +849,7 @@ async def intelligence_scanner():
                         reasons.append(f"🌋ا [{tf_label}] {pat_name}: انهيار سعري للأسفل بعد نطاق تذبذب عالٍ ومصيدة سيولة")
 
             # ==========================================
-            # 🎯 [ 8. قرار الإطلاق النهائي ]
+            # 🎯 [ 8. قرار الإطلاق النهائي و الاستخبارات المبكرة ]
             # ==========================================
             sc_crawling = 1 if is_crawling_up else 0 
             sc_spark = 1 if is_5m_spark else 0 
@@ -811,21 +866,62 @@ async def intelligence_scanner():
             # ==========================================
             await update_tracked_signals(symbol, price, reasons)
 
-
             signal_type = "NONE"
-            
-            if score >= 250:
-                if is_near_support_general or is_uptrend or is_at_tf_support:
-                    signal_type = "LONG"
-                else:
-                    reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
 
-            elif score <= -256:
-                if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
-                    signal_type = "SHORT"
-                else:
-                    reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي")
+            # 🛑 [ صمام الأمان المطلق لمنع الفخاخ ]
+            if (orderbook_ratio > 1.10 and obv_slope < 0) or ("🚫 هروب سيولة" in "".join(reasons) and score > 0) or ("تصريف مؤسساتي" in "".join(reasons) and mood != "YUSR_EXPLOSION"):
+                kill_switch = True
 
+            if not kill_switch:
+                # ==========================================
+                # 🕵️‍♂️ [ رادار الاستخبارات المبكرة: كشف النوايا قبل ساعات ]
+                # ==========================================
+                # --- 1. كشف التجميع الصامت (تجهيز لانفجار شرائي WATCH_LONG) ---
+                is_early_accumulation = (
+                    is_sqz and                                       # السعر في حالة انضغاط خانق (ممل جداً)
+                    (divergence_4h == "BULLISH_DIVERGENCE" or rsi_4h <= 25) and # الزخم يجهز لقاع على الفريم الكبير
+                    obv_slope > 0 and                                # السيولة تدخل بصمت رغم عدم صعود السعر
+                    oi_change > 5 and                                # فتح مراكز جديدة مخفية (وقود الانفجار)
+                    price >= sup_4h * 0.99                           # السعر يتكئ على دعم 4 ساعات صلب
+                )
+
+                # --- 2. كشف التصريف الصامت (تجهيز لانهيار بيعي WATCH_SHORT) ---
+                is_early_distribution = (
+                    is_sqz and                                       # السعر محشور في القمة
+                    (divergence_4h == "BEARISH_DIVERGENCE" or rsi_4h >= 75) and # الزخم في ذروة تشبع 
+                    obv_slope < 0 and                                # السيولة تهرب بصمت والسعر لم يهبط بعد
+                    orderbook_ratio < 0.90 and                       # ضغط بيعي مخفي في سجل الأوامر
+                    price <= res_4h * 1.01                           # السعر يرتطم بمقاومة 4 ساعات تاريخية
+                )
+
+                if is_early_accumulation:
+                    signal_type = "WATCH_LONG"
+                    score = 250 # إعطاء سكور نخبوي لضمان الإرسال
+                    reasons.append("⏳ رصد استخباراتي مبكر (تجميع): الحيتان يكدسون السيولة بصمت فوق دعم 4H. توقع انفجار 15%+ خلال الساعات القادمة.")
+                
+                elif is_early_distribution:
+                    signal_type = "WATCH_SHORT"
+                    score = -250
+                    reasons.append("⏳ رصد استخباراتي مبكر (تصريف): هروب سيولة مخفي ودايفرجنز سلبي تحت مقاومة 4H. تأهب لانهيار وشيك.")
+                
+                # ==========================================
+                # ⚡ [ الانفجار اللحظي الكلاسيكي - في حال لم يكن هناك رصد مبكر ]
+                # ==========================================
+                elif score >= 300:
+                    if is_near_support_general or is_uptrend or is_at_tf_support:
+                        signal_type = "LONG"
+                    else:
+                        reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
+
+                elif score <= -256:
+                    if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
+                        signal_type = "SHORT"
+                    else:
+                        reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي")
+
+            # ==========================================
+            # 💾 إرسال البيانات إلى قاعدة البيانات والتلجرام
+            # ==========================================
             if signal_type != "NONE":  
                 supabase.table("market_intelligence").upsert({ 
                     "symbol": symbol, 
@@ -835,7 +931,7 @@ async def intelligence_scanner():
                     "rsi_value": rsi_15m, 
                     "pump_score": int(score), 
                     "signal_direction": signal_type,
-                    "global_obv_status": "SQUEEZE_FIRE" if is_squeeze_firing else ("MOMENTUM_EXPLOSION" if signal_type == "LONG" else "BEARISH_DUMP"), 
+                    "global_obv_status": "SQUEEZE_FIRE" if is_squeeze_firing else ("MOMENTUM_EXPLOSION" if signal_type in ["LONG", "WATCH_LONG"] else "BEARISH_DUMP"), 
                     "multi_frame_liquidity_score": obv_slope_15m, 
                     "fib_golden_ratio": fib_618, 
                     "trend_status": mood, 
@@ -852,7 +948,7 @@ async def intelligence_scanner():
                     "orderbook_imbalance_ratio": orderbook_ratio,
                     "whale_support_detected": whale_detected,
                     "is_kill_switch_active": kill_switch,
-                    "is_fake_move": (signal_type == "LONG" and vol_delta < 0) or (signal_type == "SHORT" and vol_delta > 0),
+                    "is_fake_move": (signal_type in ["LONG", "WATCH_LONG"] and vol_delta < 0) or (signal_type in ["SHORT", "WATCH_SHORT"] and vol_delta > 0),
                     "last_updated": "now()" 
                 }).execute() 
 
@@ -874,7 +970,7 @@ async def intelligence_scanner():
         logging.error(f"❌ خطأ داخلي في الرادار القناص v11.1: {e}") 
 
     print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.1) بنجاح.")
-    
+
 
 import hashlib
 from datetime import datetime, timedelta
