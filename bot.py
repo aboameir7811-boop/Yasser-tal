@@ -4995,7 +4995,7 @@ def get_trading_session(timestamp_ms):
         logging.error(f"❌ خطأ في دالة الزمن: {e}")
         return "Unknown Session", "Unknown Day"
         
-async def fetch_klines1(session, symbol, interval, limit=500): # تم رفع الحد إلى 300 لحساب EMA 200 بأمان
+async def fetch_klines1(session, symbol, interval, limit=400): # تم رفع الحد إلى 300 لحساب EMA 200 بأمان
     url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
     try:
         async with session.get(url, timeout=10) as res:
@@ -5074,7 +5074,7 @@ async def run_forensic_autopsy(symbol, change_percent, explosion_time_ms):
     """
     try:
         # 🛡️ فلتر الأمان: التأكد من أن العملة ضمن نطاق التحقيق المطلوب
-        if change_percent >= 25:
+        if change_percent >= 30:
             event_type = "PUMP"
         elif change_percent <= 20:
             event_type = "DUMP"
@@ -5392,19 +5392,20 @@ import logging
 
 async def forensic_investigation_cycle(active_investigations):
     """
-    🕵️‍♂️ دورة المحقق الجنائي: تبحث عن الجرائم الجديدة (الانفجارات) وتحدث الملفات المفتوحة.
+    🕵️‍♂️ دورة المحقق الجنائي (النسخة المحدثة): تصطاد الحيتان الحقيقية وتتجاهل الأشباح.
     """
     
     current_time_ms = int(time.time() * 1000)
     
-    # 1. تنظيف القائمة: إغلاق الملفات التي مر عليها 24 ساعة (86400 ثانية)
+    # 1. تنظيف القائمة: إغلاق الملفات التي مر عليها "ساعتين" فقط (7,200,000 مللي ثانية)
+    # لا حاجة لمراقبة جثة هامدة لمدة 24 ساعة. ساعتين كافية لاقتناص الارتداد.
     keys_to_remove = [
         sym for sym, timestamp_ms in active_investigations.items() 
-        if current_time_ms - timestamp_ms > 86400000
+        if current_time_ms - timestamp_ms > 7200000
     ]
     for k in keys_to_remove:
         del active_investigations[k]
-        logging.info(f"📁 [إغلاق ملف] تم إنهاء تتبع {k} لمرور 24 ساعة.")
+        logging.info(f"📁 [إغلاق ملف] تم تبريد مسرح جريمة {k} وإنهاء التتبع.")
         
     try:
         async with aiohttp.ClientSession() as session:
@@ -5421,22 +5422,20 @@ async def forensic_investigation_cycle(active_investigations):
                             continue
                             
                         change = float(coin.get('priceChangePercent', 0))
-                        vol = float(coin.get('quoteVolume', 0))
+                        vol = float(coin.get('quoteVolume', 0)) # هذا الفوليوم بالدولار (USDT)
                         current_price = float(coin.get('lastPrice', 0))
-                        # الحصول على وقت الانفجار (تحديث السعر) بالملي ثانية من سيرفرات بينانس
-                        close_time_ms = int(coin.get('closeTime', current_time_ms))
-                        # أ. هل هي جريمة جديدة؟ (تجاوزت +40% أو -30% بسيولة جيدة)
-                        # أ. هل هي جريمة جديدة؟ (تجاوزت +50% أو -20% بسيولة جيدة)
-                        if vol > 50000 and (change >= 50 or change <= -20):
-                            if symbol not in active_investigations:
-                                # تخزين وقت الجريمة بالملي ثانية
-                                active_investigations[symbol] = close_time_ms
-                                logging.info(f"🚨 [المحقق] رصد انفجار جديد {symbol} بنسبة {change}% في الوقت {close_time_ms} ms")
-                                
-                                # ملاحظة: تمت إضافة close_time_ms للدالة لتعرف وقت الانفجار بالضبط
-                                tasks.append(run_forensic_autopsy(symbol, change, close_time_ms))
                         
-                        # ب. هل هي جريمة تحت المراقبة؟ (تحديث السعر المباشر للعملات المخزنة)
+                        # أ. هل هي جريمة جديدة؟ 
+                        # ⚠️ تم رفع الفوليوم إلى 5,000,000 (5 مليون) لمنع العملات الميتة
+                        if vol > 5000000 and (change >= 50 or change <= -20):
+                            if symbol not in active_investigations:
+                                # نستخدم وقت الرادار الفعلي كبداية التحقيق وليس وقت بينانس
+                                active_investigations[symbol] = current_time_ms
+                                logging.info(f"🚨 [المحقق] رصد انفجار حقيقي: {symbol} بنسبة {change}% (سيولة: {vol:,.0f} USDT)")
+                                
+                                tasks.append(run_forensic_autopsy(symbol, change, current_time_ms))
+                        
+                        # ب. هل هي جريمة تحت المراقبة؟
                         if symbol in active_investigations:
                             update_tasks.append(update_live_status(symbol, current_price, change))
 
@@ -5449,10 +5448,8 @@ async def forensic_investigation_cycle(active_investigations):
     except Exception as e:
         logging.error(f"⚠️ خطأ في دورة المحقق الجنائي: {e}")
         
-    print(f"🏁 [المحقق] أنهى جولته. يتتبع حالياً {len(active_investigations)} ملف نشط.")
-    
+    print(f"🏁 [المحقق] أنهى جولته. يتتبع حالياً {len(active_investigations)} ملف نخبوي.")
 
-    
 
 async def unified_trading_system():
     """
