@@ -709,10 +709,12 @@ async def intelligence_scanner():
                 score -= 30
                 reasons.append("⚠️ الفريم الأكبر 4h منهار، تم إبطال الهجوم الشرائي.")
                 
-            if (price > upper or is_crawling_up) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
+            # 👈 تم التحديث هنا ليتوافق مع المحرك الشامل
+            if (price > upper or is_crawling_up_15m) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
                 score -= 80  
                 intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
-                reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.") 
+                reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.")
+                
             # ==========================================
             # 📐 [ 8. تحليل الترند والقنوات السعرية - القواعد الصارمة ]
             # ==========================================
@@ -941,17 +943,18 @@ async def intelligence_scanner():
                         reasons.append(f"🌋ا {tf_label} {pat_name}: انهيار سعري للأسفل بعد نطاق تذبذب عالٍ ومصيدة سيولة")
 
             # ==========================================
-            # 🎯 [ 8. قرار الإطلاق النهائي و الاستخبارات المبكرة ]
+            # 🎯 [ 8. قرار الإطلاق النهائي وتسجيل البيانات ]
             # ==========================================
-            sc_crawling = 1 if is_crawling_up else 0 
-            sc_spark = 1 if is_5m_spark else 0 
-            sc_volume = 1 if is_volume_spike else 0 
+            # 👈 تحديث المتغيرات لتقرأ من المحرك الشامل مباشرة
+            sc_crawling = 1 if is_crawling_up_15m else 0 
+            sc_spark = 1 if (expansion_ratio_5m > 1.20) else 0 
+            sc_volume = 1 if (vol_ma_15m > 0 and vol_15m > (vol_ma_15m * 2)) else 0 
             sc_keltner = 1 if (upper > kc_upper and expansion_ratio_15m > 1.05) else 0 
-            sc_whale = 1 if (oi_change > 5 and is_crawling_up) else 0 
+            sc_whale = 1 if (oi_change > 5 and is_crawling_up_15m) else 0 
 
-            if is_crawling_up and is_5m_spark and is_volume_spike: 
-                score += 60  
-
+            # مكافأة التوافق التام
+            if is_crawling_up_15m and (expansion_ratio_5m > 1.20) and (vol_ma_15m > 0 and vol_15m > (vol_ma_15m * 2)): 
+                score += 60
             # 👈👈👈 هنا نضع دالة التحديث المستمر (قبل الشروط)
             # ==========================================
             # 🔄 تحديث الإشارات القديمة في محطات (4h, 8h...)
