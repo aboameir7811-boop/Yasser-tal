@@ -1101,17 +1101,16 @@ def get_signal_rating(direction: str, move_percent: float) -> str:
         elif move_percent >= 2.0: return "فاشل ❌"
         else: return "عادي ➖"
             
-
 # ==========================================
-# 1. دالة إطلاق الإشارة وحفظها (محدثة لمنع تكرار العملة والحد بـ 5)
+# 1. دالة إطلاق الإشارة (محدثة بالذكاء التاريخي والتعلم الذاتي)
 # ==========================================
 async def trigger_golden_signal(symbol, score, reasons, fib_618, price, direction="LONG", change_24h=0.0):
     
-    # ⛔ 1. فلتر التضخم والانهيار (تجاهل العملات الخطرة)
+    # ⛔ 1. فلتر التضخم والانهيار (تجاهل العملات الخطرة جداً)
     if (20 <= change_24h <= 100) or (-50 <= change_24h <= -15):
         return 
 
-    # 🛡️ 2. فحص ما إذا كانت العملة نفسها قيد المراقبة حالياً (لمنع تكرار نفس العملة)
+    # 🛡️ 2. فحص ما إذا كانت العملة نفسها قيد المراقبة حالياً
     try:
         active_coin = supabase.table("radar_signals") \
             .select("id") \
@@ -1120,68 +1119,131 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
             .execute()
             
         if active_coin.data and len(active_coin.data) > 0:
-            # هذه العملة أُرسل لها إشعار وهي تُراقب الآن، نتجاهلها حتى تنتهي دورتها
             return
     except Exception as e:
         import logging
         logging.error(f"❌ خطأ في فحص حالة العملة {symbol}: {e}")
 
-    # 🛡️ 3. توليد "بصمة" للأسباب لمعرفة التطابق التام في السوق
+    # 🛡️ 3. توليد "بصمة" للأسباب لمعرفة التطابق التام
     reasons_str = "".join(sorted(reasons))
     reasons_hash = hashlib.md5(reasons_str.encode('utf-8')).hexdigest()
 
+    # =================================================================
+    # 🧠 4. محرك التعلم الذاتي (غربة الإشارات وعكس الكوارث)
+    # =================================================================
+    should_alert = False
+    is_reversed = False
+    hist_notes = ""
+    history_count = 0
+    
     try:
-        # التحقق من عدد التطابقات لنفس الأسباب (يُسمح بـ 5 مرات كحد أقصى لعملات مختلفة)
-        res = supabase.table("radar_signals") \
-            .select("id", count="exact") \
+        # جلب تاريخ هذا النمط من قاعدة البيانات لمعرفة كيف تصرف سابقاً
+        history = supabase.table("radar_signals") \
+            .select("signal_type, change_4h, change_8h, change_12h, change_16h, change_20h, change_24h") \
             .eq("reasons_hash", reasons_hash) \
             .execute()
             
-        if res.count is not None and res.count >= 5:
-            # هذا النمط تكرر 5 مرات في قاعدة البيانات، نكتفي بهذا القدر للتجارب
-            return
-    except Exception as db_err:
-        import logging
-        logging.error(f"❌ خطأ في فحص بصمة الإشارة: {db_err}")
-
-    # 📲 4. إعداد وإرسال إشعار التلجرام
-    is_long = direction == "LONG"
-    emoji_main = "🚀" if is_long else "📉"
-    trade_label = "شراء (LONG)" if is_long else "بيع (SHORT)"
-    color_circle = "🟢" if is_long else "🔴"
-    
-    text = (
-        f"🚨 <b>إشعار مهم: فرصة {trade_label}!</b> {emoji_main}\n\n"
-        f"🪙 <b>العملة:</b> <code>{symbol}</code>\n"
-        f"💵 <b>السعر لحظة الرصد:</b> <code>{price}</code>\n"
-        f"🔥 <b>درجة الانفجار:</b> <code>{score}/100</code> {color_circle}\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"🕵️‍♂️ <b>الأسرار المرصودة:</b>\n"
-    )
-    
-    for reason in reasons:
-        text += f"- {reason}\n"
+        has_history = False
+        max_profit = 0.0
+        max_loss = 0.0
         
-    text += (
-        f"\n📐 <b>المستويات الفنية:</b>\n"
-        f"👈 النسبة الذهبية (0.618): <code>{fib_618:,.4f}</code>\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"<i>⚠️ هذه البيانات مرسلة لك فقط.</i>"
-    )
-
-    keyboard = types.InlineKeyboardMarkup()
-    callback_vip = f"vip_signal:{ADMIN_ID}:{symbol}:{direction}"
-    keyboard.add(types.InlineKeyboardButton(f"⚡ إصدار توصية VIP ({trade_label})", callback_data=callback_vip))
-    keyboard.add(types.InlineKeyboardButton(f"📊 عرض شارت {symbol}", callback_data=f"coin_view:{ADMIN_ID}:{symbol}:15m"))
-
-    try:
-        await bot.send_message(chat_id=ADMIN_ID, text=text, reply_markup=keyboard, parse_mode="HTML")
+        if history.data and len(history.data) > 0:
+            history_count = len(history.data)
+            
+            # تحليل كل سجلات هذا النمط
+            for row in history.data:
+                # تجميع كل نسب التحرك المسجلة في الساعات الماضية
+                changes = [row.get(f'change_{h}h') for h in [4, 8, 12, 16, 20, 24] if row.get(f'change_{h}h') is not None]
+                
+                if changes:
+                    has_history = True
+                    hist_dir = row.get("signal_type", direction)
+                    
+                    # تحويل النسب بناءً على الاتجاه (لحساب الربح والخسارة بشكل دقيق)
+                    if hist_dir == "LONG":
+                        p = max(changes) # أعلى ارتفاع هو الربح
+                        l = min(changes) # أدنى هبوط هو الخسارة
+                    else: # SHORT
+                        p = -min(changes) # أدنى سعر هو أعلى ربح في الشورت
+                        l = -max(changes) # أعلى سعر هو الخسارة في الشورت (نحتفظ بها كقيمة سالبة)
+                        
+                    if p > max_profit: max_profit = p
+                    if l < max_loss: max_loss = l
+                    
+        # ⚖️ التقييم واتخاذ القرار الحاسم
+        if has_history:
+            if max_loss <= -20.0:
+                # 💀 الإشارة كارثية وتصنع فخاً عميقاً -> نعكس الاتجاه وننصب الفخ نحن!
+                should_alert = True
+                is_reversed = True
+                direction = "SHORT" if direction == "LONG" else "LONG"
+                hist_notes = f"\n⚠️ <b>تنبيه ذكي:</b> تم عكس الإشارة! هذا النمط تاريخياً تسبب في انهيار عكسي بنسبة {max_loss:.1f}%. التداول مع التيار الانعكاسي 🔄."
+            
+            elif max_loss <= -10.0 or max_profit < 5.0:
+                # ❌ الإشارة فاشلة (تضرب الوقف) أو متذبذبة (ربحها ضعيف) -> صمت تام
+                should_alert = False
+            
+            else:
+                # 🚀 الإشارة ناجحة وموثوقة -> انطلق!
+                should_alert = True
+                hist_notes = f"\n✅ <b>نمط موثوق ومختبر:</b> هذا النمط حقق تاريخياً أرباحاً صافية تصل إلى {max_profit:.1f}% 📈."
+        else:
+            # 🆕 نمط جديد لم يختبر مسبقاً -> صمت تام ونحفظه للتعلم فقط
+            should_alert = False
+            
     except Exception as e:
         import logging
-        logging.error(f"❌ HTML Parse Error: {e}")
+        logging.error(f"❌ خطأ في فحص التاريخ للتعلم الذاتي: {e}")
+        should_alert = True # في حال تعطل الفحص، نرسلها كالعادة احتياطاً
+        
+    # =================================================================
 
-    # 💾 5. حفظ الإشارة الجديدة في قاعدة البيانات للمتابعة
+    # 📲 5. إعداد وإرسال الإشعار للتلجرام (فقط إذا تجاوزت العملة الفلتر)
+    if should_alert:
+        is_long = direction == "LONG"
+        emoji_main = "🚀" if is_long else "📉"
+        trade_label = "شراء (LONG)" if is_long else "بيع (SHORT)"
+        color_circle = "🟢" if is_long else "🔴"
+        
+        text = (
+            f"🚨 <b>إشعار مهم: فرصة {trade_label}!</b> {emoji_main}\n\n"
+            f"🪙 <b>العملة:</b> <code>{symbol}</code>\n"
+            f"💵 <b>السعر لحظة الرصد:</b> <code>{price}</code>\n"
+            f"🔥 <b>درجة الانفجار:</b> <code>{score}/100</code> {color_circle}\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🕵️‍♂️ <b>الأسرار المرصودة:</b>\n"
+        )
+        
+        for reason in reasons:
+            text += f"- {reason}\n"
+            
+        # إضافة ملاحظات الذكاء التاريخي للمنشور
+        text += f"{hist_notes}"
+            
+        text += (
+            f"\n\n📐 <b>المستويات الفنية:</b>\n"
+            f"👈 النسبة الذهبية (0.618): <code>{fib_618:,.4f}</code>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"<i>⚠️ بيانات استخباراتية مفلترة ومؤكدة.</i>"
+        )
+
+        keyboard = types.InlineKeyboardMarkup()
+        callback_vip = f"vip_signal:{ADMIN_ID}:{symbol}:{direction}"
+        keyboard.add(types.InlineKeyboardButton(f"⚡ إصدار توصية VIP ({trade_label})", callback_data=callback_vip))
+        keyboard.add(types.InlineKeyboardButton(f"📊 عرض شارت {symbol}", callback_data=f"coin_view:{ADMIN_ID}:{symbol}:15m"))
+
+        try:
+            await bot.send_message(chat_id=ADMIN_ID, text=text, reply_markup=keyboard, parse_mode="HTML")
+        except Exception as e:
+            import logging
+            logging.error(f"❌ HTML Parse Error: {e}")
+
+    # 💾 6. حفظ الإشارة في قاعدة البيانات للمتابعة الدورية
     try:
+        # إذا تم تسجيل النمط 5 مرات مسبقاً، لا داعي لتخزينه مجدداً لتخفيف الضغط على القاعدة
+        if history_count >= 5:
+            return
+            
         signal_data = {
             "symbol": symbol,
             "signal_type": direction,
@@ -1195,7 +1257,8 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
     except Exception as db_err:
         import logging
         logging.error(f"❌ خطأ في حفظ الإشارة في سوبابيس: {db_err}")
-        
+
+
 # ==========================================
 # 2. دالة التحديث الديناميكية (تلتقط البيانات من الرادار مباشرة)
 # ==========================================
