@@ -439,6 +439,7 @@ async def intelligence_scanner():
             # ==========================================
             # التأكد من جلب المتغيرات اليومية والسيولة بأمان لتجنب الأخطاء
             trend_1d = coin.get('1d_trend_direction', 'عرضي')
+            trend_1h = coin.get('1h_trend_direction', 'عرضي')
             ema200_1d = float(coin.get('ema_200_1d') or 0)
             was_squeezed_1h = bool(coin.get('was_squeezed_1h', False))
             obv_slope_1h = float(coin.get('obv_slope_1h') or 0)
