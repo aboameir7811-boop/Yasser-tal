@@ -924,6 +924,7 @@ async def intelligence_scanner():
                 # 5. الهارمونيك الاحترافي - يعتمد على السيولة (D) والدايفرجنز
                 # ----------------------------------------------------
                 elif pat_name in bullish_harmonics:
+
                     if harmonic_d_confluence == 1 and divergence_4h == "BULLISH_DIVERGENCE":
                         score += int(weight * 1.5) # نخبوي
                         reasons.append(f"💠ا {tf_label} هارمونيك نخبوي {pat_name}: النقطة D مدعومة بدايفرجنز وسيولة تاريخية")
@@ -990,52 +991,29 @@ async def intelligence_scanner():
                     signal_type = "WATCH_SHORT"
                     score = -250
                     reasons.append("⏳ رصد استخباراتي مبكر (تصريف): هروب سيولة مخفي ودايفرجنز سلبي تحت مقاومة 4H. تأهب لانهيار وشيك.")
-                
                 # ==========================================
                 # ⚡ [ الانفجار اللحظي الكلاسيكي - في حال لم يكن هناك رصد مبكر ]
                 # ==========================================
-                elif score >= 300:
+                elif score >= 200:
                     if is_near_support_general or is_uptrend or is_at_tf_support:
                         signal_type = "LONG"
                     else:
                         reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
 
-                elif score <= -256:
+                elif score <= -206:
                     if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
                         signal_type = "SHORT"
                     else:
                         reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي")
+                        
             # ==========================================
-            # 💾 إرسال البيانات إلى قاعدة البيانات والتلجرام
+            # 🚀 إطلاق إشارة التلجرام فوراً (تم إلغاء الرفع لسوبابيس للسرعة)
             # ==========================================
             if signal_type != "NONE":  
-                supabase.table("market_intelligence").upsert({ 
-                    "symbol": symbol, 
-                    "current_price": price, 
-                    "avg_volume": vol_ma_15m, 
-                    "volume_24h": vol_15m, 
-                    "rsi_value": rsi_15m, 
-                    "pump_score": int(score), 
-                    "signal_direction": signal_type,
-                    "global_obv_status": "SQUEEZE_FIRE" if is_squeeze_firing else ("MOMENTUM_EXPLOSION" if signal_type in ["LONG", "WATCH_LONG"] else "BEARISH_DUMP"), 
-                    "multi_frame_liquidity_score": obv_slope_15m, 
-                    "fib_golden_ratio": fib_618, 
-                    "trend_status": mood, 
-                    "is_1h_confirmed": True, 
-                    "is_squeezed": is_sqz,
-                    "intelligence_report": intel_report,
-                    "dynamic_sl_atr": stop_loss,
-                    "market_emotion_rsi": mood,
-                    "orderbook_imbalance_ratio": orderbook_ratio,
-                    "whale_support_detected": whale_detected,
-                    "is_kill_switch_active": kill_switch,
-                    "is_fake_move": (signal_type in ["LONG", "WATCH_LONG"] and vol_delta < 0) or (signal_type in ["SHORT", "WATCH_SHORT"] and vol_delta > 0),
-                    "last_updated": "now()" 
-                }).execute() 
-
-                # 👈👈👈 لا تنسَ استخراج change_24h وتمريرها لمنع العملات المتضخمة
+                # استخراج نسبة التغير لـ 24 ساعة لتمريرها كفلتر
                 change_24h = float(coin.get('change_24h', 0.0))
                 
+                # استدعاء دالة الإطلاق الذهبية فوراً وبدون أي تأخير
                 await trigger_golden_signal(
                     symbol=symbol, 
                     score=abs(score), # نرسلها كموجب للتلجرام دائماً
@@ -1043,7 +1021,7 @@ async def intelligence_scanner():
                     fib_618=fib_618, 
                     price=price, 
                     direction=signal_type, 
-                    change_24h=change_24h # تمرير المتغير الجديد هنا
+                    change_24h=change_24h # تمرير المتغير هنا
                 ) 
                 
     except Exception as e: 
@@ -1051,7 +1029,7 @@ async def intelligence_scanner():
         logging.error(f"❌ خطأ داخلي في الرادار القناص v11.1: {e}") 
 
     print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.1) بنجاح.")
-
+  
 
 import hashlib
 from datetime import datetime, timedelta
