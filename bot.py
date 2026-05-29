@@ -597,7 +597,7 @@ async def intelligence_scanner():
 
                 # فريم 4H
                 elif tf == '4h' and any(x in pattern for x in ["نجمة", "ثلاثة", "الساندوتش", "مطرقة", "المشنوق", "الشهاب"]):
-                    weight = 90
+                    weight = 50
                     if has_volume_confirmation:
                         if is_bullish and is_at_tf_support:
                             score += weight
@@ -608,7 +608,7 @@ async def intelligence_scanner():
 
                 # فريم 2H
                 elif tf == '2h' and any(x in pattern for x in ["تاسوكي", "التقدم", "ابتلاع", "الراكل", "الحزام"]):
-                    weight = 50
+                    weight = 30
                     if is_bullish and (is_uptrend or is_at_tf_support) and vol_delta >= 0:
                         score += weight
                         reasons.append(f"🟢 2H  {clean_name} ")
@@ -650,8 +650,8 @@ async def intelligence_scanner():
             
             # --- أوزان الفريمات (الحقيقة في الفريم الأكبر) ---
             weight_micro = 15   # 5m & 15m (شرارة فقط)
-            weight_macro = 55   # 1h & 2h (تأكيد)
-            weight_god = 100     # 4h (الحقيقة المطلقة)
+            weight_macro = 25   # 1h & 2h (تأكيد)
+            weight_god = 50     # 4h (الحقيقة المطلقة)
 
             # --- 1. إعدادات تقرير الاستخبارات ومود السوق ---
             is_yusr_detected = mood == "YUSR_EXPLOSION"
@@ -690,11 +690,11 @@ async def intelligence_scanner():
             vol_4h = float(coin.get('volume_4h') or 0)
             vol_ma_4h = float(coin.get('volume_ma_4h') or 1)
             
-            if vol_ma_1h > 0 and vol_1h > (vol_ma_1h * 1.5):
+            if vol_ma_1h > 0 and vol_1h > (vol_ma_1h * 1.0):
                 if price > ema20_1h: score += weight_macro; reasons.append("📊 سيولة مؤسساتية شرائية 1h")
                 else: score -= weight_macro; reasons.append("🩸 سيولة مؤسساتية بيعية 1h")
 
-            if vol_ma_4h > 0 and vol_4h > (vol_ma_4h * 1.5):
+            if vol_ma_4h > 0 and vol_4h > (vol_ma_4h * 1.0):
                 if price > ema20_4h: score += weight_god; reasons.append("🐋 انفجار سيولة حيتان (4H - شراء)")
                 else: score -= weight_god; reasons.append("🐋 تفريغ سيولة حيتان (4H - بيع)")
 
@@ -776,7 +776,7 @@ async def intelligence_scanner():
             # 1. قوة وموثوقية القناة (استخدام الحالات الجديدة)
             channel_power_bonus = 0
             if chan_status_4h == "STRONG_CONFIRMED" or chan_status_1h == "STRONG_CONFIRMED":
-                channel_power_bonus = 40
+                channel_power_bonus = 80
                 reasons.append("🛡️ قناة سعرية مؤكدة وقوية جداً")
             elif chan_status_4h == "VALID" or chan_status_1h == "VALID":
                 channel_power_bonus = 20
@@ -836,13 +836,13 @@ async def intelligence_scanner():
 
                 # تحديد الوزن (السكور) بناءً على الفريم
                 if tf == '1D':
-                    weight = 120
+                    weight = 100
                     tf_label = "1D - "
                 elif tf == '4H':
-                    weight = 80
+                    weight = 50
                     tf_label = "4H - "
                 elif tf == '1H':
-                    weight = 40
+                    weight = 30
                     tf_label = "1H - "
                 else: # 15m
                     weight = 15
@@ -994,13 +994,13 @@ async def intelligence_scanner():
                 # ==========================================
                 # ⚡ [ الانفجار اللحظي الكلاسيكي - في حال لم يكن هناك رصد مبكر ]
                 # ==========================================
-                elif score >= 200:
+                elif score >= 300:
                     if is_near_support_general or is_uptrend or is_at_tf_support:
                         signal_type = "LONG"
                     else:
                         reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
 
-                elif score <= -206:
+                elif score <= -306:
                     if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
                         signal_type = "SHORT"
                     else:
