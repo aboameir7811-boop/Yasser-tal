@@ -705,10 +705,6 @@ async def intelligence_scanner():
             adx_1h = float(coin.get('adx_1h') or 0)
             adx_4h = float(coin.get('adx_4h') or 0)
 
-            if adx_val > 25: # 15m
-                if is_crawling_up_15m: score += 10
-                elif is_crawling_down_15m: score -= 10
-                
             if adx_1h > 25:
                 if is_crawling_up_1h: score += 20; reasons.append(f"🌪️ ترند هجومي (ADX 1H: {adx_1h:.1f})")
                 elif is_crawling_down_1h: score -= 20; reasons.append(f"🌪️ ترند هبوطي عنيف (ADX 1H: {adx_1h:.1f})")
@@ -724,12 +720,6 @@ async def intelligence_scanner():
             if rsi_4h < 40 and ema20_4h < ema50_4h:
                 score -= 30
                 reasons.append("⚠️ الفريم الأكبر 4h منهار، تم إبطال الهجوم الشرائي.")
-                
-            # 👈 تم التحديث هنا ليتوافق مع المحرك الشامل
-            if (price > upper or is_crawling_up_15m) and (obv_slope_15m < 0 or expansion_ratio_15m < 0.95 or vol_delta < 0): 
-                score -= 80  
-                intel_report = "⚠️ فخ تلاعب: صعود وهمي وتصريف مخفي للسيولة!"
-                reasons.append("🚫 حماية مطلقة: سيولة بيعية سالبة خلف الصعود الوهمي.")
                 
             # ==========================================
             # 📐 [ 8. تحليل الترند والقنوات السعرية - القواعد الصارمة ]
@@ -959,20 +949,6 @@ async def intelligence_scanner():
                         reasons.append(f"🌋ا {tf_label} {pat_name}: انهيار سعري للأسفل بعد نطاق تذبذب عالٍ ومصيدة سيولة")
 
             # ==========================================
-            # 🎯 [ 8. قرار الإطلاق النهائي وتسجيل البيانات ]
-            # ==========================================
-            # 👈 تحديث المتغيرات لتقرأ من المحرك الشامل مباشرة
-            sc_crawling = 1 if is_crawling_up_15m else 0 
-            sc_spark = 1 if (expansion_ratio_5m > 1.20) else 0 
-            sc_volume = 1 if (vol_ma_15m > 0 and vol_15m > (vol_ma_15m * 2)) else 0 
-            sc_keltner = 1 if (upper > kc_upper and expansion_ratio_15m > 1.05) else 0 
-            sc_whale = 1 if (oi_change > 5 and is_crawling_up_15m) else 0 
-
-            # مكافأة التوافق التام
-            if is_crawling_up_15m and (expansion_ratio_5m > 1.20) and (vol_ma_15m > 0 and vol_15m > (vol_ma_15m * 2)): 
-                score += 60
-            # 👈👈👈 هنا نضع دالة التحديث المستمر (قبل الشروط)
-            # ==========================================
             # 🔄 تحديث الإشارات القديمة في محطات (4h, 8h...)
             # ==========================================
             await update_tracked_signals(symbol, price, reasons)
@@ -1046,11 +1022,6 @@ async def intelligence_scanner():
                     "fib_golden_ratio": fib_618, 
                     "trend_status": mood, 
                     "is_1h_confirmed": True, 
-                    "score_crawling": sc_crawling, 
-                    "score_spark": sc_spark, 
-                    "score_volume": sc_volume, 
-                    "score_keltner": sc_keltner, 
-                    "score_whale": sc_whale,
                     "is_squeezed": is_sqz,
                     "intelligence_report": intel_report,
                     "dynamic_sl_atr": stop_loss,
