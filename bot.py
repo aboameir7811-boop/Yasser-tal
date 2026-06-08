@@ -414,6 +414,9 @@ async def intelligence_scanner():
             high_24h = float(coin.get('high_24h') or (price * 1.05)) 
             low_24h = float(coin.get('low_24h') or (price * 0.95)) 
             fib_618 = high_24h - (0.618 * (high_24h - low_24h)) 
+
+            is_at_tf_support = False       # ضع هنا شرط الدعم الخاص بالفريمات المتعددة (إذا وُجد)
+            is_at_tf_resistance = False    # ضع هنا شرط المقاومة الخاص بالفريمات المتعددة (إذا وُجد)
             
             is_near_support_general = (price <= lower * 1.015) or (price <= ema50 * 1.015) or (abs(price - fib_618) / fib_618 <= 0.01)
             is_near_resistance_general = (price >= upper * 0.985) or (price >= ema20 * 1.03)
