@@ -423,223 +423,264 @@ async def intelligence_scanner():
             
             has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2)
             is_sqz = bbw_15m < 0.065
-            
-            # ==========================================
-            # 🧠 [ محرك مطابقة السلوك السعري والنماذج المتقدمة - محدث ]
+                        # ==========================================
+            # 🧠 [ شروط الشراء ]
             # ==========================================
 
             # 1
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "نجمة_الصباح_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_class_1h == "انعكاسي صاعد":
+            is_pattern_1_double_bottom_bullish = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "نجمة_الصباح_صاعد") and (pattern_name_1h == "قاع مزدوج") and (pattern_class_1h == "انعكاسي صاعد")
+            if is_pattern_1_double_bottom_bullish:
                 score += 50
                 reasons.append("تحقق الشرط 1: قاع مزدوج وانعكاس صاعد.")
 
             # 2
-            if patterns_1h == "نجمة_الصباح_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1d == "سايفر بيعي" and pattern_class_1d == "هارمونيك - احترافي":
+            is_pattern_2_bearish_cypher_pro = (patterns_1h == "نجمة_الصباح_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1d == "سايفر بيعي") and (pattern_class_1d == "هارمونيك - احترافي")
+            if is_pattern_2_bearish_cypher_pro:
                 score += 50
                 reasons.append("تحقق الشرط 2: هارمونيك سايفر بيعي احترافي.")
 
             # 3
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "راية صاعدة" and pattern_name_1d == "بوق متسع صاعد" and pattern_class_1h == "اختراق استمراري" and pattern_class_1d == "انفجار سعري":
+            is_pattern_3_bullish_pennant_broadening = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "ثلاثة_للخارج_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1h == "راية صاعدة") and (pattern_name_1d == "بوق متسع صاعد") and (pattern_class_1h == "اختراق استمراري") and (pattern_class_1d == "انفجار سعري")
+            if is_pattern_3_bullish_pennant_broadening:
                 score += 50
                 reasons.append("تحقق الشرط 3: راية صاعدة وبوق متسع مع انفجار سعري.")
 
             # 4
-            if patterns_1h == "ابتلاع_صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "سايفر بيعي" and pattern_class_1h == "هارمونيك احترافي":
+            is_pattern_4_bearish_cypher_1h = (patterns_1h == "ابتلاع_صاعد") and (patterns_2h == "ابتلاع_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1h == "سايفر بيعي") and (pattern_class_1h == "هارمونيك احترافي")
+            if is_pattern_4_bearish_cypher_1h:
                 score += 50
                 reasons.append("تحقق الشرط 4: سايفر بيعي احترافي على فريم الساعة.")
 
             # 5
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "رأس وكتفين مقلوب" and pattern_class_1h == "انعكاسي صاعد":
+            is_pattern_5_inv_head_shoulders = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1h == "رأس وكتفين مقلوب") and (pattern_class_1h == "انعكاسي صاعد")
+            if is_pattern_5_inv_head_shoulders:
                 score += 50
                 reasons.append("تحقق الشرط 5: رأس وكتفين مقلوب وانعكاس صاعد.")
 
             # 6
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ابتلاع_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_class_1h == "انعكاسي صاعد":
+            is_pattern_6_double_bottom_multi_tf = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "ابتلاع_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "ابتلاع_صاعد") and (pattern_name_1h == "قاع مزدوج") and (pattern_class_1h == "انعكاسي صاعد")
+            if is_pattern_6_double_bottom_multi_tf:
                 score += 50
                 reasons.append("تحقق الشرط 6: قاع مزدوج وانعكاس صاعد بتوافق فريمات متعددة.")
 
             # 7
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ثلاثة_للداخل_صاعد" and pattern_name_1h  == "قاع ثلاثي" and pattern_name_2h  == "قاع ثلاثي" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد":
+            is_pattern_7_triple_bottom_1h_2h = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "ثلاثة_للداخل_صاعد") and (pattern_name_1h == "قاع ثلاثي") and (pattern_name_2h == "قاع ثلاثي") and (pattern_class_1h == "انعكاسي صاعد") and (pattern_class_2h == "انعكاسي صاعد")
+            if is_pattern_7_triple_bottom_1h_2h:
                 score += 50
                 reasons.append("تحقق الشرط 7: قاع ثلاثي على فريمي الساعة والساعتين.")
 
             # 8
-            if patterns_1h == "قمة_الملقط_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "قاع ثلاثي" and pattern_name_2h  == "قاع ثلاثي" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد":
+            is_pattern_8_triple_bottom_after_tweezer = (patterns_1h == "قمة_الملقط_هابط") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1h == "قاع ثلاثي") and (pattern_name_2h == "قاع ثلاثي") and (pattern_class_1h == "انعكاسي صاعد") and (pattern_class_2h == "انعكاسي صاعد")
+            if is_pattern_8_triple_bottom_after_tweezer:
                 score += 50
                 reasons.append("تحقق الشرط 8: انعكاس صاعد بقاع ثلاثي بعد قمة ملقط هابطة.")
 
             # 9
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ماروبوزو_صاعد" and patterns_1d == "الحزام_الممسوك_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_name_2h  == "رأس وكتفين مقلوب" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد":
+            is_pattern_9_double_bottom_inv_hs_marubozu = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "ماروبوزو_صاعد") and (patterns_1d == "الحزام_الممسوك_صاعد") and (pattern_name_1h == "قاع مزدوج") and (pattern_name_2h == "رأس وكتفين مقلوب") and (pattern_class_1h == "انعكاسي صاعد") and (pattern_class_2h == "انعكاسي صاعد")
+            if is_pattern_9_double_bottom_inv_hs_marubozu:
                 score += 50
                 reasons.append("تحقق الشرط 9: قاع مزدوج ورأس وكتفين مقلوب مع ماروبوزو.")
 
             # 10
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "ثلاثة_للداخل_صاعد" and patterns_4h == "ابتلاع_صاعد" and pattern_name_1h  == "رأس وكتفين" and pattern_class_1h == "انعكاسي هابط":
+            is_pattern_10_head_shoulders_bearish_rev = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "ثلاثة_للداخل_صاعد") and (patterns_4h == "ابتلاع_صاعد") and (pattern_name_1h == "رأس وكتفين") and (pattern_class_1h == "انعكاسي هابط")
+            if is_pattern_10_head_shoulders_bearish_rev:
                 score += 50
                 reasons.append("تحقق الشرط 10: رأس وكتفين انعكاسي هابط.")
 
             # 11
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الحزام_الممسوك_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_name_2h  == "قاع مزدوج" and pattern_name_4h  == "رأس وكتفين مقلوب" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد" and pattern_class_4h == "انعكاسي صاعد":
+            is_pattern_11_double_bottoms_inv_hs = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "الحزام_الممسوك_صاعد") and (pattern_name_1h == "قاع مزدوج") and (pattern_name_2h == "قاع مزدوج") and (pattern_name_4h == "رأس وكتفين مقلوب") and (pattern_class_1h == "انعكاسي صاعد") and (pattern_class_2h == "انعكاسي صاعد") and (pattern_class_4h == "انعكاسي صاعد")
+            if is_pattern_11_double_bottoms_inv_hs:
                 score += 50
                 reasons.append("تحقق الشرط 11: قيعان مزدوجة ورأس وكتفين مقلوب.")
 
             # 12
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_2h  == "صندوق دارفاس صاعد" and pattern_name_4h  == "رأس وكتفين مقلوب" and pattern_name_1d == "قاع مزدوج" and pattern_class_2h == "استمراري/اختراق" and pattern_class_4h == "انعكاسي صاعد" and pattern_class_1d == "انعكاسي صاعد":
+            is_pattern_12_darvas_box_bullish_sync = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_2h == "صندوق دارفاس صاعد") and (pattern_name_4h == "رأس وكتفين مقلوب") and (pattern_name_1d == "قاع مزدوج") and (pattern_class_2h == "استمراري/اختراق") and (pattern_class_4h == "انعكاسي صاعد") and (pattern_class_1d == "انعكاسي صاعد")
+            if is_pattern_12_darvas_box_bullish_sync:
                 score += 50
                 reasons.append("تحقق الشرط 12: صندوق دارفاس ونماذج انعكاسية صاعدة متزامنة.")
 
             # 13
-            if patterns_1h == "Neutral_Doji" and patterns_2h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "نجمة_المساء_هابط" and pattern_name_2h  == "بوق متسع هابط" and pattern_class_2h == "انهيار سعري":
+            is_pattern_13_bearish_broadening_breakdown = (patterns_1h == "Neutral_Doji") and (patterns_2h == "الغربان_الثلاثة_السود_هابط") and (patterns_4h == "الغربان_الثلاثة_السود_هابط") and (patterns_1d == "نجمة_المساء_هابط") and (pattern_name_2h == "بوق متسع هابط") and (pattern_class_2h == "انهيار سعري")
+            if is_pattern_13_bearish_broadening_breakdown:
                 score += 50
                 reasons.append("تحقق الشرط 13: بوق متسع هابط وانهيار سعري.")
 
             # 14
-            if patterns_1h == "نجمة_الصباح_صاعد" and patterns_4h == "ابتلاع_صاعد" and patterns_1d == "ابتلاع_صاعد":
+            is_pattern_14_morning_star_engulfing = (patterns_1h == "نجمة_الصباح_صاعد") and (patterns_4h == "ابتلاع_صاعد") and (patterns_1d == "ابتلاع_صاعد")
+            if is_pattern_14_morning_star_engulfing:
                 score += 50
                 reasons.append("تحقق الشرط 14: نجمة صباح وابتلاع صاعد.")
 
             # 15
-            if patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "ابتلاع_صاعد" and pattern_name_1d == "رأس وكتفين" and pattern_class_1d == "انعكاسي هابط":
+            is_pattern_15_head_shoulders_daily = (patterns_4h == "ثلاثة_للخارج_صاعد") and (patterns_1d == "ابتلاع_صاعد") and (pattern_name_1d == "رأس وكتفين") and (pattern_class_1d == "انعكاسي هابط")
+            if is_pattern_15_head_shoulders_daily:
                 score += 50
                 reasons.append("تحقق الشرط 15: رأس وكتفين انعكاسي هابط على اليومي.")
 
             # 16
-            if patterns_1h == "نجمة_الصباح_صاعد" and patterns_2h == "الحزام_الممسوك_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "ابتلاع_صاعد":
+            is_pattern_16_strong_bullish_candles_all_tf = (patterns_1h == "نجمة_الصباح_صاعد") and (patterns_2h == "الحزام_الممسوك_صاعد") and (patterns_4h == "ثلاثة_للخارج_صاعد") and (patterns_1d == "ابتلاع_صاعد")
+            if is_pattern_16_strong_bullish_candles_all_tf:
                 score += 50
                 reasons.append("تحقق الشرط 16: شموع صاعدة قوية على كافة الفريمات المذكورة.")
 
             # 17
-            if patterns_1h == "ابتلاع_صاعد" and patterns_2h == "قاع_الملقط_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ابتلاع_صاعد":
+            is_pattern_17_tweezer_bottom_engulfing = (patterns_1h == "ابتلاع_صاعد") and (patterns_2h == "قاع_الملقط_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "ابتلاع_صاعد")
+            if is_pattern_17_tweezer_bottom_engulfing:
                 score += 50
                 reasons.append("تحقق الشرط 17: قاع ملقط وابتلاع صاعد.")
 
             # 18
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد":
+            is_pattern_18_three_white_soldiers_all_tf = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
+            if is_pattern_18_three_white_soldiers_all_tf:
                 score += 50
                 reasons.append("تحقق الشرط 18: الجنود الثلاثة البيض على جميع الفريمات المحددة.")
 
             # 19
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_2h  == "رأس وكتفين مقلوب" and pattern_name_4h  == "رأس وكتفين مقلوب" and pattern_class_2h == "انعكاسي صاعد" and pattern_class_4h == "انعكاسي صاعد":
+            is_pattern_19_inv_hs_white_soldiers = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_2h == "رأس وكتفين مقلوب") and (pattern_name_4h == "رأس وكتفين مقلوب") and (pattern_class_2h == "انعكاسي صاعد") and (pattern_class_4h == "انعكاسي صاعد")
+            if is_pattern_19_inv_hs_white_soldiers:
                 score += 50
                 reasons.append("تحقق الشرط 19: رأس وكتفين مقلوب مع جنود بيض.")
 
             # 20
-            if patterns_1h == "ابتلاع_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "قاع ثلاثي" and pattern_name_2h  == "قاع مزدوج" and pattern_name_1d == "بوق متسع صاعد" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد" and pattern_class_1d == "انفجار سعري":
+            is_pattern_20_triple_double_bottom_broadening = (patterns_1h == "ابتلاع_هابط") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1h == "قاع ثلاثي") and (pattern_name_2h == "قاع مزدوج") and (pattern_name_1d == "بوق متسع صاعد") and (pattern_class_1h == "انعكاسي صاعد") and (pattern_class_2h == "انعكاسي صاعد") and (pattern_class_1d == "انفجار سعري")
+            if is_pattern_20_triple_double_bottom_broadening:
                 score += 50
                 reasons.append("تحقق الشرط 20: قاع ثلاثي ومزدوج وبوق متسع مع انفجار سعري.")
 
             # 21
-            if patterns_1h == "الغربان_الثلاثة_السود_هابط" and patterns_2h == "ابتلاع_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "نجمة_المساء_هابط" and pattern_name_1h  == "خفاش بيعي" and pattern_name_1d == "قاع مزدوج" and pattern_class_1h == "هارمونيك احترافي" and pattern_class_1d == "انعكاسي صاعد":
+            is_pattern_21_bearish_bat_double_bottom = (patterns_1h == "الغربان_الثلاثة_السود_هابط") and (patterns_2h == "ابتلاع_هابط") and (patterns_4h == "الغربان_الثلاثة_السود_هابط") and (patterns_1d == "نجمة_المساء_هابط") and (pattern_name_1h == "خفاش بيعي") and (pattern_name_1d == "قاع مزدوج") and (pattern_class_1h == "هارمونيك احترافي") and (pattern_class_1d == "انعكاسي صاعد")
+            if is_pattern_21_bearish_bat_double_bottom:
                 score += 50
                 reasons.append("تحقق الشرط 21: خفاش بيعي احترافي وقاع مزدوج.")
 
             # 22
-            if patterns_2h == "ابتلاع_هابط" and patterns_4h == "ابتلاع_صاعد" and pattern_name_1d == "راية صاعدة" and pattern_class_1d == "اختراق استمراري":
+            is_pattern_22_bullish_pennant_continuation = (patterns_2h == "ابتلاع_هابط") and (patterns_4h == "ابتلاع_صاعد") and (pattern_name_1d == "راية صاعدة") and (pattern_class_1d == "اختراق استمراري")
+            if is_pattern_22_bullish_pennant_continuation:
                 score += 50
                 reasons.append("تحقق الشرط 22: راية صاعدة واختراق استمراري.")
-                   
+            # ==========================================
+            # 📉 [ شروط البيع ]
             # ==========================================
             # 1
-            if patterns_1h == "ثلاثة_للخارج_هابط" and patterns_2h == "الحزام_الممسوك_هابط" and patterns_4h == "ابتلاع_هابط" and pattern_name_1d == "راية صاعدة":
+            is_bearish_candles_with_bullish_pennant = (patterns_1h == "ثلاثة_للخارج_هابط") and (patterns_2h == "الحزام_الممسوك_هابط") and (patterns_4h == "ابتلاع_هابط") and (pattern_name_1d == "راية صاعدة")
+            if is_bearish_candles_with_bullish_pennant:
                 score -= 50
                 reasons.append("تحقق الشرط 1: نماذج شموع بيعية (ثلاثة للخارج، حزام ممسوك، ابتلاع هابط) مع راية صاعدة على اليومي.")
 
             # 2
-            if patterns_2h == "ثلاثة_للداخل_هابط" and patterns_1d == "نجمة_المساء_دوجي_هابط":
+            is_three_outside_down_with_evening_doji_star = (patterns_2h == "ثلاثة_للداخل_هابط") and (patterns_1d == "نجمة_المساء_دوجي_هابط")
+            if is_three_outside_down_with_evening_doji_star:
                 score -= 50
                 reasons.append("تحقق الشرط 2: نموذج ثلاثة للداخل هابط ونجمة المساء دوجي هابط.")
 
             # 3
-            if pattern_name_1h  == "رأس وكتفين" and pattern_class_1h == "انعكاسي هابط" and patterns_2h == "ابتلاع_هابط" and patterns_4h == "ابتلاع_هابط" and pattern_name_1d == "راية هابطة" and pattern_class_1d == "كسر استمراري":
+            is_head_shoulders_with_bearish_pennant_continuation = (pattern_name_1h == "رأس وكتفين") and (pattern_class_1h == "انعكاسي هابط") and (patterns_2h == "ابتلاع_هابط") and (patterns_4h == "ابتلاع_هابط") and (pattern_name_1d == "راية هابطة") and (pattern_class_1d == "كسر استمراري")
+            if is_head_shoulders_with_bearish_pennant_continuation:
                 score -= 50
                 reasons.append("تحقق الشرط 3: رأس وكتفين وابتلاع هابط مع راية هابطة استمرارية.")
 
             # 4
-            if patterns_2h == "نجمة_المساء_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and pattern_name_1d == "قاع مزدوج" and pattern_class_1d == "انعكاسي صاعد":
+            is_evening_star_three_black_crows_with_double_bottom = (patterns_2h == "نجمة_المساء_هابط") and (patterns_4h == "الغربان_الثلاثة_السود_هابط") and (pattern_name_1d == "قاع مزدوج") and (pattern_class_1d == "انعكاسي صاعد")
+            if is_evening_star_three_black_crows_with_double_bottom:
                 score -= 50
                 reasons.append("تحقق الشرط 4: نجمة المساء وغربان ثلاثة سود مع قاع مزدوج.")
 
             # 5
-            if trend_direction_1d == "هابط" and channel_direction_1d == "هابط" and channel_status_1d == "STRONG_CONFIRMED" and pattern_name_1h  == "قاع ثلاثي" and pattern_class_1h == "انعكاسي صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "ثلاثة_للخارج_صاعد":
+            is_strong_bearish_trend_and_channel_with_reversals = (trend_direction_1d == "هابط") and (channel_direction_1d == "هابط") and (channel_status_1d == "STRONG_CONFIRMED") and (pattern_name_1h == "قاع ثلاثي") and (pattern_class_1h == "انعكاسي صاعد") and (patterns_2h == "ابتلاع_صاعد") and (patterns_4h == "ثلاثة_للخارج_صاعد") and (patterns_1d == "ثلاثة_للخارج_صاعد")
+            if is_strong_bearish_trend_and_channel_with_reversals:
                 score -= 50
                 reasons.append("تحقق الشرط 5: ترند وقناة هابطة مؤكدة بقوة مع نماذج انعكاسية.")
 
             # 6
-            if patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد":
+            is_three_white_soldiers_multi_tf_sell_score = (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
+            if is_three_white_soldiers_multi_tf_sell_score:
                 score -= 50
                 reasons.append("تحقق الشرط 6: تواجد نموذج الجنود الثلاثة البيض صاعد على فريمات متعددة.")
 
             # 7
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_class_1h == "انعكاسي صاعد" and pattern_name_2h  == "قاع ثلاثي" and pattern_class_2h == "انعكاسي صاعد" and pattern_name_4h  == "وتد هابط" and pattern_class_4h == "استمراري" and patterns_1d == "ابتلاع_صاعد":
+            is_multiple_bullish_bottoms_and_wedges = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1h == "قاع مزدوج") and (pattern_class_1h == "انعكاسي صاعد") and (pattern_name_2h == "قاع ثلاثي") and (pattern_class_2h == "انعكاسي صاعد") and (pattern_name_4h == "وتد هابط") and (pattern_class_4h == "استمراري") and (patterns_1d == "ابتلاع_صاعد")
+            if is_multiple_bullish_bottoms_and_wedges:
                 score -= 50
                 reasons.append("تحقق الشرط 7: قيعان مزدوجة وثلاثية ووتد هابط مع جنود ثلاثة بيض وابتلاع صاعد.")
 
             # 8
-            if patterns_1h == "ابتلاع_هابط" and patterns_2h == "ثلاثة_للخارج_صاعد" and patterns_4h == "مطرقة_مقلوبة_صاعد" and patterns_1d == "ابتلاع_صاعد" and patterns_1h != "ابتلاع_صاعد" and patterns_1h != "مطرقة_صاعد":
+            is_bearish_engulfing_conflicting_with_larger_tf_bullish = (patterns_1h == "ابتلاع_هابط") and (patterns_2h == "ثلاثة_للخارج_صاعد") and (patterns_4h == "مطرقة_مقلوبة_صاعد") and (patterns_1d == "ابتلاع_صاعد") and (patterns_1h != "ابتلاع_صاعد") and (patterns_1h != "مطرقة_صاعد")
+            if is_bearish_engulfing_conflicting_with_larger_tf_bullish:
                 score -= 50
                 reasons.append("تحقق الشرط 8: ابتلاع هابط وتعارض مع نماذج صاعدة على فريمات أكبر.")
 
             # 9
-            if patterns_1h == "ابتلاع_هابط" and patterns_2h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "الغربان_الثلاثة_السود_هابط" and pattern_name_2h  == "سايفر شرائي" and pattern_class_2h == "هارمونيك احترافي":
+            is_bearish_crows_and_engulfing_overriding_bullish_cypher = (patterns_1h == "ابتلاع_هابط") and (patterns_2h == "الغربان_الثلاثة_السود_هابط") and (patterns_4h == "الغربان_الثلاثة_السود_هابط") and (patterns_1d == "الغربان_الثلاثة_السود_هابط") and (pattern_name_2h == "سايفر شرائي") and (pattern_class_2h == "هارمونيك احترافي")
+            if is_bearish_crows_and_engulfing_overriding_bullish_cypher:
                 score -= 50
                 reasons.append("تحقق الشرط 9: سيطرة للغربان الثلاثة السود وابتلاع هابط رغم وجود هارمونيك سايفر شرائي.")
 
             # 10
-            if patterns_1h == "الحزام_الممسوك_هابط" and patterns_2h == "الحزام_الممسوك_هابط" and patterns_4h == "ابتلاع_هابط" and patterns_1d == "ابتلاع_هابط" and patterns_4h != "ابتلاع_صاعد" and patterns_1d != "ابتلاع_صاعد":
+            is_strong_bearish_hold_and_engulfing_without_bullish_counter = (patterns_1h == "الحزام_الممسوك_هابط") and (patterns_2h == "الحزام_الممسوك_هابط") and (patterns_4h == "ابتلاع_هابط") and (patterns_1d == "ابتلاع_هابط") and (patterns_4h != "ابتلاع_صاعد") and (patterns_1d != "ابتلاع_صاعد")
+            if is_strong_bearish_hold_and_engulfing_without_bullish_counter:
                 score -= 50
                 reasons.append("تحقق الشرط 10: حزام ممسوك وابتلاع هابط قوي دون وجود ابتلاع صاعد مضاد.")
 
             # 11
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "صندوق دارفاس صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and trend_direction_1h == "هابط" and trend_direction_2h == "هابط" and trend_direction_4h == "هابط":
+            is_bullish_patterns_swimming_against_major_downtrend = (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_1h == "صندوق دارفاس صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (trend_direction_1h == "هابط") and (trend_direction_2h == "هابط") and (trend_direction_4h == "هابط")
+            if is_bullish_patterns_swimming_against_major_downtrend:
                 score -= 50
                 reasons.append("تحقق الشرط 11: نماذج صاعدة تسبح ضد اتجاه عام هابط على جميع الفريمات.")
 
             # 12
-            if patterns_1h == "هارامي_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_4h  == "رأس وكتفين" and pattern_class_4h == "انعكاسي هابط" and pattern_name_1d == "علم هابط" and pattern_class_1d == "كسر استمراري" and patterns_1d == "ابتلاع_صاعد":
+            is_bearish_harami_and_head_shoulders_with_bearish_flag = (patterns_1h == "هارامي_هابط") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (pattern_name_4h == "رأس وكتفين") and (pattern_class_4h == "انعكاسي هابط") and (pattern_name_1d == "علم هابط") and (pattern_class_1d == "كسر استمراري") and (patterns_1d == "ابتلاع_صاعد")
+            if is_bearish_harami_and_head_shoulders_with_bearish_flag:
                 score -= 50
                 reasons.append("تحقق الشرط 12: هارامي هابط ورأس وكتفين مع علم هابط كسر استمراري.")
 
             # 13
-            if patterns_2h == "في_الرقبة_هابط" and pattern_name_2h  == "راية هابطة" and patterns_4h == "الغربان_الثلاثة_السود_هابط":
+            is_in_neck_bearish_pennant_with_three_black_crows = (patterns_2h == "في_الرقبة_هابط") and (pattern_name_2h == "راية هابطة") and (patterns_4h == "الغربان_الثلاثة_السود_هابط")
+            if is_in_neck_bearish_pennant_with_three_black_crows:
                 score -= 50
                 reasons.append("تحقق الشرط 13: نموذج في الرقبة وراية هابطة وغربان ثلاثة سود هابطة.")
 
             # 14
-            if pattern_name_1d == "رأس وكتفين" and pattern_class_1d == "انعكاسي هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "قاع_الملقط_صاعد" and pattern_class_1d != "انعكاسي صاعد":
+            is_daily_head_shoulders_without_bullish_reversal_confirmation = (pattern_name_1d == "رأس وكتفين") and (pattern_class_1d == "انعكاسي هابط") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "ثلاثة_للخارج_صاعد") and (patterns_1d == "قاع_الملقط_صاعد") and (pattern_class_1d != "انعكاسي صاعد")
+            if is_daily_head_shoulders_without_bullish_reversal_confirmation:
                 score -= 50
                 reasons.append("تحقق الشرط 14: رأس وكتفين انعكاسي هابط مع غياب الانعكاس الصاعد اليومي.")
 
             # 15
-            if patterns_1h == "هارامي_صاعد" and patterns_4h == "ابتلاع_صاعد" and patterns_1d == "الغربان_الثلاثة_السود_هابط" and trend_direction_1d != "صاعد" and patterns_1d != "ابتلاع_صاعد" and patterns_1d != "مطرقة":
+            is_daily_three_black_crows_with_non_bullish_trend = (patterns_1h == "هارامي_صاعد") and (patterns_4h == "ابتلاع_صاعد") and (patterns_1d == "الغربان_الثلاثة_السود_هابط") and (trend_direction_1d != "صاعد") and (patterns_1d != "ابتلاع_صاعد") and (patterns_1d != "مطرقة_صاعد")
+            if is_daily_three_black_crows_with_non_bullish_trend:
                 score -= 50
                 reasons.append("تحقق الشرط 15: غربان ثلاثة سود يومية مع ترند غير صاعد.")
 
             # 16
-            if trend_direction_1d == "هابط" and channel_status_1d == "VALID" and channel_direction_1d == "هابط" and patterns_1d == "دوجي_شاهد_القبر_هابط" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "ابتلاع_صاعد":
+            is_bearish_trend_and_channel_with_gravestone_doji = (trend_direction_1d == "هابط") and (channel_status_1d == "VALID") and (channel_direction_1d == "هابط") and (patterns_1d == "دوجي_شاهد_القبر_هابط") and (patterns_2h == "ابتلاع_صاعد") and (patterns_4h == "ابتلاع_صاعد")
+            if is_bearish_trend_and_channel_with_gravestone_doji:
                 score -= 50
                 reasons.append("تحقق الشرط 16: ترند وقناة هابطة صحيحة مع دوجي شاهد القبر هابط.")
 
             # 17
-            if patterns_1h == "في_الرقبة_هابط" and patterns_2h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "الغربان_الثلاثة_السود_هابط":
+            is_in_neck_and_dominant_three_black_crows = (patterns_1h == "في_الرقبة_هابط") and (patterns_2h == "الغربان_الثلاثة_السود_هابط") and (patterns_4h == "الغربان_الثلاثة_السود_هابط") and (patterns_1d == "الغربان_الثلاثة_السود_هابط")
+            if is_in_neck_and_dominant_three_black_crows:
                 score -= 50
                 reasons.append("تحقق الشرط 17: نموذج في الرقبة وغربان ثلاثة سود مسيطرة بقوة على الفريمات.")
 
             # 18
-            if patterns_1h == "ابتلاع_صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ابتلاع_صاعد":
+            is_full_bullish_engulfing_and_white_soldiers_dominance = (patterns_1h == "ابتلاع_صاعد") and (patterns_2h == "ابتلاع_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "ابتلاع_صاعد")
+            if is_full_bullish_engulfing_and_white_soldiers_dominance:
                 score -= 50
                 reasons.append("تحقق الشرط 18: سيطرة كاملة للابتلاع الصاعد والجنود الثلاثة البيض.")
 
             # 19
-            if patterns_1h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "ابتلاع_هابط" and patterns_1h != "شمعة_ابتلاعية_صعودية" and patterns_1h != "المطرقة" and patterns_4h != "ابتلاع_صاعد" and patterns_4h != "نجمة_الصباح" and trend_direction_1h != "صعودي" and trend_direction_2h != "صعودي" and trend_direction_4h != "صعودي" and trend_direction_1d != "صعودي":
+            is_bearish_crows_and_engulfing_without_any_bullish_trend = (patterns_1h == "الغربان_الثلاثة_السود_هابط") and (patterns_4h == "ابتلاع_هابط") and (patterns_1h != "ابتلاع_صاعد") and (patterns_1h != "مطرقة_صاعد") and (patterns_4h != "ابتلاع_صاعد") and (patterns_4h != "نجمة_الصباح_صاعد") and (trend_direction_1h != "صاعد") and (trend_direction_2h != "صاعد") and (trend_direction_4h != "صاعد") and (trend_direction_1d != "صاعد")
+            if is_bearish_crows_and_engulfing_without_any_bullish_trend:
                 score -= 50
-                reasons.append("تحقق الشرط 19: غربان ثلاثة سود وابتلاع هابط مع انعدام الترند الصعودي في كل الفريمات.")
+                reasons.append("تحقق الشرط 19: غربان ثلاثة سود وابتلاع هابط مع انعدام الترند الصاعد في كل الفريمات.")
 
             # 20
-            if pattern_name_1h  == "بوق متسع هابط" and pattern_class_1h == "انهيار سعري" and pattern_name_2h  == "علم هابط" and pattern_class_2h == "كسر استمراري" and pattern_name_4h  == "راية هابطة" and pattern_class_4h == "كسر استمراري" and patterns_2h != "نجمة_الصباح_صاعد" and patterns_4h != "هارامي_صاعد" and patterns_1d != "الجنود_الثلاثة_البيض_صاعد":
+            is_bearish_broadening_with_continuation_flags_and_pennants = (pattern_name_1h == "بوق متسع هابط") and (pattern_class_1h == "انهيار سعري") and (pattern_name_2h == "علم هابط") and (pattern_class_2h == "كسر استمراري") and (pattern_name_4h == "راية هابطة") and (pattern_class_4h == "كسر استمراري") and (patterns_2h != "نجمة_الصباح_صاعد") and (patterns_4h != "هارامي_صاعد") and (patterns_1d != "الجنود_الثلاثة_البيض_صاعد")
+            if is_bearish_broadening_with_continuation_flags_and_pennants:
                 score -= 50
                 reasons.append("تحقق الشرط 20: بوق متسع هابط (انهيار سعري) مع علم وراية هابطة استمرارية.")
-
-# ==========================================
+            # ==========================================
             # ⚡ [ الانفجار اللحظي الكلاسيكي - في حال لم يكن هناك رصد مبكر ]
             # ==========================================
             # تم تعديل elif إلى if لتجنب أي تعارض أو خطأ برمجي
