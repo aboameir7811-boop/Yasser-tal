@@ -5107,7 +5107,6 @@ async def forensic_investigation_cycle(active_investigations):
         
     print(f"🏁 [المحقق] أنهى جولته. يتتبع حالياً {len(active_investigations)} ملف نخبوي.")
 
-
 async def unified_trading_system():
     """
     المايسترو المطور: يعمل بانسجام مع السكربت الخارجي
@@ -5122,14 +5121,11 @@ async def unified_trading_system():
             if turn == 'radar':
                 print(f"\n🎯 [دور الرادار]: السكربت انتهى، جاري المسح الآن... {datetime.now().strftime('%H:%M:%S')}")
                 
-                # 📡 تشغيل الرادار
+                # 📡 تشغيل الرادار فقط
                 await intelligence_scanner()
                 
-                # 🕵️‍♂️ تشغيل المحقق
-                await forensic_investigation_cycle(active_investigations)
-                
-                # 🔄 بعد الانتهاء، إعادة الدور للسكربت
-                print("♻️ اكتمل المسح، إعادة الراية للسكربت الخارجي...")
+                # 🔄 بعد انتهاء الرادار مباشرة، استدعاء السكربت (تسليم الراية)
+                print("♻️ اكتمل مسح الرادار، استدعاء وإعادة الراية للسكربت الخارجي...")
                 await async_manual_upsert("system_sync", [{"id": 1, "current_turn": "script"}])
                 
             else:
@@ -5137,13 +5133,13 @@ async def unified_trading_system():
                 if random.random() < 0.1: # طباعة كل فترة بسيطة لتقليل زحمة اللوج
                     print("⏳ في انتظار السكربت الخارجي لإتمام الحقن...")
             
-            await asyncio.sleep(60) # فحص كل 30 ثانية
+            # ملاحظة: قمت بتعديل الرقم إلى 30 ليتطابق مع التعليق الخاص بك (كان 60 في الكود القديم)
+            await asyncio.sleep(30) # فحص كل 30 ثانية
             
         except Exception as e:
             logging.error(f"🚨 خطأ في المايسترو: {e}")
             await asyncio.sleep(10)
-                
-
+            
 # 1. 🟢 ضع هذا الكلاس قبل "نظام الإنعاش الأبدي" (في منطقة عامة خارج الدوال)
 class TelegramLoggerHandler(logging.Handler):
     def __init__(self, bot, chat_id):
