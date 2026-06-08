@@ -412,67 +412,67 @@ async def intelligence_scanner():
             # ==========================================
 
             # 1
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "نجمة_الصباح_صاعد" and 1h_pattern_name == "قاع مزدوج" and 1h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "نجمة_الصباح_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_class_1h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 1: قاع مزدوج وانعكاس صاعد.")
 
             # 2
-            if patterns_1h == "نجمة_الصباح_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and 1d_pattern_name == "سايفر بيعي" and 1d_pattern_class == "هارمونيك - احترافي":
+            if patterns_1h == "نجمة_الصباح_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1d == "سايفر بيعي" and pattern_class_1d == "هارمونيك - احترافي":
                 score += 50
                 reasons.append("تحقق الشرط 2: هارمونيك سايفر بيعي احترافي.")
 
             # 3
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and 1h_pattern_name == "راية صاعدة" and 1d_pattern_name == "بوق متسع صاعد" and 1h_pattern_class == "اختراق استمراري" and 1d_pattern_class == "انفجار سعري":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "راية صاعدة" and pattern_name_1d == "بوق متسع صاعد" and pattern_class_1h == "اختراق استمراري" and pattern_class_1d == "انفجار سعري":
                 score += 50
                 reasons.append("تحقق الشرط 3: راية صاعدة وبوق متسع مع انفجار سعري.")
 
             # 4
-            if patterns_1h == "ابتلاع_صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and 1h_pattern_name == "سايفر بيعي" and 1h_pattern_class == "هارمونيك احترافي":
+            if patterns_1h == "ابتلاع_صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "سايفر بيعي" and pattern_class_1h == "هارمونيك احترافي":
                 score += 50
                 reasons.append("تحقق الشرط 4: سايفر بيعي احترافي على فريم الساعة.")
 
             # 5
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and 1h_pattern_name == "رأس وكتفين مقلوب" and 1h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "رأس وكتفين مقلوب" and pattern_class_1h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 5: رأس وكتفين مقلوب وانعكاس صاعد.")
 
             # 6
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ابتلاع_صاعد" and 1h_pattern_name == "قاع مزدوج" and 1h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ابتلاع_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_class_1h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 6: قاع مزدوج وانعكاس صاعد بتوافق فريمات متعددة.")
 
             # 7
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ثلاثة_للداخل_صاعد" and 1h_pattern_name == "قاع ثلاثي" and 2h_pattern_name == "قاع ثلاثي" and 1h_pattern_class == "انعكاسي صاعد" and 2h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "ثلاثة_للداخل_صاعد" and pattern_name_1h  == "قاع ثلاثي" and pattern_name_2h  == "قاع ثلاثي" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 7: قاع ثلاثي على فريمي الساعة والساعتين.")
 
             # 8
-            if patterns_1h == "قمة_الملقط_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and 1h_pattern_name == "قاع ثلاثي" and 2h_pattern_name == "قاع ثلاثي" and 1h_pattern_class == "انعكاسي صاعد" and 2h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "قمة_الملقط_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "قاع ثلاثي" and pattern_name_2h  == "قاع ثلاثي" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 8: انعكاس صاعد بقاع ثلاثي بعد قمة ملقط هابطة.")
 
             # 9
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ماروبوزو_صاعد" and patterns_1d == "الحزام_الممسوك_صاعد" and 1h_pattern_name == "قاع مزدوج" and 2h_pattern_name == "رأس وكتفين مقلوب" and 1h_pattern_class == "انعكاسي صاعد" and 2h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ماروبوزو_صاعد" and patterns_1d == "الحزام_الممسوك_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_name_2h  == "رأس وكتفين مقلوب" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 9: قاع مزدوج ورأس وكتفين مقلوب مع ماروبوزو.")
 
             # 10
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "ثلاثة_للداخل_صاعد" and patterns_4h == "ابتلاع_صاعد" and 1h_pattern_name == "رأس وكتفين" and 1h_pattern_class == "انعكاسي هابط":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "ثلاثة_للداخل_صاعد" and patterns_4h == "ابتلاع_صاعد" and pattern_name_1h  == "رأس وكتفين" and pattern_class_1h == "انعكاسي هابط":
                 score += 50
                 reasons.append("تحقق الشرط 10: رأس وكتفين انعكاسي هابط.")
 
             # 11
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الحزام_الممسوك_صاعد" and 1h_pattern_name == "قاع مزدوج" and 2h_pattern_name == "قاع مزدوج" and 4h_pattern_name == "رأس وكتفين مقلوب" and 1h_pattern_class == "انعكاسي صاعد" and 2h_pattern_class == "انعكاسي صاعد" and 4h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الحزام_الممسوك_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_name_2h  == "قاع مزدوج" and pattern_name_4h  == "رأس وكتفين مقلوب" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد" and pattern_class_4h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 11: قيعان مزدوجة ورأس وكتفين مقلوب.")
 
             # 12
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and 2h_pattern_name == "صندوق دارفاس صاعد" and 4h_pattern_name == "رأس وكتفين مقلوب" and 1d_pattern_name == "قاع مزدوج" and 2h_pattern_class == "استمراري/اختراق" and 4h_pattern_class == "انعكاسي صاعد" and 1d_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_2h  == "صندوق دارفاس صاعد" and pattern_name_4h  == "رأس وكتفين مقلوب" and pattern_name_1d == "قاع مزدوج" and pattern_class_2h == "استمراري/اختراق" and pattern_class_4h == "انعكاسي صاعد" and pattern_class_1d == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 12: صندوق دارفاس ونماذج انعكاسية صاعدة متزامنة.")
 
             # 13
-            if patterns_1h == "Neutral_Doji" and patterns_2h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "نجمة_المساء_هابط" and 2h_pattern_name == "بوق متسع هابط" and 2h_pattern_class == "انهيار سعري":
+            if patterns_1h == "Neutral_Doji" and patterns_2h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "نجمة_المساء_هابط" and pattern_name_2h  == "بوق متسع هابط" and pattern_class_2h == "انهيار سعري":
                 score += 50
                 reasons.append("تحقق الشرط 13: بوق متسع هابط وانهيار سعري.")
 
@@ -482,7 +482,7 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 14: نجمة صباح وابتلاع صاعد.")
 
             # 15
-            if patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "ابتلاع_صاعد" and 1d_pattern_name == "رأس وكتفين" and 1d_pattern_class == "انعكاسي هابط":
+            if patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "ابتلاع_صاعد" and pattern_name_1d == "رأس وكتفين" and pattern_class_1d == "انعكاسي هابط":
                 score += 50
                 reasons.append("تحقق الشرط 15: رأس وكتفين انعكاسي هابط على اليومي.")
 
@@ -502,28 +502,28 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 18: الجنود الثلاثة البيض على جميع الفريمات المحددة.")
 
             # 19
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and 2h_pattern_name == "رأس وكتفين مقلوب" and 4h_pattern_name == "رأس وكتفين مقلوب" and 2h_pattern_class == "انعكاسي صاعد" and 4h_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and patterns_1d == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_2h  == "رأس وكتفين مقلوب" and pattern_name_4h  == "رأس وكتفين مقلوب" and pattern_class_2h == "انعكاسي صاعد" and pattern_class_4h == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 19: رأس وكتفين مقلوب مع جنود بيض.")
 
             # 20
-            if patterns_1h == "ابتلاع_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and 1h_pattern_name == "قاع ثلاثي" and 2h_pattern_name == "قاع مزدوج" and 1d_pattern_name == "بوق متسع صاعد" and 1h_pattern_class == "انعكاسي صاعد" and 2h_pattern_class == "انعكاسي صاعد" and 1d_pattern_class == "انفجار سعري":
+            if patterns_1h == "ابتلاع_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "قاع ثلاثي" and pattern_name_2h  == "قاع مزدوج" and pattern_name_1d == "بوق متسع صاعد" and pattern_class_1h == "انعكاسي صاعد" and pattern_class_2h == "انعكاسي صاعد" and pattern_class_1d == "انفجار سعري":
                 score += 50
                 reasons.append("تحقق الشرط 20: قاع ثلاثي ومزدوج وبوق متسع مع انفجار سعري.")
 
             # 21
-            if patterns_1h == "الغربان_الثلاثة_السود_هابط" and patterns_2h == "ابتلاع_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "نجمة_المساء_هابط" and 1h_pattern_name == "خفاش بيعي" and 1d_pattern_name == "قاع مزدوج" and 1h_pattern_class == "هارمونيك احترافي" and 1d_pattern_class == "انعكاسي صاعد":
+            if patterns_1h == "الغربان_الثلاثة_السود_هابط" and patterns_2h == "ابتلاع_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "نجمة_المساء_هابط" and pattern_name_1h  == "خفاش بيعي" and pattern_name_1d == "قاع مزدوج" and pattern_class_1h == "هارمونيك احترافي" and pattern_class_1d == "انعكاسي صاعد":
                 score += 50
                 reasons.append("تحقق الشرط 21: خفاش بيعي احترافي وقاع مزدوج.")
 
             # 22
-            if patterns_2h == "ابتلاع_هابط" and patterns_4h == "ابتلاع_صاعد" and 1d_pattern_name == "راية صاعدة" and 1d_pattern_class == "اختراق استمراري":
+            if patterns_2h == "ابتلاع_هابط" and patterns_4h == "ابتلاع_صاعد" and pattern_name_1d == "راية صاعدة" and pattern_class_1d == "اختراق استمراري":
                 score += 50
                 reasons.append("تحقق الشرط 22: راية صاعدة واختراق استمراري.")
                    
             # ==========================================
             # 1
-            if patterns_1h == "ثلاثة_للخارج_هابط" and patterns_2h == "الحزام_الممسوك_هابط" and patterns_4h == "ابتلاع_هابط" and 1d_pattern_name == "راية صاعدة":
+            if patterns_1h == "ثلاثة_للخارج_هابط" and patterns_2h == "الحزام_الممسوك_هابط" and patterns_4h == "ابتلاع_هابط" and pattern_name_1d == "راية صاعدة":
                 score -= 50
                 reasons.append("تحقق الشرط 1: نماذج شموع بيعية (ثلاثة للخارج، حزام ممسوك، ابتلاع هابط) مع راية صاعدة على اليومي.")
 
@@ -533,17 +533,17 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 2: نموذج ثلاثة للداخل هابط ونجمة المساء دوجي هابط.")
 
             # 3
-            if 1h_pattern_name == "رأس وكتفين" and 1h_pattern_class == "انعكاسي هابط" and patterns_2h == "ابتلاع_هابط" and patterns_4h == "ابتلاع_هابط" and 1d_pattern_name == "راية هابطة" and 1d_pattern_class == "كسر استمراري":
+            if pattern_name_1h  == "رأس وكتفين" and pattern_class_1h == "انعكاسي هابط" and patterns_2h == "ابتلاع_هابط" and patterns_4h == "ابتلاع_هابط" and pattern_name_1d == "راية هابطة" and pattern_class_1d == "كسر استمراري":
                 score -= 50
                 reasons.append("تحقق الشرط 3: رأس وكتفين وابتلاع هابط مع راية هابطة استمرارية.")
 
             # 4
-            if patterns_2h == "نجمة_المساء_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and 1d_pattern_name == "قاع مزدوج" and 1d_pattern_class == "انعكاسي صاعد":
+            if patterns_2h == "نجمة_المساء_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and pattern_name_1d == "قاع مزدوج" and pattern_class_1d == "انعكاسي صاعد":
                 score -= 50
                 reasons.append("تحقق الشرط 4: نجمة المساء وغربان ثلاثة سود مع قاع مزدوج.")
 
             # 5
-            if 1d_trend_direction == "هابط" and 1d_channel_direction == "هابط" and 1d_channel_status == "STRONG_CONFIRMED" and 1h_pattern_name == "قاع ثلاثي" and 1h_pattern_class == "انعكاسي صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "ثلاثة_للخارج_صاعد":
+            if trend_direction_1d == "هابط" and channel_direction_1d == "هابط" and channel_status_1d == "STRONG_CONFIRMED" and pattern_name_1h  == "قاع ثلاثي" and pattern_class_1h == "انعكاسي صاعد" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "ثلاثة_للخارج_صاعد":
                 score -= 50
                 reasons.append("تحقق الشرط 5: ترند وقناة هابطة مؤكدة بقوة مع نماذج انعكاسية.")
 
@@ -553,7 +553,7 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 6: تواجد نموذج الجنود الثلاثة البيض صاعد على فريمات متعددة.")
 
             # 7
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and 1h_pattern_name == "قاع مزدوج" and 1h_pattern_class == "انعكاسي صاعد" and 2h_pattern_name == "قاع ثلاثي" and 2h_pattern_class == "انعكاسي صاعد" and 4h_pattern_name == "وتد هابط" and 4h_pattern_class == "استمراري" and patterns_1d == "ابتلاع_صاعد":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "قاع مزدوج" and pattern_class_1h == "انعكاسي صاعد" and pattern_name_2h  == "قاع ثلاثي" and pattern_class_2h == "انعكاسي صاعد" and pattern_name_4h  == "وتد هابط" and pattern_class_4h == "استمراري" and patterns_1d == "ابتلاع_صاعد":
                 score -= 50
                 reasons.append("تحقق الشرط 7: قيعان مزدوجة وثلاثية ووتد هابط مع جنود ثلاثة بيض وابتلاع صاعد.")
 
@@ -563,7 +563,7 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 8: ابتلاع هابط وتعارض مع نماذج صاعدة على فريمات أكبر.")
 
             # 9
-            if patterns_1h == "ابتلاع_هابط" and patterns_2h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "الغربان_الثلاثة_السود_هابط" and 2h_pattern_name == "سايفر شرائي" and 2h_pattern_class == "هارمونيك احترافي":
+            if patterns_1h == "ابتلاع_هابط" and patterns_2h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "الغربان_الثلاثة_السود_هابط" and patterns_1d == "الغربان_الثلاثة_السود_هابط" and pattern_name_2h  == "سايفر شرائي" and pattern_class_2h == "هارمونيك احترافي":
                 score -= 50
                 reasons.append("تحقق الشرط 9: سيطرة للغربان الثلاثة السود وابتلاع هابط رغم وجود هارمونيك سايفر شرائي.")
 
@@ -573,32 +573,32 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 10: حزام ممسوك وابتلاع هابط قوي دون وجود ابتلاع صاعد مضاد.")
 
             # 11
-            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and 1h_pattern_name == "صندوق دارفاس صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and 1h_trend_direction == "هابط" and 2h_trend_direction == "هابط" and 4h_trend_direction == "هابط":
+            if patterns_1h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_1h  == "صندوق دارفاس صاعد" and patterns_4h == "الجنود_الثلاثة_البيض_صاعد" and trend_direction_1h == "هابط" and trend_direction_2h == "هابط" and trend_direction_4h == "هابط":
                 score -= 50
                 reasons.append("تحقق الشرط 11: نماذج صاعدة تسبح ضد اتجاه عام هابط على جميع الفريمات.")
 
             # 12
-            if patterns_1h == "هارامي_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and 4h_pattern_name == "رأس وكتفين" and 4h_pattern_class == "انعكاسي هابط" and 1d_pattern_name == "علم هابط" and 1d_pattern_class == "كسر استمراري" and patterns_1d == "ابتلاع_صاعد":
+            if patterns_1h == "هارامي_هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and pattern_name_4h  == "رأس وكتفين" and pattern_class_4h == "انعكاسي هابط" and pattern_name_1d == "علم هابط" and pattern_class_1d == "كسر استمراري" and patterns_1d == "ابتلاع_صاعد":
                 score -= 50
                 reasons.append("تحقق الشرط 12: هارامي هابط ورأس وكتفين مع علم هابط كسر استمراري.")
 
             # 13
-            if patterns_2h == "في_الرقبة_هابط" and 2h_pattern_name == "راية هابطة" and patterns_4h == "الغربان_الثلاثة_السود_هابط":
+            if patterns_2h == "في_الرقبة_هابط" and pattern_name_2h  == "راية هابطة" and patterns_4h == "الغربان_الثلاثة_السود_هابط":
                 score -= 50
                 reasons.append("تحقق الشرط 13: نموذج في الرقبة وراية هابطة وغربان ثلاثة سود هابطة.")
 
             # 14
-            if 1d_pattern_name == "رأس وكتفين" and 1d_pattern_class == "انعكاسي هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "قاع_الملقط_صاعد" and 1d_pattern_class != "انعكاسي صاعد":
+            if pattern_name_1d == "رأس وكتفين" and pattern_class_1d == "انعكاسي هابط" and patterns_2h == "الجنود_الثلاثة_البيض_صاعد" and patterns_4h == "ثلاثة_للخارج_صاعد" and patterns_1d == "قاع_الملقط_صاعد" and pattern_class_1d != "انعكاسي صاعد":
                 score -= 50
                 reasons.append("تحقق الشرط 14: رأس وكتفين انعكاسي هابط مع غياب الانعكاس الصاعد اليومي.")
 
             # 15
-            if patterns_1h == "هارامي_صاعد" and patterns_4h == "ابتلاع_صاعد" and patterns_1d == "الغربان_الثلاثة_السود_هابط" and 1d_trend_direction != "صاعد" and patterns_1d != "ابتلاع_صاعد" and patterns_1d != "مطرقة":
+            if patterns_1h == "هارامي_صاعد" and patterns_4h == "ابتلاع_صاعد" and patterns_1d == "الغربان_الثلاثة_السود_هابط" and trend_direction_1d != "صاعد" and patterns_1d != "ابتلاع_صاعد" and patterns_1d != "مطرقة":
                 score -= 50
                 reasons.append("تحقق الشرط 15: غربان ثلاثة سود يومية مع ترند غير صاعد.")
 
             # 16
-            if 1d_trend_direction == "هابط" and 1d_channel_status == "VALID" and 1d_channel_direction == "هابط" and patterns_1d == "دوجي_شاهد_القبر_هابط" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "ابتلاع_صاعد":
+            if trend_direction_1d == "هابط" and channel_status_1d == "VALID" and channel_direction_1d == "هابط" and patterns_1d == "دوجي_شاهد_القبر_هابط" and patterns_2h == "ابتلاع_صاعد" and patterns_4h == "ابتلاع_صاعد":
                 score -= 50
                 reasons.append("تحقق الشرط 16: ترند وقناة هابطة صحيحة مع دوجي شاهد القبر هابط.")
 
@@ -613,12 +613,12 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 18: سيطرة كاملة للابتلاع الصاعد والجنود الثلاثة البيض.")
 
             # 19
-            if patterns_1h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "ابتلاع_هابط" and patterns_1h != "شمعة_ابتلاعية_صعودية" and patterns_1h != "المطرقة" and patterns_4h != "ابتلاع_صاعد" and patterns_4h != "نجمة_الصباح" and 1h_trend_direction != "صعودي" and 2h_trend_direction != "صعودي" and 4h_trend_direction != "صعودي" and 1d_trend_direction != "صعودي":
+            if patterns_1h == "الغربان_الثلاثة_السود_هابط" and patterns_4h == "ابتلاع_هابط" and patterns_1h != "شمعة_ابتلاعية_صعودية" and patterns_1h != "المطرقة" and patterns_4h != "ابتلاع_صاعد" and patterns_4h != "نجمة_الصباح" and trend_direction_1h != "صعودي" and trend_direction_2h != "صعودي" and trend_direction_4h != "صعودي" and trend_direction_1d != "صعودي":
                 score -= 50
                 reasons.append("تحقق الشرط 19: غربان ثلاثة سود وابتلاع هابط مع انعدام الترند الصعودي في كل الفريمات.")
 
             # 20
-            if 1h_pattern_name == "بوق متسع هابط" and 1h_pattern_class == "انهيار سعري" and 2h_pattern_name == "علم هابط" and 2h_pattern_class == "كسر استمراري" and 4h_pattern_name == "راية هابطة" and 4h_pattern_class == "كسر استمراري" and patterns_2h != "نجمة_الصباح_صاعد" and patterns_4h != "هارامي_صاعد" and patterns_1d != "الجنود_الثلاثة_البيض_صاعد":
+            if pattern_name_1h  == "بوق متسع هابط" and pattern_class_1h == "انهيار سعري" and pattern_name_2h  == "علم هابط" and pattern_class_2h == "كسر استمراري" and pattern_name_4h  == "راية هابطة" and pattern_class_4h == "كسر استمراري" and patterns_2h != "نجمة_الصباح_صاعد" and patterns_4h != "هارامي_صاعد" and patterns_1d != "الجنود_الثلاثة_البيض_صاعد":
                 score -= 50
                 reasons.append("تحقق الشرط 20: بوق متسع هابط (انهيار سعري) مع علم وراية هابطة استمرارية.")
 
