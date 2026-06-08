@@ -398,7 +398,12 @@ async def intelligence_scanner():
             ema50_1h = float(coin.get('ema_50_1h') or 0)
             ema100_1h = float(coin.get('ema_100_1h') or 0)
 
-
+            upper = float(coin.get('bb_upper_15m') or 0) 
+            lower = float(coin.get('bb_lower_15m') or 0) 
+            middle = float(coin.get('bb_middle_15m') or 1) 
+            
+            kc_upper = float(coin.get('kc_upper_15m') or 0) 
+            kc_lower = float(coin.get('kc_lower_15m') or 0) 
             is_uptrend = (ema20_1h > ema50_1h > ema100_1h)
             is_downtrend = (ema20_1h < ema50_1h < ema100_1h)
 
