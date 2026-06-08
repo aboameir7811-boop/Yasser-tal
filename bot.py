@@ -394,6 +394,11 @@ async def intelligence_scanner():
             channel_touches_1d = int(coin.get('1d_channel_touches') or 0)
             channel_status_1d = coin.get('1d_channel_status', 'NONE')
             
+            ema20_1h = float(coin.get('ema_20_1h') or 0)
+            ema50_1h = float(coin.get('ema_50_1h') or 0)
+            ema100_1h = float(coin.get('ema_100_1h') or 0)
+
+
             is_uptrend = (ema20_1h > ema50_1h > ema100_1h)
             is_downtrend = (ema20_1h < ema50_1h < ema100_1h)
 
