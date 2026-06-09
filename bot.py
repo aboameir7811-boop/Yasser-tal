@@ -592,7 +592,7 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 5: ترند وقناة هابطة مؤكدة بقوة مع نماذج انعكاسية.")
 
             # 6
-            is_three_white_soldiers_multi_tf_sell_score = (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
+            is_three_white_soldiers_multi_tf_sell_score = (patterns_1h == "Normal") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
             if is_three_white_soldiers_multi_tf_sell_score:
                 score -= 50
                 reasons.append("تحقق الشرط 6: تواجد نموذج الجنود الثلاثة البيض صاعد على فريمات متعددة.")
@@ -681,23 +681,17 @@ async def intelligence_scanner():
                 score -= 50
                 reasons.append("تحقق الشرط 20: بوق متسع هابط (انهيار سعري) مع علم وراية هابطة استمرارية.")
             # ==========================================
-            # ⚡ [ الانفجار اللحظي الكلاسيكي - في حال لم يكن هناك رصد مبكر ]
+            # ⚡ [ الانفجار اللحظي ورصد الفخاخ - التقييم النهائي ]
             # ==========================================
-            # تم تعديل elif إلى if لتجنب أي تعارض أو خطأ برمجي
+            # تم حذف الاعتماد على الدعم والمقاومة كما طلبت
+            # الاعتماد الكلي الآن على قوة السكور (صائد التلاعبات)
+            
             if score >= 50:
-                if is_near_support_general or is_uptrend or is_at_tf_support:
-                    signal_type = "LONG"
-                else:
-                    reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
-
+                signal_type = "LONG"
             elif score <= -50:
-                if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
-                    signal_type = "SHORT"
-                else:
-                    reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي")
-                    
+                signal_type = "SHORT"
             # ==========================================
-            # 🚀 إطلاق إشارة التلجرام فوراً (تم إلغاء الرفع لسوبابيس للسرعة)
+            # 🚀 إطلاق إشارة التلجرام فوراً
             # ==========================================
             if signal_type != "NONE":  
                 
@@ -715,7 +709,7 @@ async def intelligence_scanner():
         import logging 
         logging.error(f"❌ خطأ داخلي في الرادار القناص v11.1: {e}") 
 
-    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط (v11.1) بنجاح.")
+    print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط والفخاخ (v11.1) بنجاح.")
     
 
 import hashlib
@@ -730,10 +724,10 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
     color_circle = "🟢" if is_long else "🔴"
     
     text = (
-        f"🚨 <b>إشعار مهم: فرصة {trade_label}!</b> {emoji_main}\n\n"
+        f"🚨 <b>إشعار مهم {trade_label}!</b> {emoji_main}\n\n"
         f"🪙 <b>العملة:</b> <code>{symbol}</code>\n"
         f"💵 <b>السعر لحظة الرصد:</b> <code>{price}</code>\n"
-        f"🔥 <b>درجة الانفجار:</b> <code>{score}/100</code> {color_circle}\n"
+        f"🔥 <b>قوة الإشارة:</b> <code>{score}</code> {color_circle}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
         f"🕵️‍♂️ <b>الأسرار المرصودة:</b>\n"
     )
@@ -766,7 +760,6 @@ async def trigger_golden_signal(symbol, score, reasons, fib_618, price, directio
         # نسخة احتياطية في حال خطأ التنسيق لضمان عدم ضياع الصفقة
         clean_text = f"إشارة {trade_label} لعملة {symbol}\nالسعر: {price}\nالسكور: {score}"
         await bot.send_message(chat_id=ADMIN_ID, text=f"⚠️ خطأ في التنسيق، إليك البيانات الأساسية:\n\n{clean_text}")
-# ==========================================
 # ==========================================
 # دالة مساعدة لتقييم النسبة المئوية
 # ==========================================
