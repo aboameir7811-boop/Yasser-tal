@@ -402,6 +402,46 @@ async def intelligence_scanner():
             ema100 = float(coin.get('ema_100_15m') or 0) 
             rsi_15m = float(coin.get('rsi_15m') or 50) 
 
+            # 1. مجموعة القوة النسبية (RSI)
+            rsi_1h = float(coin.get('rsi_1h') or 0.0)
+            rsi_2h = float(coin.get('rsi_2h') or 0.0)
+            rsi_4h = float(coin.get('rsi_4h') or 0.0)
+            rsi_1d = float(coin.get('rsi_1d') or 0.0)
+            
+            # 2. مجموعة متوسط الحركة الاتجاهي (ADX)
+            adx_1h = float(coin.get('adx_1h') or 0.0)
+            adx_2h = float(coin.get('adx_2h') or 0.0)
+            adx_4h = float(coin.get('adx_4h') or 0.0)
+            adx_1d = float(coin.get('adx_1d') or 0.0)
+            
+            # 3. مجموعة الماكد (MACD System)
+            macd_1h = float(coin.get('macd_1h') or 0.0)
+            macd_signal_1h = float(coin.get('macd_signal_1h') or 0.0)
+            macd_hist_1h = float(coin.get('macd_hist_1h') or 0.0)
+            
+            macd_2h = float(coin.get('macd_2h') or 0.0)
+            macd_signal_2h = float(coin.get('macd_signal_2h') or 0.0)
+            macd_hist_2h = float(coin.get('macd_hist_2h') or 0.0)
+            
+            macd_4h = float(coin.get('macd_4h') or 0.0)
+            macd_signal_4h = float(coin.get('macd_signal_4h') or 0.0)
+            macd_hist_4h = float(coin.get('macd_hist_4h') or 0.0)
+            
+            macd_1d = float(coin.get('macd_1d') or 0.0)
+            macd_signal_1d = float(coin.get('macd_signal_1d') or 0.0)
+            macd_hist_1d = float(coin.get('macd_hist_1d') or 0.0)
+            
+            # 4. مجموعة تدفق الحجم (Volume & OBV)
+            obv_1h = float(coin.get('obv_1h') or 0.0)
+            obv_2h = float(coin.get('obv_2h') or 0.0)
+            obv_4h = float(coin.get('obv_4h') or 0.0)
+            obv_1d = float(coin.get('obv_1d') or 0.0)
+            
+            obv_slope_1h = float(coin.get('obv_slope_1h') or 0.0)
+            obv_slope_2h = float(coin.get('obv_slope_2h') or 0.0)
+            obv_slope_4h = float(coin.get('obv_slope_4h') or 0.0)
+            obv_slope_1d = float(coin.get('obv_slope_1d') or 0.0)
+
             upper = float(coin.get('bb_upper_15m') or 0) 
             lower = float(coin.get('bb_lower_15m') or 0) 
             middle = float(coin.get('bb_middle_15m') or 1) 
@@ -423,7 +463,7 @@ async def intelligence_scanner():
             
             has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2)
             is_sqz = bbw_15m < 0.065
-                        # ==========================================
+            # ==========================================
             # 🧠 [ شروط الشراء ]
             # ==========================================
 
@@ -604,7 +644,7 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 7: قيعان مزدوجة وثلاثية ووتد هابط مع جنود ثلاثة بيض وابتلاع صاعد.")
 
             # 8
-            is_bearish_engulfing_conflicting_with_larger_tf_bullish = (patterns_1h == "ابتلاع_هابط") and (patterns_2h == "ثلاثة_للخارج_صاعد") and (patterns_4h == "مطرقة_مقلوبة_صاعد") and (patterns_1d == "ابتلاع_صاعد") and (patterns_1h != "ابتلاع_صاعد") and (patterns_1h != "مطرقة_صاعد")
+            is_bearish_engulfing_conflicting_with_larger_tf_bullish = (patterns_1h == "ابتلاع_هابط") and (patterns_2h == "ثلاثة_للخارج_صاعد") and (patterns_4h == "مطرقة_مقلوبة_صاعد") and (patterns_1d == "ابتلاع_صاعد") and (patterns_1h == "ابتلاع_صاعد") and (patterns_1h == "مطرقة_صاعد")
             if is_bearish_engulfing_conflicting_with_larger_tf_bullish:
                 score -= 50
                 reasons.append("تحقق الشرط 8: ابتلاع هابط وتعارض مع نماذج صاعدة على فريمات أكبر.")
@@ -616,7 +656,7 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 9: سيطرة للغربان الثلاثة السود وابتلاع هابط رغم وجود هارمونيك سايفر شرائي.")
 
             # 10
-            is_strong_bearish_hold_and_engulfing_without_bullish_counter = (patterns_1h == "الحزام_الممسوك_هابط") and (patterns_2h == "الحزام_الممسوك_هابط") and (patterns_4h == "ابتلاع_هابط") and (patterns_1d == "ابتلاع_هابط") and (patterns_4h != "ابتلاع_صاعد") and (patterns_1d != "ابتلاع_صاعد")
+            is_strong_bearish_hold_and_engulfing_without_bullish_counter = (patterns_1h == "الحزام_الممسوك_هابط") and (patterns_2h == "الحزام_الممسوك_هابط") and (patterns_4h == "ابتلاع_هابط") and (patterns_1d == "ابتلاع_هابط") and (patterns_4h == "ابتلاع_صاعد") and (patterns_1d == "ابتلاع_صاعد")
             if is_strong_bearish_hold_and_engulfing_without_bullish_counter:
                 score -= 50
                 reasons.append("تحقق الشرط 10: حزام ممسوك وابتلاع هابط قوي دون وجود ابتلاع صاعد مضاد.")
@@ -640,13 +680,13 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 13: نموذج في الرقبة وراية هابطة وغربان ثلاثة سود هابطة.")
 
             # 14
-            is_daily_head_shoulders_without_bullish_reversal_confirmation = (pattern_name_1d == "رأس وكتفين") and (pattern_class_1d == "انعكاسي هابط") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "ثلاثة_للخارج_صاعد") and (patterns_1d == "قاع_الملقط_صاعد") and (pattern_class_1d != "انعكاسي صاعد")
+            is_daily_head_shoulders_without_bullish_reversal_confirmation = (pattern_name_1d == "رأس وكتفين") and (pattern_class_1d == "انعكاسي هابط") and (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and (patterns_4h == "ثلاثة_للخارج_صاعد") and (patterns_1d == "قاع_الملقط_صاعد") and (pattern_class_1d == "انعكاسي صاعد")
             if is_daily_head_shoulders_without_bullish_reversal_confirmation:
                 score -= 50
                 reasons.append("تحقق الشرط 14: رأس وكتفين انعكاسي هابط مع غياب الانعكاس الصاعد اليومي.")
 
             # 15
-            is_daily_three_black_crows_with_non_bullish_trend = (patterns_1h == "هارامي_صاعد") and (patterns_4h == "ابتلاع_صاعد") and (patterns_1d == "الغربان_الثلاثة_السود_هابط") and (trend_direction_1d != "صاعد") and (patterns_1d != "ابتلاع_صاعد") and (patterns_1d != "مطرقة_صاعد")
+            is_daily_three_black_crows_with_non_bullish_trend = (patterns_1h == "هارامي_صاعد") and (patterns_4h == "ابتلاع_صاعد") and (patterns_1d == "الغربان_الثلاثة_السود_هابط") and (trend_direction_1d == "صاعد") and (patterns_1d == "ابتلاع_صاعد") and (patterns_1d == "مطرقة_صاعد")
             if is_daily_three_black_crows_with_non_bullish_trend:
                 score -= 50
                 reasons.append("تحقق الشرط 15: غربان ثلاثة سود يومية مع ترند غير صاعد.")
@@ -670,30 +710,333 @@ async def intelligence_scanner():
                 reasons.append("تحقق الشرط 18: سيطرة كاملة للابتلاع الصاعد والجنود الثلاثة البيض.")
 
             # 19
-            is_bearish_crows_and_engulfing_without_any_bullish_trend = (patterns_1h == "الغربان_الثلاثة_السود_هابط") and (patterns_4h == "ابتلاع_هابط") and (patterns_1h != "ابتلاع_صاعد") and (patterns_1h != "مطرقة_صاعد") and (patterns_4h != "ابتلاع_صاعد") and (patterns_4h != "نجمة_الصباح_صاعد") and (trend_direction_1h != "صاعد") and (trend_direction_2h != "صاعد") and (trend_direction_4h != "صاعد") and (trend_direction_1d != "صاعد")
-            if is_bearish_crows_and_engulfing_without_any_bullish_trend:
-                score -= 50
-                reasons.append("تحقق الشرط 19: غربان ثلاثة سود وابتلاع هابط مع انعدام الترند الصاعد في كل الفريمات.")
-
-            # 20
-            is_bearish_broadening_with_continuation_flags_and_pennants = (pattern_name_1h == "بوق متسع هابط") and (pattern_class_1h == "انهيار سعري") and (pattern_name_2h == "علم هابط") and (pattern_class_2h == "كسر استمراري") and (pattern_name_4h == "راية هابطة") and (pattern_class_4h == "كسر استمراري") and (patterns_2h != "نجمة_الصباح_صاعد") and (patterns_4h != "هارامي_صاعد") and (patterns_1d != "الجنود_الثلاثة_البيض_صاعد")
+            is_bearish_broadening_with_continuation_flags_and_pennants = (pattern_name_1h == "بوق متسع هابط") and (pattern_class_1h == "انهيار سعري") and (pattern_name_2h == "علم هابط") and (pattern_class_2h == "كسر استمراري") and (pattern_name_4h == "راية هابطة") and (pattern_class_4h == "كسر استمراري") and (patterns_2h == "نجمة_الصباح_صاعد") and (patterns_4h == "هارامي_صاعد") and (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
             if is_bearish_broadening_with_continuation_flags_and_pennants:
                 score -= 50
                 reasons.append("تحقق الشرط 20: بوق متسع هابط (انهيار سعري) مع علم وراية هابطة استمرارية.")
+            
+            # ⚙️ مؤشر المؤشرات 1: زخم انفجاري وتدفق سيولة قوي (بناءً على الحالة 1)
+            is_condition_1_explosive = (
+                (rsi_1h >= 80 and rsi_2h >= 70 and rsi_1d >= 60) and
+                (adx_1h >= 75 and adx_2h >= 60 and adx_1d >= 30) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_1d > 0) and
+                (macd_1h > macd_signal_1h) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_1_explosive:
+                score += 25
+                reasons.append("مؤشر 1")
+
+            # ⚙️ مؤشر المؤشرات 2: صعود مستدام على الفريمات المتوسطة (بناءً على الحالة 2)
+            is_condition_2_sustained = (
+                (rsi_1h >= 65 and rsi_2h >= 80 and rsi_4h >= 85) and
+                (adx_2h >= 70 and adx_4h >= 80) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0)
+            )
+            if is_condition_2_sustained:
+                score += 25
+                reasons.append("مؤشر 2")
+
+            # ⚙️ مؤشر المؤشرات 3: صعود جنوني / بارابوليك (بناءً على الحالة 3)
+            is_condition_3_parabolic = (
+                (rsi_1h >= 85 and rsi_4h >= 85 and rsi_1d >= 80) and
+                (adx_1h >= 70 and adx_4h >= 85 and adx_1d >= 70) and
+                (macd_hist_1h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_4h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_3_parabolic:
+                score += 25
+                reasons.append("مؤشر 3")
+
+            # ⚙️ مؤشر المؤشرات 4: تسارع الزخم على الفريمات اللحظية (بناءً على الحالة 4)
+            is_condition_4_acceleration = (
+                (rsi_1h >= 65 and rsi_2h >= 80 and rsi_4h >= 80) and
+                (adx_1h >= 60 and adx_2h >= 70 and adx_4h >= 75) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0) and
+                (macd_1h > macd_signal_1h and macd_2h > macd_signal_2h) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0)
+            )
+            if is_condition_4_acceleration:
+                score += 25
+                reasons.append("مؤشر 4")
+
+            # ⚙️ مؤشر المؤشرات 5: بداية استيقاظ / انعكاس مبكر (بناءً على الحالة 5)
+            # هنا الماكد كان تحت الصفر وبدأ يعطي إشارات خضراء، والـ ADX على الساعة ضعيف لكنه ينهض
+            is_condition_5_early_reversal = (
+                (rsi_1h >= 55 and rsi_1h <= 65 and rsi_2h >= 70 and rsi_1d >= 70) and
+                (adx_1h <= 25 and adx_4h >= 50) and
+                (macd_signal_1h < 0 and macd_hist_1h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_5_early_reversal:
+                score += 25
+                reasons.append("مؤشر 5")
+
+            # ⚙️ مؤشر المؤشرات 6: تقاطع إيجابي سريع على فريم الساعة فقط (بناءً على الحالة 6)
+            is_condition_6_quick_scalp = (
+                (rsi_1h >= 75) and
+                (adx_1h >= 60) and
+                (macd_hist_1h > 0 and macd_1h > macd_signal_1h) and
+                (obv_slope_1h > 0)
+            )
+            if is_condition_6_quick_scalp:
+                score += 25
+                reasons.append("مؤشر 6")
+
+            # ⚙️ التعديل على مؤشر 7: تغيير macd_1h ليصبح أكبر من الصفر
+            is_condition_7_deep_bottom = (
+                (rsi_1h >= 55 and rsi_2h <= 60 and rsi_4h >= 70) and
+                (adx_1h >= 70 and adx_4h >= 80) and
+                (macd_1h > 0 and macd_4h < 0) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0) and
+                (obv_slope_1h > 0 and obv_slope_4h > 0)
+            )
+            if is_condition_7_deep_bottom:
+                score += 25
+                reasons.append("مؤشر 7")
+
+            # ⚙️ مؤشر المؤشرات 8: اختراق يومي مع زخم عالي جداً للمضاربة (بناءً على الحالة 8)
+            is_condition_8_fresh_breakout = (
+                (rsi_1h >= 75 and rsi_2h >= 85 and rsi_1d >= 60) and
+                (adx_1h >= 90 and adx_2h >= 80 and adx_1d >= 40) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_1d > 0) and
+                (macd_1h > macd_signal_1h) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_8_fresh_breakout:
+                score += 25
+                reasons.append("مؤشر 8")
+                
+            # ⚙️ التعديل على مؤشر 9: إضافة شرط الهستوجرام السالب على فريم الساعة
+            is_condition_9_strong_uptrend_pullback = (
+                (rsi_1h >= 60 and rsi_2h >= 75 and rsi_4h >= 80 and rsi_1d >= 70) and
+                (adx_2h >= 85 and adx_4h >= 70 and adx_1d >= 50) and
+                (macd_hist_1h < 0 and macd_hist_2h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_9_strong_uptrend_pullback:
+                score += 25
+                reasons.append("مؤشر 9")
+
+            # ⚙️ مؤشر المؤشرات 10: قناة صاعدة قوية على فريم الساعتين مع تشبع شرائي يومي
+            # لاحظ: تم دمج شروط الاتجاه (Trend) والقناة (Channel) مع المؤشرات
+            is_condition_10_confirmed_channel_uptrend = (
+                (rsi_2h >= 65 and rsi_4h >= 75 and rsi_1d >= 90) and
+                (adx_2h >= 70 and adx_4h >= 90 and adx_1d >= 90) and
+                (macd_hist_2h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_2h > 0 and obv_slope_4h > 0) and
+                (coin.get('2h_trend_direction') == 'صاعد') and
+                (coin.get('2h_channel_status') == 'STRONG_CONFIRMED')
+            )
+            if is_condition_10_confirmed_channel_uptrend:
+                score += 25
+                reasons.append("مؤشر 10")
+
+            # ⚙️ التعديل على مؤشر 11: تغيير macd_1h ليصبح أكبر من الصفر
+            is_condition_11_small_tf_reversal = (
+                (rsi_1h >= 60 and rsi_2h >= 70 and rsi_1d <= 40) and
+                (adx_1h >= 60 and adx_2h >= 60) and
+                (macd_1h > 0 and macd_hist_1h > 0 and macd_hist_2h > 0) and
+                (obv_slope_2h > 0 and obv_slope_4h > 0)
+            )
+            if is_condition_11_small_tf_reversal:
+                score += 25
+                reasons.append("مؤشر 11")
+
+            # ⚙️ مؤشر المؤشرات 12: استمرار الصعود القوي (Continuation)
+            # جميع المؤشرات تدل على صحة الاتجاه والسيولة تتدفق بقوة
+            is_condition_12_solid_continuation = (
+                (rsi_1h >= 70 and rsi_2h >= 80 and rsi_4h >= 80 and rsi_1d >= 60) and
+                (adx_2h >= 75 and adx_4h >= 60) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_12_solid_continuation:
+                score += 25
+                reasons.append("مؤشر 12")
+
+            # ⚙️ مؤشر المؤشرات 13: تجميع إيجابي / صعود هادئ (Accumulation)
+            # الزخم (ADX) ضعيف نسبياً، ولكن السيولة (OBV) والماكد في حالة تعافي
+            is_condition_13_quiet_accumulation = (
+                (rsi_1h >= 50 and rsi_2h >= 65 and rsi_4h >= 60 and rsi_1d >= 70) and
+                (adx_1h <= 30 and adx_4h <= 30 and adx_1d <= 20) and
+                (macd_hist_2h > 0 and macd_hist_4h > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_13_quiet_accumulation:
+                score += 25
+                reasons.append("مؤشر 13")
+
+            # ⚙️ مؤشر المؤشرات 14: ذروة الشراء / انفجار سعري هائل (Climax/Overbought)
+            is_condition_14_extreme_overbought = (
+                (rsi_1h >= 90 and rsi_2h >= 90 and rsi_4h >= 85 and rsi_1d >= 75) and
+                (adx_1h >= 90 and adx_2h >= 90 and adx_4h >= 80) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0)
+            )
+            if is_condition_14_extreme_overbought:
+                score += 25
+                reasons.append("مؤشر 14")
+
+            # ⚙️ مؤشر المؤشرات 15: اختراق نماذج فنية كبرى (Super Breakout)
+            # دمج أندر وأقوى النماذج الانعكاسية والاستمرارية مع مؤشرات ممتلئة (RSI > 90, ADX > 90)
+            is_condition_15_super_pattern_breakout = (
+                (rsi_1h >= 90 and rsi_2h >= 90 and rsi_4h >= 90 and rsi_1d >= 85) and
+                (adx_1h >= 90 and adx_2h >= 90 and adx_4h >= 90 and adx_1d >= 90) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0) and
+                (coin.get('2h_pattern_name') == "صندوق دارفاس صاعد" or coin.get('4h_pattern_name') == "رأس وكتفين مقلوب" or coin.get('1d_pattern_name') == "قاع مزدوج")
+            )
+            if is_condition_15_super_pattern_breakout:
+                score += 25  
+                reasons.append("مؤشر 15")
+
+            # ⚙️ مؤشر المؤشرات 16: تحذير انهيار سعري (Dump Warning)
+            # نموذج هابط، RSI متشبع بالبيع، وماكد سلبي بقوة، وسيولة خارجة (OBV Slope < 0)
+            is_condition_16_bearish_dump_warning = (
+                (rsi_1h <= 35 and rsi_2h <= 25 and rsi_4h <= 30 and rsi_1d <= 40) and
+                (macd_hist_1h < 0 and macd_hist_2h < 0 and macd_hist_4h < 0 and macd_hist_1d < 0) and
+                (obv_slope_2h < 0 and obv_slope_4h < 0 and obv_slope_1d < 0) and
+                (coin.get('2h_pattern_name') == "بوق متسع هابط" or coin.get('2h_pattern_class') == "انهيار سعري")
+            )
+            if is_condition_16_bearish_dump_warning:
+                score -= 30  
+                reasons.append("مؤشر 16")
+                
+            # ⚙️ مؤشر المؤشرات 17: ارتداد من قاع عميق جداً وبداية الإيجابية على فريم 4 ساعات
+            # اليومي لا يزال سلبي جداً، لكن الـ 4 ساعات والساعتين يشهدان دخول سيولة (OBV) وانعكاس ماكد
+            is_condition_17_4h_bottom_reversal = (
+                (rsi_1h >= 55 and rsi_4h >= 60 and rsi_1d <= 40) and
+                (adx_4h >= 60) and
+                (macd_1d < 0 and macd_4h < 0) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0)
+            )
+            if is_condition_17_4h_bottom_reversal:
+                score += 25
+                reasons.append("مؤشر 17")
+
+            # ⚙️ مؤشر المؤشرات 18: ترييح/تصحيح بسيط على فريم الساعة داخل اتجاه صاعد قوي
+            # الزخم على الساعة مات (ADX=8) والسيولة مائلة للسلبية، لكن الفريمات الأكبر إيجابية جداً
+            is_condition_18_1h_pullback_uptrend = (
+                (rsi_1h <= 55 and rsi_2h >= 75 and rsi_4h >= 70 and rsi_1d >= 65) and
+                (adx_1h <= 20 and adx_2h >= 65 and adx_4h >= 60) and
+                (macd_hist_1h > 0 and macd_hist_4h > 0) and
+                (obv_slope_1h < 0 and obv_slope_2h > 0 and obv_slope_4h > 0)
+            )
+            if is_condition_18_1h_pullback_uptrend:
+                score += 25
+                reasons.append("مؤشر 18")
+
+            # ⚙️ مؤشر المؤشرات 19: تعافي هادئ وتجميع بعد موجة هبوط
+            # الماكد تحت الصفر لكن الهستوجرام بدأ يخضر، والسيولة تتدفق بإيجابية في كل الفريمات
+            is_condition_19_steady_recovery = (
+                (rsi_1h >= 50 and rsi_2h >= 60 and rsi_1d >= 50) and
+                (macd_1h < 0 and macd_1d < 0) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_19_steady_recovery:
+                score += 25
+                reasons.append("مؤشر 19")
+
+            # ⚙️ مؤشر المؤشرات 20: انفجار زخم مفاجئ على فريم الساعة (Micro-Breakout)
+            is_condition_20_1h_momentum_spike = (
+                (rsi_1h >= 65 and rsi_4h <= 55) and
+                (adx_1h >= 90 and adx_4h <= 35) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0)
+            )
+            if is_condition_20_1h_momentum_spike:
+                score += 25
+                reasons.append("مؤشر 20")
+
+            # ⚙️ مؤشر المؤشرات 21: ترند صاعد أسطوري (Hyper-Parabolic)
+            is_condition_21_a_hyper_parabolic = (
+                (rsi_1h >= 85 and rsi_4h >= 85 and rsi_1d >= 80) and
+                (adx_2h >= 90 and adx_4h >= 90 and adx_1d >= 80) and
+                (macd_hist_1h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_4h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_21_a_hyper_parabolic:
+                score += 25
+                reasons.append("مؤشر 21")
+
+            # ⚙️ مؤشر المؤشرات 22: اختراق نموذج رأس وكتفين مقلوب على الفريمات المتوسطة
+            is_condition_21_b_inv_hs_breakout = (
+                (rsi_1h >= 85 and rsi_4h >= 80 and rsi_1d >= 65) and
+                (adx_2h >= 70 and adx_4h >= 75) and
+                (macd_hist_1h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0) and
+                (coin.get('2h_pattern_name') == "رأس وكتفين مقلوب" or coin.get('4h_pattern_name') == "رأس وكتفين مقلوب")
+            )
+            if is_condition_21_b_inv_hs_breakout:
+                score += 25
+                reasons.append("مؤشر 22")
+
+            # ⚙️ مؤشر المؤشرات 23 ترييح لحظي لاختراق نماذج كبرى (بوق متسع صاعد وقاع مزدوج)
+            # خروج سيولة بسيط على الساعة، لكن الفريمات الأكبر تنفجر
+            is_condition_22_a_mega_pattern_breakout = (
+                (rsi_2h >= 75 and rsi_4h >= 75 and rsi_1d >= 85) and
+                (adx_2h >= 70 and adx_4h >= 80 and adx_1d >= 85) and
+                (macd_hist_2h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h < 0 and obv_slope_2h > 0 and obv_slope_4h > 0) and
+                (coin.get('2h_pattern_name') == "قاع مزدوج" or coin.get('1d_pattern_name') == "بوق متسع صاعد")
+            )
+            if is_condition_22_a_mega_pattern_breakout:
+                score += 25
+                reasons.append("مؤشر 23")
+
+            # ⚙️ مؤشر المؤشرات 24: تحذير تصحيح (هارمونيك بيعي + خروج سيولة)
+            # بالرغم من القاع المزدوج اليومي، يوجد نموذج خفاش بيعي على الساعة والسيولة (OBV) تخرج من كل الفريمات
+            is_condition_22_b_bearish_harmonic_correction = (
+                (macd_hist_1h < 0 and macd_hist_2h < 0) and
+                (obv_slope_1h < 0 and obv_slope_2h < 0 and obv_slope_4h < 0 and obv_slope_1d < 0) and
+                (coin.get('1h_pattern_name') == "خفاش بيعي" or coin.get('1h_pattern_class') == "هارمونيك احترافي")
+            )
+            if is_condition_22_b_bearish_harmonic_correction:
+                score += 25  
+                reasons.append("مؤشر 24")
+
+            # ⚙️ مؤشر المؤشرات 25: استمرارية (راية صاعدة) مع تصحيح لحظي
+            # نموذج راية صاعدة يومي، مع تصحيح وماكد سلبي مؤقت على الفريمات اللحظية
+            is_condition_23_bullish_pennant_pullback = (
+                (rsi_1h >= 50 and rsi_4h >= 70 and rsi_1d >= 55) and
+                (adx_2h >= 60 and adx_4h >= 70) and
+                (macd_hist_1h < 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h < 0 and obv_slope_4h > 0 and obv_slope_1d > 0) and
+                (coin.get('1d_pattern_name') == "راية صاعدة" or coin.get('1d_pattern_class') == "اختراق استمراري")
+            )
+            if is_condition_23_bullish_pennant_pullback:
+                score += 25
+                reasons.append("مؤشر 25")
+
+            # ⚙️ مؤشر المؤشرات 26: ترند صاعد صاروخي ومستدام (استنساخ لحالة 21 ولكن بخصائص تأكيدية)
+            is_condition_24_sustained_extreme_bullish = (
+                (rsi_1h >= 85 and rsi_2h >= 85 and rsi_4h >= 85 and rsi_1d >= 80) and
+                (adx_1h >= 65 and adx_4h >= 90 and adx_1d >= 70) and
+                (macd_hist_1h > 0 and macd_hist_2h > 0 and macd_hist_4h > 0 and macd_hist_1d > 0) and
+                (obv_slope_1h > 0 and obv_slope_2h > 0 and obv_slope_4h > 0 and obv_slope_1d > 0)
+            )
+            if is_condition_24_sustained_extreme_bullish:
+                score += 25
+                reasons.append("مؤشر 26")
+                
             # ==========================================
             # ⚡ [ الانفجار اللحظي ورصد الفخاخ - التقييم النهائي ]
             # ==========================================
             # تم حذف الاعتماد على الدعم والمقاومة كما طلبت
             # الاعتماد الكلي الآن على قوة السكور (صائد التلاعبات)
             
-            if score >= 50:
+            if score >= 25:
                 signal_type = "LONG"
             elif score <= -50:
                 signal_type = "SHORT"
             # ==========================================
             # 🚀 إطلاق إشارة التلجرام فوراً
             # ==========================================
-            if signal_type != "NONE":  
+            if signal_type == "NONE":  
                 
                 # استدعاء دالة الإطلاق الذهبية فوراً وبدون أي تأخير
                 await trigger_golden_signal(
@@ -711,7 +1054,6 @@ async def intelligence_scanner():
 
     print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط والفخاخ (v11.1) بنجاح.")
     
-
 import hashlib
 from datetime import datetime, timedelta
 import asyncio
