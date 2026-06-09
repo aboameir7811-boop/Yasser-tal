@@ -1024,19 +1024,9 @@ async def intelligence_scanner():
                 reasons.append("مؤشر 26")
                 
             # ==========================================
-            # ⚡ [ الانفجار اللحظي ورصد الفخاخ - التقييم النهائي ]
-            # ==========================================
-            # تم حذف الاعتماد على الدعم والمقاومة كما طلبت
-            # الاعتماد الكلي الآن على قوة السكور (صائد التلاعبات)
-            
-            if score >= 25:
-                signal_type = "LONG"
-            elif score <= -50:
-                signal_type = "SHORT"
-            # ==========================================
             # 🚀 إطلاق إشارة التلجرام فوراً
             # ==========================================
-            if signal_type == "NONE":  
+            if signal_type != "NONE":  # 👈 التعديل هنا: غيرنا == إلى !=
                 
                 # استدعاء دالة الإطلاق الذهبية فوراً وبدون أي تأخير
                 await trigger_golden_signal(
@@ -1046,7 +1036,7 @@ async def intelligence_scanner():
                     fib_618=fib_618, 
                     price=price, 
                     direction=signal_type 
-                ) 
+                )
                 
     except Exception as e: 
         import logging 
