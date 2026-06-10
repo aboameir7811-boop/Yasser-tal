@@ -1022,22 +1022,41 @@ async def intelligence_scanner():
             if is_condition_24_sustained_extreme_bullish:
                 score += 25
                 reasons.append("مؤشر 26")
-                
+            # ==========================================
+            # ⚡ [ التقييم النهائي وإطلاق الإشارة ]
+            # ==========================================
+            # طباعة مؤقتة لكشف الحقيقة في التيرمنال (لن ترسل للتلجرام)
+            if score >= 30 or score <= -30:
+                print(f"🔍 [DEBUG {symbol}] Score: {score} | Uptrend: {is_uptrend} | Support: {is_near_support_general}")
+
+            if score >= 50:
+                if is_near_support_general or is_uptrend or is_at_tf_support:
+                    signal_type = "LONG"
+                else:
+                    reasons.append("🚫 تم الإلغاء: السكور عالٍ لكن المكان عشوائي (معلق بالهواء)")
+                    # 💡 خدعة: أرسل الإلغاء للتلجرام مؤقتاً لتتأكد أنه يعمل
+                    # signal_type = "LONG" # فك التعليق عن هذا السطر للاختبار فقط
+
+            elif score <= -50:
+                if is_near_resistance_general or is_downtrend or is_at_tf_resistance:
+                    signal_type = "SHORT"
+                else:
+                    reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي")
+                    
             # ==========================================
             # 🚀 إطلاق إشارة التلجرام فوراً
             # ==========================================
-            if signal_type != "NONE":  # 👈 التعديل هنا: غيرنا == إلى !=
-                
-                # استدعاء دالة الإطلاق الذهبية فوراً وبدون أي تأخير
+            if signal_type != "NONE":  
                 await trigger_golden_signal(
                     symbol=symbol, 
-                    score=abs(score), # نرسلها كموجب للتلجرام دائماً
+                    score=abs(score),
                     reasons=reasons, 
                     fib_618=fib_618, 
                     price=price, 
                     direction=signal_type 
-                )
-                
+                )    
+            
+
     except Exception as e: 
         import logging 
         logging.error(f"❌ خطأ داخلي في الرادار القناص v11.1: {e}") 
