@@ -1259,28 +1259,39 @@ async def intelligence_scanner():
                     reasons.append("🚫 تم الإلغاء: السكور منخفض لكن المكان عشوائي")
                     
             # ==========================================
-            # 🚀 إطلاق إشارة التلجرام فوراً
+            # 🚀 إطلاق إشارة التلجرام فوراً (مع حماية ضد التكرار)
             # ==========================================
             if signal_type != "NONE":  
                 
-                # 1. توثيق الإشارة في القاعدة لبدء تتبعها فوراً
-                await save_new_signal(
-                    symbol=symbol, 
-                    signal_type=signal_type, 
-                    price=price, 
-                    fib_618=fib_618, 
-                    reasons=reasons
-                )
-                
-                # 2. إطلاق الإشعار للتلجرام
-                await trigger_golden_signal(
-                    symbol=symbol, 
-                    score=abs(score),
-                    reasons=reasons, 
-                    fib_618=fib_618, 
-                    price=price, 
-                    direction=signal_type 
-                ) 
+                # 🛡️ جدار الحماية: فحص هل العملة قيد التتبع حالياً (لم تمر 24 ساعة)
+                is_tracking_res = supabase.table("radar_signals") \
+                    .select("id") \
+                    .eq("symbol", symbol) \
+                    .eq("status", "tracking") \
+                    .execute()
+
+                if not is_tracking_res.data:
+                    # 1. توثيق الإشارة في القاعدة لبدء تتبعها فوراً
+                    await save_new_signal(
+                        symbol=symbol, 
+                        signal_type=signal_type, 
+                        price=price, 
+                        fib_618=fib_618, 
+                        reasons=reasons
+                    )
+                    
+                    # 2. إطلاق الإشعار للتلجرام
+                    await trigger_golden_signal(
+                        symbol=symbol, 
+                        score=abs(score),
+                        reasons=reasons, 
+                        fib_618=fib_618, 
+                        price=price, 
+                        direction=signal_type 
+                    )
+                else:
+                    # طباعة صامتة في التيرمنال لمعرفة أن الرادار التقطها ولكن منع التكرار
+                    print(f"⚠️ [منع التكرار] الإشارة للعملة {symbol} نشطة بالفعل، تم إيقاف الإشعار المكرر.")
                 
             # ==========================================
             # 👁️ التتبع المستمر (يُنفذ على كل عملة سواء كان لها إشارة جديدة أم لا)
@@ -1294,6 +1305,7 @@ async def intelligence_scanner():
 
     print("✅ تم الانتهاء من المسح الاستخباراتي ورصد الأنماط والفخاخ (v11.1) بنجاح.")
     
+
     
 import hashlib
 from datetime import datetime, timedelta
