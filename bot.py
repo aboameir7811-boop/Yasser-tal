@@ -1155,7 +1155,7 @@ async def intelligence_scanner():
                 score += 50
                 reasons.append("مؤشر 16")
             elif is_condition_22_b_bearish_harmonic_correction:
-                score += 50
+                score += 1
                 reasons.append("مؤشر 24")
             
             # 🚀 النماذج الخارقة والانفجارات (الأولوية القصوى)
@@ -1226,7 +1226,7 @@ async def intelligence_scanner():
             
             # ⚡ الزخم اللحظي والمضاربة السريعة (تأتي في النهاية)
             elif is_condition_4_acceleration:
-                score += 50
+                score -= 10
                 reasons.append("مؤشر 4")
             elif is_condition_20_1h_momentum_spike:
                 score += 50
