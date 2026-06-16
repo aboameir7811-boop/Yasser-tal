@@ -1281,10 +1281,7 @@ async def intelligence_scanner():
                 reasons.append("مؤشر 20")
             elif is_condition_18_1h_pullback_uptrend:
                 score += 50
-                reasons.append("مؤشر 18")
-            elif is_condition_6_quick_scalp:
-                score += 50
-                reasons.append("مؤشر 6")                
+                reasons.append("مؤشر 18")                
             # ==========================================
             # ⚡ [ التقييم النهائي وإطلاق الإشارة ]
             # ==========================================
