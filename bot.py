@@ -401,6 +401,9 @@ async def intelligence_scanner():
             ema50 = float(coin.get('ema_50_15m') or 0) 
             ema100 = float(coin.get('ema_100_15m') or 0) 
             rsi_15m = float(coin.get('rsi_15m') or 50) 
+            bbw_15m = float(coin.get('bbw_15m') or 0)
+            bbw_prev_15m = float(coin.get('bbw_prev_15m') or 0) 
+            expansion_ratio_15m = (bbw_15m / bbw_prev_15m) if bbw_prev_15m > 0 else 1.0 
 
             # 1. مجموعة القوة النسبية (RSI)
             rsi_1h = float(coin.get('rsi_1h') or 0.0)
@@ -871,11 +874,11 @@ async def intelligence_scanner():
                 score -= 10
                 reasons.append("نمودج بيع 16")
             elif is_in_neck_and_dominant_three_black_crows:
-                score -= 10
-                reasons.append("نمودج بيع 17")
+                score += 50
+                reasons.append("نمودج شراء 27")
             elif is_full_bullish_engulfing_and_white_soldiers_dominance:
-                score -= 10
-                reasons.append("نمودج بيع 18")
+                score += 50
+                reasons.append("نمودج شراء 28")
 
             # 🚀 تقييم شروط ونماذج الشراء (تعمل في حال عدم وجود خطر يمنعها)
             elif is_pattern_1_double_bottom_bullish:
@@ -1139,13 +1142,58 @@ async def intelligence_scanner():
                 (obv_slope_1h < 0 and obv_slope_2h > 0 and obv_slope_4h > 0)
             )
             
-            is_condition_6_quick_scalp = (
+            is_1h_explosive_long = (
+                # البرايس أكشن وترتيب المتوسطات
+                (price > ema20_1h) and             
+                (price < bb_upper_1h) and          
+                (ema20_1h > bb_mid_1h) and        
+                (ema20_1h > ema50_1h > ema100_1h) and
+                # زخم انفجاري وتدفق سيولة
                 (rsi_1h >= 75) and
                 (adx_1h >= 60) and
                 (macd_hist_1h > 0 and macd_1h > macd_signal_1h) and
                 (obv_slope_1h > 0)
             )
             
+            is_15m_band_walk_long = (
+                # تسلق السعر للحد العلوي مع فتح فم البولنجر
+                (price >= ema20) and  
+                (price >= upper * 0.995) and 
+                (ema20 > middle) and 
+                (ema20 > ema50 > ema100) and 
+                (expansion_ratio_15m > 1.10) and 
+                # تأكيد الزخم من الفريم الأكبر
+                (rsi_1h >= 75) and
+                (adx_1h >= 60) and
+                (macd_hist_1h > 0 and macd_1h > macd_signal_1h) and
+                (obv_slope_1h > 0)
+            )
+            
+            is_15m_band_walk_short = (
+                # تسلق السعر للحد السفلي مع فتح فم البولنجر للأسفل
+                (price <= ema20) and  
+                (price <= lower * 1.005) and  # السعر يضرب أو يخترق الحد السفلي
+                (ema20 < middle) and 
+                (ema20 < ema50 < ema100) and 
+                (expansion_ratio_15m > 1.10) and 
+                # زخم هابط عنيف وخروج سيولة
+                (rsi_1h <= 25) and 
+                (adx_1h >= 60) and 
+                (macd_hist_1h < 0 and macd_1h < macd_signal_1h) and
+                (obv_slope_1h < 0) 
+            )
+
+            # --- استدعاء الشروط وتحديث ملف التحقيق ---
+            if is_1h_explosive_long:
+                score += 50
+                reasons.append("انفجار صعودي عنيف")
+            elif is_15m_band_walk_long:
+                score += 40
+                reasons.append("تسلق البولنجر الإيجابي")
+            elif is_15m_band_walk_short:
+                score -= 10  # يمكنك تعديلها لتكون بالناقص (score -= 50) إذا كان نظامك يطرح النقاط للهبوط
+                reasons.append("تسلق البولنجر السلبي أو هبوط ")
+                
             # ====================================================================
             # 2. تقييم الشروط بطريقة هرمية (if / elif)
             # ====================================================================
