@@ -398,7 +398,9 @@ async def intelligence_scanner():
             
             ema20_1h = float(coin.get('ema_20_1h') or 0)
             ema50_1h = float(coin.get('ema_50_1h') or 0)
+            ema50_1d = float(coin.get('ema_50_1d') or 0)
             ema100_1h = float(coin.get('ema_100_1h') or 0)
+            ema200_4h = float(coin.get('ema_200_4h') or 0)
             ema20 = float(coin.get('ema_20_15m') or 0) 
             ema50 = float(coin.get('ema_50_15m') or 0) 
             ema100 = float(coin.get('ema_100_15m') or 0) 
