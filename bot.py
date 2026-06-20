@@ -238,6 +238,8 @@ async def intelligence_scanner():
             # ==========================================
             vol_15m = float(coin.get('volume_15m') or 0)
             vol_ma_15m = float(coin.get('volume_ma_15m') or 1)
+            vol_1h = float(coin.get('volume_1h') or 0)
+            vol_ma_1h = float(coin.get('volume_ma_1h') or 1)
             bbw_15m = float(coin.get('bbw_15m') or 0)
             price = float(coin.get('current_price') or 0)
             
@@ -1143,46 +1145,66 @@ async def intelligence_scanner():
                 (macd_hist_1h > 0 and macd_hist_4h > 0) and
                 (obv_slope_1h < 0 and obv_slope_2h > 0 and obv_slope_4h > 0)
             )
-            
             is_1h_explosive_long = (
-                # البرايس أكشن وترتيب المتوسطات
+                # 1. فلتر الاتجاه العام: تأكيد أننا في ترند صاعد على الفريمات الأكبر (تجنب الفخاخ)
+                (price > ema200_4h) and 
+                (price > ema50_1d) and
+                
+                # 2. البرايس أكشن وترتيب المتوسطات
                 (price > ema20_1h) and             
                 (price < bb_upper_1h) and          
                 (ema20_1h > bb_mid_1h) and        
                 (ema20_1h > ema50_1h > ema100_1h) and
-                # زخم انفجاري وتدفق سيولة
-                (rsi_1h >= 75) and
-                (adx_1h >= 60) and
+                
+                # 3. زخم الانفجار (اصطياد البداية بدلاً من القمة)
+                (55 <= rsi_1h <= 70) and  # تم التعديل لتجنب الشراء في التشبع الشرائي
+                (adx_1h >= 25) and        # تم التعديل لاصطياد بداية تكون الترند
                 (macd_hist_1h > 0 and macd_1h > macd_signal_1h) and
-                (obv_slope_1h > 0)
+                (obv_slope_1h > 0) and
+                
+                # 4. تأكيد الانفجار بسيولة حقيقية
+                (volume_1h > volume_ma_1h * 1.5) # الفوليوم أعلى من متوسطه بـ 1.5 مرة
             )
             
             is_15m_band_walk_long = (
+                # فلتر الاتجاه الأكبر
+                (price > ema200_4h) and
+                
                 # تسلق السعر للحد العلوي مع فتح فم البولنجر
                 (price >= ema20) and  
                 (price >= upper * 0.995) and 
                 (ema20 > middle) and 
                 (ema20 > ema50 > ema100) and 
                 (expansion_ratio_15m > 1.10) and 
-                # تأكيد الزخم من الفريم الأكبر
-                (rsi_1h >= 75) and
-                (adx_1h >= 60) and
+                
+                # تأكيد الزخم من الفريم الأكبر (في بدايته)
+                (55 <= rsi_1h <= 70) and
+                (adx_1h >= 25) and
                 (macd_hist_1h > 0 and macd_1h > macd_signal_1h) and
-                (obv_slope_1h > 0)
+                (obv_slope_1h > 0) and
+                (volume_1h > volume_ma_1h * 1.5)
             )
             
             is_15m_band_walk_short = (
-                # تسلق السعر للحد السفلي مع فتح فم البولنجر للأسفل
+                # 1. فلتر الاتجاه العام: تأكيد أننا في ترند هابط
+                (price < ema200_4h) and 
+                (price < ema50_1d) and
+                
+                # 2. تسلق السعر للحد السفلي مع فتح فم البولنجر للأسفل
                 (price <= ema20) and  
                 (price <= lower * 1.005) and  # السعر يضرب أو يخترق الحد السفلي
                 (ema20 < middle) and 
                 (ema20 < ema50 < ema100) and 
                 (expansion_ratio_15m > 1.10) and 
-                # زخم هابط عنيف وخروج سيولة
-                (rsi_1h <= 25) and 
-                (adx_1h >= 60) and 
+                
+                # 3. زخم هابط في بدايته (تجنب البيع في قاع التشبع البيعي)
+                (30 <= rsi_1h <= 45) and  # تم التعديل لتجنب البيع في القاع
+                (adx_1h >= 25) and 
                 (macd_hist_1h < 0 and macd_1h < macd_signal_1h) and
-                (obv_slope_1h < 0) 
+                (obv_slope_1h < 0) and
+                
+                # 4. تأكيد خروج السيولة
+                (volume_1h > volume_ma_1h * 1.5)
             )
 
             # --- استدعاء الشروط وتحديث ملف التحقيق ---
