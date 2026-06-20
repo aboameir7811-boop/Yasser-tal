@@ -238,8 +238,7 @@ async def intelligence_scanner():
             # ==========================================
             vol_15m = float(coin.get('volume_15m') or 0)
             vol_ma_15m = float(coin.get('volume_ma_15m') or 1)
-            vol_1h = float(coin.get('volume_1h') or 0)
-            vol_ma_1h = float(coin.get('volume_ma_1h') or 1)
+            
             bbw_15m = float(coin.get('bbw_15m') or 0)
             price = float(coin.get('current_price') or 0)
             
@@ -410,6 +409,8 @@ async def intelligence_scanner():
             bbw_15m = float(coin.get('bbw_15m') or 0)
             bbw_prev_15m = float(coin.get('bbw_prev_15m') or 0) 
             expansion_ratio_15m = (bbw_15m / bbw_prev_15m) if bbw_prev_15m > 0 else 1.0 
+            volume_1h = float(coin.get('volume_1h') or 0)
+            volume_ma_1h = float(coin.get('volume_ma_1h') or 0)
 
             # 1. مجموعة القوة النسبية (RSI)
             rsi_1h = float(coin.get('rsi_1h') or 0.0)
