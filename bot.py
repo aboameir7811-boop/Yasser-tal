@@ -478,6 +478,7 @@ async def intelligence_scanner():
             # ====================================================================
 
             # 🧠 [ شروط الشراء ]
+            # --- BOT_INSERT_BUY_ZONE ---
             is_pattern_1_double_bottom_bullish = (
                 (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
                 (patterns_1d == "نجمة_الصباح_صاعد") and 
@@ -676,6 +677,7 @@ async def intelligence_scanner():
             )
 
             # 📉 [ شروط البيع ]
+            # --- BOT_INSERT_SELL_ZONE ---
             is_bearish_candles_with_bullish_pennant = (
                 (patterns_1h == "ثلاثة_للخارج_هابط") and 
                 (patterns_2h == "الحزام_الممسوك_هابط") and 
