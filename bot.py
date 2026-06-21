@@ -473,15 +473,12 @@ async def intelligence_scanner():
             
             has_volume_confirmation = vol_15m > (vol_ma_15m * 1.2)
             is_sqz = bbw_15m < 0.065
-                        # ====================================================================
+            # ====================================================================
             # 1. حساب وتجهيز جميع الشروط المنطقية أولاً
             # ====================================================================
 
             # 🧠 [ شروط الشراء ]
-            
-
-            
-            # --- BOT_INSERT_BUY_ZONE ---
+            # --- BOT_INSERT_BUY_CONDITIONS ---      
             is_pattern_1_double_bottom_bullish = (
                 (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
                 (patterns_1d == "نجمة_الصباح_صاعد") and 
@@ -680,7 +677,7 @@ async def intelligence_scanner():
             )
 
             # 📉 [ شروط البيع ]
-            # --- BOT_INSERT_SELL_ZONE ---
+            # --- BOT_INSERT_SELL_CONDITIONS ---
             is_bearish_candles_with_bullish_pennant = (
                 (patterns_1h == "ثلاثة_للخارج_هابط") and 
                 (patterns_2h == "الحزام_الممسوك_هابط") and 
@@ -831,15 +828,15 @@ async def intelligence_scanner():
                 (patterns_1d == "ابتلاع_صاعد")
             )
 
-
             # ====================================================================
             # 2. تقييم الشروط بطريقة هرمية (if / elif)
             # ====================================================================
 
-            # 🚨 التحذيرات وشروط البيع أولاً (لحماية الصفقة من أي انعكاس سلبي)
+            # 📉 تقييم البيع
             if is_bearish_candles_with_bullish_pennant:
                 score -= 10
                 reasons.append("نمودج بيع 1")
+            # --- BOT_INSERT_SELL_EVALUATIONS ---
             elif is_three_outside_down_with_evening_doji_star:
                 score -= 10
                 reasons.append("نمودج بيع 2")
@@ -896,6 +893,7 @@ async def intelligence_scanner():
             elif is_pattern_1_double_bottom_bullish:
                 score += 50
                 reasons.append("نمودج شراء 1")
+            # --- BOT_INSERT_BUY_EVALUATIONS ---
             elif is_pattern_2_bearish_cypher_pro:
                 score += 50
                 reasons.append("نمودج شراء 2")
