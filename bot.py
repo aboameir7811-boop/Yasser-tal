@@ -553,11 +553,7 @@ async def intelligence_scanner():
                 (pattern_class_1h == "اختراق استمراري") and 
                 (patterns_1d == "ابتلاع_هابط")
             )
-
-            is_buy_pattern_9 = (
-                (patterns_1h == "نجمة_الصباح_صاعد")
-            )
-
+            
             is_buy_pattern_10 = (
                 (patterns_1h == "ماروبوزو_صاعد") and 
                 (pattern_name_2h == "بوق متسع صاعد") and 
@@ -1409,10 +1405,6 @@ async def intelligence_scanner():
             elif is_buy_pattern_8:
                 score += 50
                 reasons.append("نموذج شراء 8")
-
-            elif is_buy_pattern_9:
-                score += 50
-                reasons.append("نموذج شراء 9")
 
             elif is_buy_pattern_10:
                 score += 50
