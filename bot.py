@@ -478,6 +478,97 @@ async def intelligence_scanner():
             # ====================================================================
 
             # 🧠 [ شروط الشراء ]
+            is_buy_pattern_1 = (
+                (patterns_2h == "نجمة_الصباح_صاعد")
+            )
+
+            is_buy_pattern_2 = (
+                (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_1h == "قاع ثلاثي") and 
+                (pattern_class_1h == "انعكاسي صاعد") and 
+                (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_2h == "صندوق دارفاس صاعد") and 
+                (pattern_class_2h == "اختراق استمراري") and 
+                (pattern_name_4h == "صندوق دارفاس صاعد") and 
+                (pattern_class_4h == "اختراق استمراري") and 
+                (patterns_1d == "ابتلاع_صاعد")
+            )
+
+            is_buy_pattern_3 = (
+                (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_4h == "راية صاعدة") and 
+                (pattern_class_4h == "اختراق استمراري") and 
+                (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
+            )
+
+            is_buy_pattern_4 = (
+                (patterns_1h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_1h == "رأس وكتفين مقلوب") and 
+                (pattern_class_1h == "انعكاسي صاعد") and 
+                (patterns_2h == "ابتلاع_صاعد") and 
+                (pattern_name_2h == "سايفر شرائي") and 
+                (pattern_class_2h == "هارمونيك احترافي") and 
+                (patterns_1d == "الحزام_الممسوك_صاعد") and 
+                (trend_direction_1d == "هابط") and 
+                (trend_touches_1d == 3) and 
+                (channel_direction_1d == "هابط") and 
+                (channel_status_1d == "VALID") and 
+                (channel_touches_1d == 4)
+            )
+
+            is_buy_pattern_5 = (
+                (patterns_1h == "ثلاثة_للداخل_هابط") and 
+                (patterns_2h == "نجمة_المساء_دوجي_هابط") and 
+                (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_4h == "مثلث متماثل صاعد") and 
+                (pattern_class_4h == "استمراري صاعد") and 
+                (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
+            )
+
+            is_buy_pattern_6 = (
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_2h == "علم هابط") and 
+                (pattern_class_2h == "كسر استمراري") and 
+                (trend_direction_2h == "هابط") and 
+                (trend_touches_2h == 3) and 
+                (channel_direction_2h == "هابط") and 
+                (channel_status_2h == "VALID") and 
+                (channel_touches_2h == 4) and 
+                (pattern_name_4h == "بوق متسع هابط") and 
+                (pattern_class_4h == "انهيار سعري") and 
+                (patterns_1d == "في_الرقبة_هابط")
+            )
+
+            is_buy_pattern_7 = (
+                (patterns_1h == "Neutral_Doji") and 
+                (patterns_2h == "خطوط_التلاقي_هابط") and 
+                (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (patterns_1d == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_1d == "راية صاعدة") and 
+                (pattern_class_1d == "اختراق استمراري")
+            )
+
+            is_buy_pattern_8 = (
+                (patterns_1h == "الحزام_الممسوك_صاعد") and 
+                (pattern_name_1h == "راية صاعدة") and 
+                (pattern_class_1h == "اختراق استمراري") and 
+                (patterns_1d == "ابتلاع_هابط")
+            )
+
+            is_buy_pattern_9 = (
+                (patterns_1h == "نجمة_الصباح_صاعد")
+            )
+
+            is_buy_pattern_10 = (
+                (patterns_1h == "ماروبوزو_صاعد") and 
+                (pattern_name_2h == "بوق متسع صاعد") and 
+                (pattern_class_2h == "انفجار سعري") and 
+                (pattern_name_4h == "علم صاعد") and 
+                (pattern_class_4h == "اختراق استمراري")
+            )
+
             # --- BOT_INSERT_BUY_CONDITIONS ---      
             is_pattern_1_double_bottom_bullish = (
                 (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
@@ -677,6 +768,263 @@ async def intelligence_scanner():
             )
 
             # 📉 [ شروط البيع ]
+            is_sell_pattern_1 = (
+                (patterns_1h == "ابتلاع_هابط") and 
+                (patterns_2h == "ابتلاع_هابط") and 
+                (patterns_1d == "هارامي_صليب_هابط")
+            )
+
+            is_sell_pattern_2 = (
+                (pattern_name_1h == "علم هابط") and 
+                (pattern_class_1h == "كسر استمراري") and 
+                (patterns_2h == "ابتلاع_صاعد") and 
+                (pattern_name_2h == "علم هابط") and 
+                (pattern_class_2h == "كسر استمراري") and 
+                (patterns_4h == "خطوط_التلاقي_صاعد") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري") and 
+                (patterns_1d == "خطوط_التلاقي_صاعد") and 
+                (pattern_name_1d == "علم هابط") and 
+                (pattern_class_1d == "كسر استمراري")
+            )
+
+            is_sell_pattern_3 = (
+                (patterns_1h == "هارامي_صليب_هابط") and 
+                (patterns_2h == "الخط_الثاقب_صاعد") and 
+                (patterns_4h == "في_الرقبة_هابط") and 
+                (patterns_1d == "في_الرقبة_هابط")
+            )
+
+            is_sell_pattern_4 = (
+                (patterns_1h == "ابتلاع_هابط") and 
+                (pattern_name_1h == "قمة مزدوجة") and 
+                (pattern_class_1h == "انعكاسي هابط") and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_4h == "بوق متسع هابط") and 
+                (pattern_class_4h == "انهيار سعري") and 
+                (patterns_1d == "ثلاثة_للخارج_هابط")
+            )
+
+            is_sell_pattern_5 = (
+                (patterns_1h == "الحمامة_الزاجلة_صاعد") and 
+                (pattern_name_1h == "سايفر بيعي") and 
+                (pattern_class_1h == "هارمونيك احترافي") and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_2h == "علم هابط") and 
+                (pattern_class_2h == "كسر استمراري") and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري") and 
+                (trend_direction_4h == "هابط") and 
+                (trend_touches_4h == 3) and 
+                (channel_direction_4h == "هابط") and 
+                (channel_status_4h == "STRONG_CONFIRMED") and 
+                (channel_touches_4h == 8)
+            )
+
+            is_sell_pattern_6 = (
+                (patterns_1h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_1h == "بوق متسع هابط") and 
+                (pattern_class_1h == "انهيار سعري") and 
+                (pattern_name_2h == "بوق متسع هابط") and 
+                (pattern_class_2h == "انهيار سعري") and 
+                (pattern_name_1d == "بوق متسع هابط") and 
+                (pattern_class_1d == "انهيار سعري")
+            )
+
+            is_sell_pattern_7 = (
+                (patterns_1h == "في_الرقبة_هابط") and 
+                (trend_direction_1h == "هابط") and 
+                (trend_touches_1h == 3) and 
+                (channel_direction_1h == "هابط") and 
+                (channel_status_1h == "STRONG_CONFIRMED") and 
+                (channel_touches_1h == 5) and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (trend_direction_2h == "هابط") and 
+                (trend_touches_2h == 3) and 
+                (channel_direction_2h == "هابط") and 
+                (channel_status_2h == "VALID") and 
+                (channel_touches_2h == 4) and 
+                (trend_direction_4h == "هابط") and 
+                (trend_touches_4h == 3) and 
+                (channel_direction_4h == "هابط") and 
+                (channel_status_4h == "STRONG_CONFIRMED") and 
+                (channel_touches_4h == 5)
+            )
+
+            is_sell_pattern_8 = (
+                (patterns_1h == "ابتلاع_هابط") and 
+                (pattern_name_1h == "بوق متسع هابط") and 
+                (pattern_class_1h == "انهيار سعري") and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_2h == "بوق متسع هابط") and 
+                (pattern_class_2h == "انهيار سعري") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط")
+            )
+
+            is_sell_pattern_9 = (
+                (patterns_1h == "ثلاثة_للداخل_هابط") and 
+                (trend_direction_1h == "هابط") and 
+                (trend_touches_1h == 3) and 
+                (channel_direction_1h == "هابط") and 
+                (channel_status_1h == "STRONG_CONFIRMED") and 
+                (channel_touches_1h == 6) and 
+                (patterns_2h == "خطوط_الانفصال_هابط") and 
+                (trend_direction_2h == "هابط") and 
+                (trend_touches_2h == 3) and 
+                (channel_direction_2h == "هابط") and 
+                (channel_status_2h == "STRONG_CONFIRMED") and 
+                (channel_touches_2h == 6) and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط")
+            )
+
+            is_sell_pattern_10 = (
+                (patterns_1h == "ابتلاع_هابط") and 
+                (trend_direction_1h == "هابط") and 
+                (trend_touches_1h == 3) and 
+                (channel_direction_1h == "هابط") and 
+                (channel_status_1h == "STRONG_CONFIRMED") and 
+                (channel_touches_1h == 5) and 
+                (pattern_name_2h == "بوق متسع هابط") and 
+                (pattern_class_2h == "انهيار سعري") and 
+                (patterns_4h == "في_الرقبة_هابط") and 
+                (patterns_1d == "في_الرقبة_هابط")
+            )
+
+            is_sell_pattern_11 = (
+                (patterns_1h == "الحزام_الممسوك_هابط") and 
+                (trend_direction_1h == "هابط") and 
+                (trend_touches_1h == 3) and 
+                (channel_direction_1h == "هابط") and 
+                (channel_status_1h == "STRONG_CONFIRMED") and 
+                (channel_touches_1h == 6) and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_2h == "علم هابط") and 
+                (pattern_class_2h == "كسر استمراري") and 
+                (trend_direction_2h == "هابط") and 
+                (trend_touches_2h == 4) and 
+                (channel_direction_2h == "هابط") and 
+                (channel_status_2h == "STRONG_CONFIRMED") and 
+                (channel_touches_2h == 6) and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط")
+            )
+
+            is_sell_pattern_12 = (
+                (patterns_1h == "خطوط_الانفصال_هابط") and 
+                (pattern_name_1h == "علم هابط") and 
+                (pattern_class_1h == "كسر استمراري") and 
+                (trend_direction_1h == "هابط") and 
+                (trend_touches_1h == 3) and 
+                (channel_direction_1h == "هابط") and 
+                (channel_status_1h == "STRONG_CONFIRMED") and 
+                (channel_touches_1h == 5) and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_2h == "علم هابط") and 
+                (pattern_class_2h == "كسر استمراري") and 
+                (trend_direction_2h == "هابط") and 
+                (trend_touches_2h == 3) and 
+                (channel_direction_2h == "هابط") and 
+                (channel_status_2h == "STRONG_CONFIRMED") and 
+                (channel_touches_2h == 6) and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_1d == "علم هابط") and 
+                (pattern_class_1d == "كسر استمراري")
+            )
+
+            is_sell_pattern_13 = (
+                (patterns_1h == "ابتلاع_هابط") and 
+                (pattern_name_2h == "بوق متسع هابط") and 
+                (pattern_class_2h == "انهيار سعري") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط")
+            )
+
+            is_sell_pattern_14 = (
+                (patterns_1h == "نجمة_الصباح_صاعد") and 
+                (patterns_2h == "في_الرقبة_هابط") and 
+                (pattern_name_2h == "رأس وكتفين") and 
+                (pattern_class_2h == "انعكاسي هابط") and 
+                (pattern_name_1d == "علم هابط") and 
+                (pattern_class_1d == "كسر استمراري")
+            )
+
+            is_sell_pattern_15 = (
+                (patterns_1h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_1h == "سايفر بيعي") and 
+                (pattern_class_1h == "هارمونيك احترافي") and 
+                (pattern_name_2h == "علم هابط") and 
+                (pattern_class_2h == "كسر استمراري") and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_1d == "علم هابط") and 
+                (pattern_class_1d == "كسر استمراري")
+            )
+
+            is_sell_pattern_16 = (
+                (patterns_1h == "الغربان_الثلاثة_السود_هابط") and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_2h == "علم هابط") and 
+                (pattern_class_2h == "كسر استمراري") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري")
+            )
+
+            is_sell_pattern_17 = (
+                (pattern_name_1h == "مثلث متماثل هابط") and 
+                (pattern_class_1h == "استمراري هابط") and 
+                (trend_direction_1h == "هابط") and 
+                (trend_touches_1h == 3) and 
+                (channel_direction_1h == "هابط") and 
+                (channel_status_1h == "VALID") and 
+                (channel_touches_1h == 4) and 
+                (pattern_name_2h == "قمة مزدوجة") and 
+                (pattern_class_2h == "انعكاسي هابط") and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_4h == "قمة مزدوجة") and 
+                (pattern_class_4h == "انعكاسي هابط") and 
+                (trend_direction_1d == "هابط") and 
+                (trend_touches_1d == 3) and 
+                (channel_direction_1d == "هابط") and 
+                (channel_status_1d == "VALID") and 
+                (channel_touches_1d == 4)
+            )
+
+            is_sell_pattern_18 = (
+                (patterns_1h == "ابتلاع_صاعد") and 
+                (pattern_name_1d == "بوق متسع هابط") and 
+                (pattern_class_1d == "انهيار سعري")
+            )
+
+            is_sell_pattern_19 = (
+                (patterns_1h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_1h == "بوق متسع هابط") and 
+                (pattern_class_1h == "انهيار سعري") and 
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط")
+            )
+
+            is_sell_pattern_20 = (
+                (patterns_2h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_2h == "رأس وكتفين") and 
+                (pattern_class_2h == "انعكاسي هابط") and 
+                (patterns_4h == "الغربان_الثلاثة_السود_هابط") and 
+                (pattern_name_4h == "علم هابط") and 
+                (pattern_class_4h == "كسر استمراري") and 
+                (patterns_1d == "الغربان_الثلاثة_السود_هابط")
+            )
+
             # --- BOT_INSERT_SELL_CONDITIONS ---
             is_bearish_candles_with_bullish_pennant = (
                 (patterns_1h == "ثلاثة_للخارج_هابط") and 
@@ -836,6 +1184,86 @@ async def intelligence_scanner():
             if is_bearish_candles_with_bullish_pennant:
                 score -= 10
                 reasons.append("نمودج بيع 1")
+            elif is_sell_pattern_1:
+                score -= 50
+                reasons.append("نموذج بيع 1")
+
+            elif is_sell_pattern_2:
+                score -= 50
+                reasons.append("نموذج بيع 2")
+
+            elif is_sell_pattern_3:
+                score -= 50
+                reasons.append("نموذج بيع 3")
+
+            elif is_sell_pattern_4:
+                score -= 50
+                reasons.append("نموذج بيع 4")
+
+            elif is_sell_pattern_5:
+                score -= 50
+                reasons.append("نموذج بيع 5")
+
+            elif is_sell_pattern_6:
+                score -= 50
+                reasons.append("نموذج بيع 6")
+
+            elif is_sell_pattern_7:
+                score -= 50
+                reasons.append("نموذج بيع 7")
+
+            elif is_sell_pattern_8:
+                score -= 50
+                reasons.append("نموذج بيع 8")
+
+            elif is_sell_pattern_9:
+                score -= 50
+                reasons.append("نموذج بيع 9")
+
+            elif is_sell_pattern_10:
+                score -= 50
+                reasons.append("نموذج بيع 10")
+
+            elif is_sell_pattern_11:
+                score -= 50
+                reasons.append("نموذج بيع 11")
+
+            elif is_sell_pattern_12:
+                score -= 50
+                reasons.append("نموذج بيع 12")
+
+            elif is_sell_pattern_13:
+                score -= 50
+                reasons.append("نموذج بيع 13")
+
+            elif is_sell_pattern_14:
+                score -= 50
+                reasons.append("نموذج بيع 14")
+
+            elif is_sell_pattern_15:
+                score -= 50
+                reasons.append("نموذج بيع 15")
+
+            elif is_sell_pattern_16:
+                score -= 50
+                reasons.append("نموذج بيع 16")
+
+            elif is_sell_pattern_17:
+                score -= 50
+                reasons.append("نموذج بيع 17")
+
+            elif is_sell_pattern_18:
+                score -= 50
+                reasons.append("نموذج بيع 18")
+
+            elif is_sell_pattern_19:
+                score -= 50
+                reasons.append("نموذج بيع 19")
+
+            elif is_sell_pattern_20:
+                score -= 50
+                reasons.append("نموذج بيع 20")
+
             # --- BOT_INSERT_SELL_EVALUATIONS ---
             elif is_three_outside_down_with_evening_doji_star:
                 score -= 10
@@ -893,6 +1321,46 @@ async def intelligence_scanner():
             elif is_pattern_1_double_bottom_bullish:
                 score += 50
                 reasons.append("نمودج شراء 1")
+            elif is_buy_pattern_1:
+                score += 50
+                reasons.append("نموذج شراء 1")
+
+            elif is_buy_pattern_2:
+                score += 50
+                reasons.append("نموذج شراء 2")
+
+            elif is_buy_pattern_3:
+                score += 50
+                reasons.append("نموذج شراء 3")
+
+            elif is_buy_pattern_4:
+                score += 50
+                reasons.append("نموذج شراء 4")
+
+            elif is_buy_pattern_5:
+                score += 50
+                reasons.append("نموذج شراء 5")
+
+            elif is_buy_pattern_6:
+                score += 50
+                reasons.append("نموذج شراء 6")
+
+            elif is_buy_pattern_7:
+                score += 50
+                reasons.append("نموذج شراء 7")
+
+            elif is_buy_pattern_8:
+                score += 50
+                reasons.append("نموذج شراء 8")
+
+            elif is_buy_pattern_9:
+                score += 50
+                reasons.append("نموذج شراء 9")
+
+            elif is_buy_pattern_10:
+                score += 50
+                reasons.append("نموذج شراء 10")
+
             # --- BOT_INSERT_BUY_EVALUATIONS ---
             elif is_pattern_2_bearish_cypher_pro:
                 score += 50
