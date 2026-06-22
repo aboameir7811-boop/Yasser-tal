@@ -478,10 +478,7 @@ async def intelligence_scanner():
             # ====================================================================
 
             # 🧠 [ شروط الشراء ]
-            is_buy_pattern_1 = (
-                (patterns_2h == "نجمة_الصباح_صاعد")
-            )
-
+            
             is_buy_pattern_2 = (
                 (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
                 (pattern_name_1h == "قاع ثلاثي") and 
@@ -1183,7 +1180,7 @@ async def intelligence_scanner():
             # 📉 تقييم البيع
             if is_bearish_candles_with_bullish_pennant:
                 score -= 10
-                reasons.append("نمودج بيع 1")
+                reasons.append("ن بيع 1")
             elif is_sell_pattern_1:
                 score -= 50
                 reasons.append("نموذج بيع 1")
@@ -1267,63 +1264,123 @@ async def intelligence_scanner():
             # --- BOT_INSERT_SELL_EVALUATIONS ---
             elif is_three_outside_down_with_evening_doji_star:
                 score -= 10
-                reasons.append("نمودج بيع 2")
+                reasons.append("ن بيع 2")
             elif is_head_shoulders_with_bearish_pennant_continuation:
                 score -= 10
-                reasons.append("نمودج بيع 3")
+                reasons.append("ن بيع 3")
             elif is_evening_star_three_black_crows_with_double_bottom:
                 score -= 10
-                reasons.append("نمودج بيع 4")
+                reasons.append("ن بيع 4")
             elif is_strong_bearish_trend_and_channel_with_reversals:
                 score -= 10
-                reasons.append("نمودج بيع 5")
+                reasons.append("ن بيع 5")
             elif is_three_white_soldiers_multi_tf_sell_score:
                 score -= 10
-                reasons.append("نمودج بيع 6")
+                reasons.append("ن بيع 6")
             elif is_multiple_bullish_bottoms_and_wedges:
                 score -= 10
-                reasons.append("نمودج بيع 7")
+                reasons.append("ن بيع 7")
             elif is_bearish_engulfing_conflicting_with_larger_tf_bullish:
                 score -= 10
-                reasons.append("نمودج بيع 8")
+                reasons.append("ن بيع 8")
             elif is_bearish_crows_and_engulfing_overriding_bullish_cypher:
                 score -= 10
-                reasons.append("نمودج بيع 9: سيطرة للغربان الثلاثة السود وابتلاع هابط رغم وجود هارمونيك سايفر شرائي.")
+                reasons.append("ن بيع 9: سيطرة للغربان الثلاثة السود وابتلاع هابط رغم وجود هارمونيك سايفر شرائي.")
             elif is_strong_bearish_hold_and_engulfing_without_bullish_counter:
                 score -= 10
-                reasons.append("نمودج بيع 10")
+                reasons.append("ن بيع 10")
             elif is_bullish_patterns_swimming_against_major_downtrend:
                 score -= 10
-                reasons.append("نمودج بيع 11")
+                reasons.append("ن بيع 11")
             elif is_bearish_harami_and_head_shoulders_with_bearish_flag:
                 score -= 10
-                reasons.append("نمودج بيع 12")
+                reasons.append("ن بيع 12")
             elif is_in_neck_bearish_pennant_with_three_black_crows:
                 score -= 10
-                reasons.append("نمودج بيع 13")
+                reasons.append("ن بيع 13")
             elif is_daily_head_shoulders_without_bullish_reversal_confirmation:
                 score -= 10
-                reasons.append("نمودج بيع 14")
+                reasons.append("ن بيع 14")
             elif is_daily_three_black_crows_with_non_bullish_trend:
                 score -= 10
-                reasons.append("نمودج بيع 15")
+                reasons.append("ن بيع 15")
             elif is_bearish_trend_and_channel_with_gravestone_doji:
                 score -= 10
-                reasons.append("نمودج بيع 16")
+                reasons.append("ن بيع 16")
             elif is_in_neck_and_dominant_three_black_crows:
                 score += 50
-                reasons.append("نمودج شراء 27")
+                reasons.append("ن شراء 27")
             elif is_full_bullish_engulfing_and_white_soldiers_dominance:
                 score += 50
-                reasons.append("نمودج شراء 28")
-
+                reasons.append("ن شراء 28")
+                            
             # 🚀 تقييم شروط ونماذج الشراء (تعمل في حال عدم وجود خطر يمنعها)
             elif is_pattern_1_double_bottom_bullish:
                 score += 50
-                reasons.append("نمودج شراء 1")
-            elif is_buy_pattern_1:
+                reasons.append("ن شراء 1")
+            elif is_pattern_2_bearish_cypher_pro:
                 score += 50
-                reasons.append("نموذج شراء 1")
+                reasons.append("ن شراء 2")
+            elif is_pattern_3_bullish_pennant_broadening:
+                score += 50
+                reasons.append("ن شراء 3")
+            elif is_pattern_4_bearish_cypher_1h:
+                score += 50
+                reasons.append("ن شراء 4")
+            elif is_pattern_5_inv_head_shoulders:
+                score += 50
+                reasons.append("ن شراء 5")
+            elif is_pattern_6_double_bottom_multi_tf:
+                score += 50
+                reasons.append("ن شراء 6")
+            elif is_pattern_7_triple_bottom_1h_2h:
+                score += 50
+                reasons.append("ن شراء 7")
+            elif is_pattern_8_triple_bottom_after_tweezer:
+                score += 50
+                reasons.append("ن شراء 8")
+            elif is_pattern_9_double_bottom_inv_hs_marubozu:
+                score += 50
+                reasons.append("ن شراء 9")
+            elif is_pattern_10_head_shoulders_bearish_rev:
+                score += 50
+                reasons.append("ن شراء 10")
+            elif is_pattern_11_double_bottoms_inv_hs:
+                score += 50
+                reasons.append("ن شراء 11")
+            elif is_pattern_12_darvas_box_bullish_sync:
+                score += 50
+                reasons.append("ن شراء 12")
+            elif is_pattern_13_bearish_broadening_breakdown:
+                score += 50
+                reasons.append("ن شراء 13")
+            elif is_pattern_14_morning_star_engulfing:
+                score += 50
+                reasons.append("ن شراء 14")
+            elif is_pattern_15_head_shoulders_daily:
+                score += 50
+                reasons.append("ن شراء 15")
+            elif is_pattern_16_strong_bullish_candles_all_tf:
+                score += 50
+                reasons.append("ن شراء 16")
+            elif is_pattern_17_tweezer_bottom_engulfing:
+                score += 50
+                reasons.append("ن شراء 17")
+            elif is_pattern_18_three_white_soldiers_all_tf:
+                score += 50
+                reasons.append("ن شراء 18")
+            elif is_pattern_19_inv_hs_white_soldiers:
+                score += 50
+                reasons.append("ن شراء 19")
+            elif is_pattern_20_triple_double_bottom_broadening:
+                score += 50
+                reasons.append("ن شراء 20")
+            elif is_pattern_21_bearish_bat_double_bottom:
+                score += 50
+                reasons.append("ن شراء 21")
+            elif is_pattern_22_bullish_pennant_continuation:
+                score += 50
+                reasons.append("ن شراء 22")
 
             elif is_buy_pattern_2:
                 score += 50
@@ -1362,70 +1419,7 @@ async def intelligence_scanner():
                 reasons.append("نموذج شراء 10")
 
             # --- BOT_INSERT_BUY_EVALUATIONS ---
-            elif is_pattern_2_bearish_cypher_pro:
-                score += 50
-                reasons.append("نمودج شراء 2")
-            elif is_pattern_3_bullish_pennant_broadening:
-                score += 50
-                reasons.append("نمودج شراء 3")
-            elif is_pattern_4_bearish_cypher_1h:
-                score += 50
-                reasons.append("نمودج شراء 4")
-            elif is_pattern_5_inv_head_shoulders:
-                score += 50
-                reasons.append("نمودج شراء 5")
-            elif is_pattern_6_double_bottom_multi_tf:
-                score += 50
-                reasons.append("نمودج شراء 6")
-            elif is_pattern_7_triple_bottom_1h_2h:
-                score += 50
-                reasons.append("نمودج شراء 7")
-            elif is_pattern_8_triple_bottom_after_tweezer:
-                score += 50
-                reasons.append("نمودج شراء 8")
-            elif is_pattern_9_double_bottom_inv_hs_marubozu:
-                score += 50
-                reasons.append("نمودج شراء 9")
-            elif is_pattern_10_head_shoulders_bearish_rev:
-                score += 50
-                reasons.append("نمودج شراء 10")
-            elif is_pattern_11_double_bottoms_inv_hs:
-                score += 50
-                reasons.append("نمودج شراء 11")
-            elif is_pattern_12_darvas_box_bullish_sync:
-                score += 50
-                reasons.append("نمودج شراء 12")
-            elif is_pattern_13_bearish_broadening_breakdown:
-                score += 50
-                reasons.append("نمودج شراء 13")
-            elif is_pattern_14_morning_star_engulfing:
-                score += 50
-                reasons.append("نمودج شراء 14")
-            elif is_pattern_15_head_shoulders_daily:
-                score += 50
-                reasons.append("نمودج شراء 15")
-            elif is_pattern_16_strong_bullish_candles_all_tf:
-                score += 50
-                reasons.append("نمودج شراء 16")
-            elif is_pattern_17_tweezer_bottom_engulfing:
-                score += 50
-                reasons.append("نمودج شراء 17")
-            elif is_pattern_18_three_white_soldiers_all_tf:
-                score += 50
-                reasons.append("نمودج شراء 18")
-            elif is_pattern_19_inv_hs_white_soldiers:
-                score += 50
-                reasons.append("نمودج شراء 19")
-            elif is_pattern_20_triple_double_bottom_broadening:
-                score += 50
-                reasons.append("نمودج شراء 20")
-            elif is_pattern_21_bearish_bat_double_bottom:
-                score += 50
-                reasons.append("نمودج شراء 21")
-            elif is_pattern_22_bullish_pennant_continuation:
-                score += 50
-                reasons.append("نمودج شراء 22")
-                
+            
             # ====================================================================
             # 1. حساب وتجهيز جميع الشروط المنطقية أولاً
             # ====================================================================
