@@ -2451,7 +2451,7 @@ async def intelligence_scanner():
                 # 2. البرايس أكشن وترتيب المتوسطات
                 (price > ema_20_1h) and             
                 (price < bb_upper_1h) and          
-                (ema_20_1h > bb_mid_1h) and        
+                (ema_20_1h > bb_middle_1h) and        
                 (ema_20_1h > ema_50_1h > ema_100_1h) and
                 
                 # 3. زخم الانفجار (اصطياد البداية بدلاً من القمة)
