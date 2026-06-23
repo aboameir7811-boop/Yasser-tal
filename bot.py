@@ -626,8 +626,8 @@ async def intelligence_scanner():
             lin_reg_curve_1d = float(coin.get('lin_reg_curve_1d') or 0.0)
             
             
-            is_uptrend = (ema20_1h > ema50_1h > ema100_1h)
-            is_downtrend = (ema20_1h < ema50_1h < ema100_1h)
+            is_uptrend = (ema_20_1h > ema_50_1h > ema_100_1h)
+            is_downtrend = (ema_20_1h < ema_50_1h < ema_100_1h)
 
             high_24h = float(coin.get('high_24h') or (price * 1.05)) 
             low_24h = float(coin.get('low_24h') or (price * 0.95)) 
@@ -2445,14 +2445,14 @@ async def intelligence_scanner():
             )
             is_1h_explosive_long = (
                 # 1. فلتر الاتجاه العام: تأكيد أننا في ترند صاعد على الفريمات الأكبر (تجنب الفخاخ)
-                (price > ema200_4h) and 
-                (price > ema50_1d) and
+                (price > ema_200_4h) and 
+                (price > ema_50_1d) and
                 
                 # 2. البرايس أكشن وترتيب المتوسطات
-                (price > ema20_1h) and             
+                (price > ema_20_1h) and             
                 (price < bb_upper_1h) and          
-                (ema20_1h > bb_mid_1h) and        
-                (ema20_1h > ema50_1h > ema100_1h) and
+                (ema_20_1h > bb_mid_1h) and        
+                (ema_20_1h > ema_50_1h > ema_100_1h) and
                 
                 # 3. زخم الانفجار (اصطياد البداية بدلاً من القمة)
                 (55 <= rsi_1h <= 70) and  # تم التعديل لتجنب الشراء في التشبع الشرائي
@@ -2466,7 +2466,7 @@ async def intelligence_scanner():
             
             is_15m_band_walk_long = (
                 # فلتر الاتجاه الأكبر
-                (price > ema200_4h) and
+                (price > ema_200_4h) and
                 
                 # تسلق السعر للحد العلوي مع فتح فم البولنجر
                 (price >= ema20) and  
@@ -2485,8 +2485,8 @@ async def intelligence_scanner():
             
             is_15m_band_walk_short = (
                 # 1. فلتر الاتجاه العام: تأكيد أننا في ترند هابط
-                (price < ema200_4h) and 
-                (price < ema50_1d) and
+                (price < ema_200_4h) and 
+                (price < ema_50_1d) and
                 
                 # 2. تسلق السعر للحد السفلي مع فتح فم البولنجر للأسفل
                 (price <= ema20) and  
