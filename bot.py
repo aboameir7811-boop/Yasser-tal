@@ -271,7 +271,7 @@ async def intelligence_scanner():
                 if level == 0: return False
                 return abs(current_p - level) / level <= threshold
 
-            # ==========================================
+                        # ==========================================
             # 📐 [ 2. استخراج بيانات النماذج الفنية المتقدمة لجميع الفريمات ]
             # ==========================================
             # --- فريم 5 دقائق (5m) ---
@@ -395,16 +395,109 @@ async def intelligence_scanner():
             channel_touches_1d = int(coin.get('1d_channel_touches') or 0)
             channel_status_1d = coin.get('1d_channel_status', 'NONE')
             
-            ema20_1h = float(coin.get('ema_20_1h') or 0)
-            ema50_1h = float(coin.get('ema_50_1h') or 0)
-            ema50_1d = float(coin.get('ema_50_1d') or 0)
-            ema100_1h = float(coin.get('ema_100_1h') or 0)
-            ema200_4h = float(coin.get('ema_200_4h') or 0)
-            ema20 = float(coin.get('ema_20_15m') or 0) 
-            ema50 = float(coin.get('ema_50_15m') or 0) 
-            ema100 = float(coin.get('ema_100_15m') or 0) 
-            bb_upper_1h = float(coin.get('bb_upper_1h') or 0)
-            bb_mid_1h = float(coin.get('bb_middle_1h') or 1)
+            ema_20_1h = float(coin.get('ema_20_1h') or 0.0)
+            ema_20_2h = float(coin.get('ema_20_2h') or 0.0)
+            ema_20_4h = float(coin.get('ema_20_4h') or 0.0)
+            ema_20_1d = float(coin.get('ema_20_1d') or 0.0)
+            
+            ema_50_1h = float(coin.get('ema_50_1h') or 0.0)
+            ema_50_2h = float(coin.get('ema_50_2h') or 0.0)
+            ema_50_4h = float(coin.get('ema_50_4h') or 0.0)
+            ema_50_1d = float(coin.get('ema_50_1d') or 0.0)
+            
+            ema_100_1h = float(coin.get('ema_100_1h') or 0.0)
+            ema_100_2h = float(coin.get('ema_100_2h') or 0.0)
+            ema_100_4h = float(coin.get('ema_100_4h') or 0.0)
+            ema_100_1d = float(coin.get('ema_100_1d') or 0.0)
+            
+            ema_200_1h = float(coin.get('ema_200_1h') or 0.0)
+            ema_200_2h = float(coin.get('ema_200_2h') or 0.0)
+            ema_200_4h = float(coin.get('ema_200_4h') or 0.0)
+            ema_200_1d = float(coin.get('ema_200_1d') or 0.0)
+            
+            ema20 = float(coin.get('ema_20_15m') or 0.0) 
+            ema50 = float(coin.get('ema_50_15m') or 0.0) 
+            ema100 = float(coin.get('ema_100_15m') or 0.0) 
+
+            bb_upper_1h = float(coin.get('bb_upper_1h') or 0.0) 
+            bb_lower_1h = float(coin.get('bb_lower_1h') or 0.0) 
+            bb_middle_1h = float(coin.get('bb_middle_1h') or 0.0)
+            
+            bb_upper_2h = float(coin.get('bb_upper_2h') or 0.0) 
+            bb_lower_2h = float(coin.get('bb_lower_2h') or 0.0) 
+            bb_middle_2h = float(coin.get('bb_middle_2h') or 0.0)
+            
+            bb_upper_4h = float(coin.get('bb_upper_4h') or 0.0) 
+            bb_lower_4h = float(coin.get('bb_lower_4h') or 0.0) 
+            bb_middle_4h = float(coin.get('bb_middle_4h') or 0.0) 
+            
+            bb_upper_1d = float(coin.get('bb_upper_1d') or 0.0) 
+            bb_lower_1d = float(coin.get('bb_lower_1d') or 0.0) 
+            bb_middle_1d = float(coin.get('bb_middle_1d') or 0.0) 
+            
+            kc_upper_1h = float(coin.get('kc_upper_1h') or 0.0) 
+            kc_lower_1h = float(coin.get('kc_lower_1h') or 0.0)
+            
+            kc_upper_2h = float(coin.get('kc_upper_2h') or 0.0) 
+            kc_lower_2h = float(coin.get('kc_lower_2h') or 0.0) 
+            
+            kc_upper_4h = float(coin.get('kc_upper_4h') or 0.0) 
+            kc_lower_4h = float(coin.get('kc_lower_4h') or 0.0)  
+            
+            kc_upper_1d = float(coin.get('kc_upper_1d') or 0.0) 
+            kc_lower_1d = float(coin.get('kc_lower_1d') or 0.0)
+            
+            upper = float(coin.get('bb_upper_15m') or 0.0) 
+            lower = float(coin.get('bb_lower_15m') or 0.0) 
+            middle = float(coin.get('bb_middle_15m') or 0.0) 
+            
+            bb_upper_1h = float(coin.get('bb_upper_1h') or 0.0) 
+            bb_lower_1h = float(coin.get('bb_lower_1h') or 0.0) 
+            bb_middle_1h = float(coin.get('bb_middle_1h') or 0.0)
+            bb_upper_2h = float(coin.get('bb_upper_2h') or 0.0) 
+            bb_lower_2h = float(coin.get('bb_lower_2h') or 0.0) 
+            bb_middle_2h = float(coin.get('bb_middle_2h') or 0.0)
+            bb_upper_4h = float(coin.get('bb_upper_4h') or 0.0) 
+            bb_lower_4h = float(coin.get('bb_lower_4h') or 0.0) 
+            bb_middle_4h = float(coin.get('bb_middle_4h') or 0.0) 
+            bb_upper_1d = float(coin.get('bb_upper_1d') or 0.0) 
+            bb_lower_1d = float(coin.get('bb_lower_1d') or 0.0) 
+            bb_middle_1d = float(coin.get('bb_middle_1d') or 0.0) 
+            
+            kc_upper = float(coin.get('kc_upper_15m') or 0.0) 
+            kc_lower = float(coin.get('kc_lower_15m') or 0.0)  
+            
+            ichimoku_cloud_bottom_1h = float(coin.get('ichimoku_cloud_bottom_1h') or 0.0)
+            ichimoku_conversion_1h = float(coin.get('ichimoku_conversion_1h') or 0.0)
+            ichimoku_base_1h = float(coin.get('ichimoku_base_1h') or 0.0)
+            ichimoku_cloud_top_1h = float(coin.get('ichimoku_cloud_top_1h') or 0.0)
+            
+            ichimoku_cloud_bottom_2h = float(coin.get('ichimoku_cloud_bottom_2h') or 0.0)
+            ichimoku_conversion_2h = float(coin.get('ichimoku_conversion_2h') or 0.0)
+            ichimoku_base_2h = float(coin.get('ichimoku_base_2h') or 0.0)
+            ichimoku_cloud_top_2h = float(coin.get('ichimoku_cloud_top_2h') or 0.0)
+            
+            ichimoku_cloud_bottom_4h = float(coin.get('ichimoku_cloud_bottom_4h') or 0.0)
+            ichimoku_conversion_4h = float(coin.get('ichimoku_conversion_4h') or 0.0)
+            ichimoku_base_4h = float(coin.get('ichimoku_base_4h') or 0.0)
+            ichimoku_cloud_top_4h = float(coin.get('ichimoku_cloud_top_4h') or 0.0)
+            
+            ichimoku_cloud_bottom_1d = float(coin.get('ichimoku_cloud_bottom_1d') or 0.0)
+            ichimoku_conversion_1d = float(coin.get('ichimoku_conversion_1d') or 0.0)
+            ichimoku_base_1d = float(coin.get('ichimoku_base_1d') or 0.0)
+            ichimoku_cloud_top_1d = float(coin.get('ichimoku_cloud_top_1d') or 0.0)
+            
+            supertrend_1h = float(coin.get('supertrend_1h') or 0.0)
+            supertrend_2h = float(coin.get('supertrend_2h') or 0.0)
+            supertrend_4h = float(coin.get('supertrend_4h') or 0.0)
+            supertrend_1d = float(coin.get('supertrend_1d') or 0.0)
+            
+            parabolic_sar_1h = float(coin.get('parabolic_sar_1h') or 0.0)
+            parabolic_sar_2h = float(coin.get('parabolic_sar_2h') or 0.0)
+            parabolic_sar_4h = float(coin.get('parabolic_sar_4h') or 0.0)
+            parabolic_sar_1d = float(coin.get('parabolic_sar_1d') or 0.0)
+            
+            
             rsi_15m = float(coin.get('rsi_15m') or 50) 
             bbw_15m = float(coin.get('bbw_15m') or 0)
             bbw_prev_15m = float(coin.get('bbw_prev_15m') or 0) 
@@ -441,6 +534,16 @@ async def intelligence_scanner():
             macd_signal_1d = float(coin.get('macd_signal_1d') or 0.0)
             macd_hist_1d = float(coin.get('macd_hist_1d') or 0.0)
             
+            stochastic_k_1h = float(coin.get('stochastic_k_1h') or 0.0)
+            stochastic_k_2h = float(coin.get('stochastic_k_2h') or 0.0)
+            stochastic_k_4h = float(coin.get('stochastic_k_4h') or 0.0)
+            stochastic_k_1d = float(coin.get('stochastic_k_1d') or 0.0)
+            
+            stochastic_d_1h = float(coin.get('stochastic_d_1h') or 0.0)
+            stochastic_d_2h = float(coin.get('stochastic_d_2h') or 0.0)
+            stochastic_d_4h = float(coin.get('stochastic_d_4h') or 0.0)
+            stochastic_d_1d = float(coin.get('stochastic_d_1d') or 0.0)
+            
             # 4. مجموعة تدفق الحجم (Volume & OBV)
             obv_1h = float(coin.get('obv_1h') or 0.0)
             obv_2h = float(coin.get('obv_2h') or 0.0)
@@ -451,13 +554,78 @@ async def intelligence_scanner():
             obv_slope_2h = float(coin.get('obv_slope_2h') or 0.0)
             obv_slope_4h = float(coin.get('obv_slope_4h') or 0.0)
             obv_slope_1d = float(coin.get('obv_slope_1d') or 0.0)
-
-            upper = float(coin.get('bb_upper_15m') or 0) 
-            lower = float(coin.get('bb_lower_15m') or 0) 
-            middle = float(coin.get('bb_middle_15m') or 1) 
             
-            kc_upper = float(coin.get('kc_upper_15m') or 0) 
-            kc_lower = float(coin.get('kc_lower_15m') or 0) 
+            obv_prev_1h = float(coin.get('obv_prev_1h') or 0.0)
+            obv_prev_2h = float(coin.get('obv_prev_2h') or 0.0)
+            obv_prev_4h = float(coin.get('obv_prev_4h') or 0.0)
+            obv_prev_1d = float(coin.get('obv_prev_1d') or 0.0)
+            
+            mfi_1h = float(coin.get('mfi_1h') or 0.0)
+            mfi_2h = float(coin.get('mfi_2h') or 0.0)
+            mfi_4h = float(coin.get('mfi_4h') or 0.0)
+            mfi_1d = float(coin.get('mfi_1d') or 0.0)
+            
+            cmf_1h = float(coin.get('cmf_1h') or 0.0)
+            cmf_2h = float(coin.get('cmf_2h') or 0.0)
+            cmf_4h = float(coin.get('cmf_4h') or 0.0)
+            cmf_1d = float(coin.get('cmf_1d') or 0.0)
+            
+            vwap_1h = float(coin.get('vwap_1h') or 0.0)
+            vwap_2h = float(coin.get('vwap_2h') or 0.0)
+            vwap_4h = float(coin.get('vwap_4h') or 0.0)
+            vwap_1d = float(coin.get('vwap_1d') or 0.0)
+            
+            vwap_distance_pct_1h = float(coin.get('vwap_distance_pct_1h') or 0.0)
+            vwap_distance_pct_2h = float(coin.get('vwap_distance_pct_2h') or 0.0)
+            vwap_distance_pct_4h = float(coin.get('vwap_distance_pct_4h') or 0.0)
+            vwap_distance_pct_1d = float(coin.get('vwap_distance_pct_1d') or 0.0)
+            
+            poc_price_1h = float(coin.get('poc_price_1h') or 0.0)
+            poc_price_2h = float(coin.get('poc_price_2h') or 0.0)
+            poc_price_4h = float(coin.get('poc_price_4h') or 0.0)
+            poc_price_1d = float(coin.get('poc_price_1d') or 0.0)
+            
+            value_area_high_1h = float(coin.get('value_area_high_1h') or 0.0)
+            value_area_high_2h = float(coin.get('value_area_high_2h') or 0.0)
+            value_area_high_4h = float(coin.get('value_area_high_4h') or 0.0)
+            value_area_high_1d = float(coin.get('value_area_high_1d') or 0.0)
+            
+            value_area_low_1h = float(coin.get('value_area_low_1h') or 0.0)
+            value_area_low_2h = float(coin.get('value_area_low_2h') or 0.0)
+            value_area_low_4h = float(coin.get('value_area_low_4h') or 0.0)
+            value_area_low_1d = float(coin.get('value_area_low_1d') or 0.0)
+            
+            volume_oscillator_1h = float(coin.get('volume_oscillator_1h') or 0.0)
+            volume_oscillator_2h = float(coin.get('volume_oscillator_2h') or 0.0)
+            volume_oscillator_4h = float(coin.get('volume_oscillator_4h') or 0.0)
+            volume_oscillator_1d = float(coin.get('volume_oscillator_1d') or 0.0)
+            
+            williams_r_1h = float(coin.get('williams_r_1h') or 0.0)
+            williams_r_2h = float(coin.get('williams_r_2h') or 0.0)
+            williams_r_4h = float(coin.get('williams_r_4h') or 0.0)
+            williams_r_1d = float(coin.get('williams_r_1d') or 0.0)
+            
+            choppiness_index_1h = float(coin.get('choppiness_index_1h') or 0.0)
+            choppiness_index_2h = float(coin.get('choppiness_index_2h') or 0.0)
+            choppiness_index_4h = float(coin.get('choppiness_index_4h') or 0.0)
+            choppiness_index_1d = float(coin.get('choppiness_index_1d') or 0.0)
+            
+            last_fractal_high_1h = float(coin.get('last_fractal_high_1h') or 0.0)
+            last_fractal_high_2h = float(coin.get('last_fractal_high_2h') or 0.0)
+            last_fractal_high_4h = float(coin.get('last_fractal_high_4h') or 0.0)
+            last_fractal_high_1d = float(coin.get('last_fractal_high_1d') or 0.0)
+            
+            last_fractal_low_1h = float(coin.get('last_fractal_low_1h') or 0.0)
+            last_fractal_low_2h = float(coin.get('last_fractal_low_2h') or 0.0)
+            last_fractal_low_4h = float(coin.get('last_fractal_low_4h') or 0.0)
+            last_fractal_low_1d = float(coin.get('last_fractal_low_1d') or 0.0)
+            
+            lin_reg_curve_1h = float(coin.get('lin_reg_curve_1h') or 0.0)
+            lin_reg_curve_2h = float(coin.get('lin_reg_curve_2h') or 0.0)
+            lin_reg_curve_4h = float(coin.get('lin_reg_curve_4h') or 0.0)
+            lin_reg_curve_1d = float(coin.get('lin_reg_curve_1d') or 0.0)
+            
+            
             is_uptrend = (ema20_1h > ema50_1h > ema100_1h)
             is_downtrend = (ema20_1h < ema50_1h < ema100_1h)
 
