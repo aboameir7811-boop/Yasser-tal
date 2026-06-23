@@ -562,6 +562,49 @@ async def intelligence_scanner():
                 (pattern_class_4h == "اختراق استمراري")
             )
 
+            is_buy_pattern_11 = (
+                (pattern_name_2h == "رأس وكتفين مقلوب") and 
+                (pattern_class_2h == "انعكاسي صاعد") and 
+                (patterns_1d == "الجنود_الثلاثة_البيض_صاعد")
+            )
+
+            is_buy_pattern_12 = (
+                (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_1h == "راية صاعدة") and 
+                (pattern_class_1h == "اختراق استمراري") and 
+                (patterns_2h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_2h == "بوق متسع صاعد") and 
+                (pattern_class_2h == "انفجار سعري") and 
+                (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (patterns_1d == "ابتلاع_صاعد")
+            )
+
+            is_buy_pattern_13 = (
+                (patterns_2h == "ثلاثة_للداخل_صاعد") and 
+                (patterns_4h == "هارامي_صليب_صاعد")
+            )
+
+            is_buy_pattern_14 = (
+                (patterns_1h == "في_الرقبة_هابط") and 
+                (trend_direction_1h == "صاعد") and 
+                (trend_touches_1h == 3) and 
+                (channel_direction_1h == "صاعد") and 
+                (channel_status_1h == "VALID") and 
+                (channel_touches_1h == 4) and 
+                (pattern_name_2h == "بوق متسع صاعد") and 
+                (pattern_class_2h == "انفجار سعري") and 
+                (patterns_4h == "الجنود_الثلاثة_البيض_صاعد") and 
+                (pattern_name_4h == "راية صاعدة") and 
+                (pattern_class_4h == "اختراق استمراري")
+            )
+
+            is_buy_pattern_15 = (
+                (patterns_1h == "الحزام_الممسوك_صاعد") and 
+                (patterns_2h == "ثلاثة_للخارج_صاعد") and 
+                (patterns_4h == "ابتلاع_صاعد") and 
+                (patterns_1d == "ثلاثة_للخارج_صاعد")
+            )
+
             # --- BOT_INSERT_BUY_CONDITIONS ---      
             is_pattern_1_double_bottom_bullish = (
                 (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
@@ -1409,6 +1452,26 @@ async def intelligence_scanner():
             elif is_buy_pattern_10:
                 score += 50
                 reasons.append("نموذج شراء 10")
+
+            elif is_buy_pattern_11:
+                score += 50
+                reasons.append("نموذج شراء 11")
+
+            elif is_buy_pattern_12:
+                score += 50
+                reasons.append("نموذج شراء 12")
+
+            elif is_buy_pattern_13:
+                score += 50
+                reasons.append("نموذج شراء 13")
+
+            elif is_buy_pattern_14:
+                score += 50
+                reasons.append("نموذج شراء 14")
+
+            elif is_buy_pattern_15:
+                score += 50
+                reasons.append("نموذج شراء 15")
 
             # --- BOT_INSERT_BUY_EVALUATIONS ---
             
