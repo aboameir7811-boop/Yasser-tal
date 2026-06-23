@@ -605,6 +605,177 @@ async def intelligence_scanner():
                 (patterns_1d == "ثلاثة_للخارج_صاعد")
             )
 
+            is_buy_indicator_1 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > ema_50_4h > ema_100_4h > ema_200_4h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_2 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_3 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > ema_50_4h > ema_100_4h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_4 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > ema_50_4h > ema_100_4h > ema_200_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_5 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_6 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > ema_50_4h > ema_100_4h > ema_200_4h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h) and 
+                (ema_20_4h > supertrend_4h)
+            )
+
+            is_buy_indicator_7 = (
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_8 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > ema_50_4h > ema_100_4h > ema_200_4h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_9 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_10 = (
+                (ema_20_1h > ema_50_1h > ema_100_1h > ema_200_1h) and 
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_4h > ema_50_4h > ema_100_4h > ema_200_4h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_11 = (
+                (ema_20_1h > kc_lower_1h) and 
+                (ema_20_1h > ichimoku_cloud_top_1h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_12 = (
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > ema_50_4h > ema_100_4h > ema_200_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h)
+            )
+
+            is_buy_indicator_13 = (
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ichimoku_conversion_4h > ichimoku_base_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
+            is_buy_indicator_14 = (
+                (ema_20_1h > bb_middle_1h) and 
+                (ema_20_1h > kc_lower_1h) and 
+                (ichimoku_conversion_1h > ichimoku_base_1h) and 
+                (ema_20_1h > supertrend_1h) and 
+                (ema_20_1h > parabolic_sar_1h) and 
+                (ema_20_4h > bb_middle_4h) and 
+                (ema_20_4h > kc_lower_4h) and 
+                (ema_20_4h > supertrend_4h) and 
+                (ema_20_4h > parabolic_sar_4h)
+            )
+
             # --- BOT_INSERT_BUY_CONDITIONS ---      
             is_pattern_1_double_bottom_bullish = (
                 (patterns_1h == "الجنود_الثلاثة_البيض_صاعد") and 
@@ -1061,6 +1232,306 @@ async def intelligence_scanner():
                 (patterns_1d == "الغربان_الثلاثة_السود_هابط")
             )
 
+            is_sell_indicator_1 = (
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_2 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_3 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h)
+            )
+
+            is_sell_indicator_4 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_5 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_6 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_7 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_8 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_9 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_10 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h)
+            )
+
+            is_sell_indicator_11 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h)
+            )
+
+            is_sell_indicator_12 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h)
+            )
+
+            is_sell_indicator_13 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_14 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h)
+            )
+
+            is_sell_indicator_15 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_16 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_17 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_18 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_19 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_1h < supertrend_1h) and 
+                (ema_20_1h < parabolic_sar_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
+            is_sell_indicator_20 = (
+                (ema_20_1h < ema_50_1h < ema_100_1h < ema_200_1h) and 
+                (ema_20_1h < bb_middle_1h) and 
+                (ema_20_1h < kc_upper_1h) and 
+                (ichimoku_conversion_1h < ichimoku_base_1h) and 
+                (ema_20_1h < ichimoku_cloud_bottom_1h) and 
+                (ema_20_4h < ema_50_4h < ema_100_4h < ema_200_4h) and 
+                (ema_20_4h < bb_middle_4h) and 
+                (ema_20_4h < kc_upper_4h) and 
+                (ichimoku_conversion_4h < ichimoku_base_4h) and 
+                (ema_20_4h < ichimoku_cloud_bottom_4h) and 
+                (ema_20_4h < supertrend_4h) and 
+                (ema_20_4h < parabolic_sar_4h)
+            )
+
             # --- BOT_INSERT_SELL_CONDITIONS ---
             is_bearish_candles_with_bullish_pennant = (
                 (patterns_1h == "ثلاثة_للخارج_هابط") and 
@@ -1300,6 +1771,86 @@ async def intelligence_scanner():
                 score -= 50
                 reasons.append("نموذج بيع 20")
 
+            elif is_sell_indicator_1:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 1")
+
+            elif is_sell_indicator_2:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 2")
+
+            elif is_sell_indicator_3:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 3")
+
+            elif is_sell_indicator_4:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 4")
+
+            elif is_sell_indicator_5:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 5")
+
+            elif is_sell_indicator_6:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 6")
+
+            elif is_sell_indicator_7:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 7")
+
+            elif is_sell_indicator_8:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 8")
+
+            elif is_sell_indicator_9:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 9")
+
+            elif is_sell_indicator_10:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 10")
+
+            elif is_sell_indicator_11:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 11")
+
+            elif is_sell_indicator_12:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 12")
+
+            elif is_sell_indicator_13:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 13")
+
+            elif is_sell_indicator_14:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 14")
+
+            elif is_sell_indicator_15:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 15")
+
+            elif is_sell_indicator_16:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 16")
+
+            elif is_sell_indicator_17:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 17")
+
+            elif is_sell_indicator_18:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 18")
+
+            elif is_sell_indicator_19:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 19")
+
+            elif is_sell_indicator_20:
+                score -= 50
+                reasons.append("مؤشرات بيع قوية 20")
+
             # --- BOT_INSERT_SELL_EVALUATIONS ---
             elif is_three_outside_down_with_evening_doji_star:
                 score -= 10
@@ -1472,6 +2023,62 @@ async def intelligence_scanner():
             elif is_buy_pattern_15:
                 score += 50
                 reasons.append("نموذج شراء 15")
+
+            elif is_buy_indicator_1:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 1")
+
+            elif is_buy_indicator_2:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 2")
+
+            elif is_buy_indicator_3:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 3")
+
+            elif is_buy_indicator_4:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 4")
+
+            elif is_buy_indicator_5:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 5")
+
+            elif is_buy_indicator_6:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 6")
+
+            elif is_buy_indicator_7:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 7")
+
+            elif is_buy_indicator_8:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 8")
+
+            elif is_buy_indicator_9:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 9")
+
+            elif is_buy_indicator_10:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 10")
+
+            elif is_buy_indicator_11:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 11")
+
+            elif is_buy_indicator_12:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 12")
+
+            elif is_buy_indicator_13:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 13")
+
+            elif is_buy_indicator_14:
+                score += 50
+                reasons.append("مؤشرات شراء قوية 14")
 
             # --- BOT_INSERT_BUY_EVALUATIONS ---
             
